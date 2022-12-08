@@ -12,6 +12,19 @@ pub struct UserItem {
     pub amount: i32,
 }
 
+pub(crate) fn user_item() -> impl HttpServiceFactory {
+    let cors = Cors::default()
+        .allow_any_header()
+        .allow_any_origin()
+        .allow_any_method()
+        .send_wildcard()
+        .max_age(3600);
+    web::scope("api/v1/user_item")
+        .wrap(cors)
+        .route("", web::post().to(increment_amount))
+        .route("/user", web::get().to(get_user_items))
+}
+
 async fn increment_amount(
     connection: web::Data<PgPool>,
     user_item_increment: web::Json<UserItem>,
@@ -33,19 +46,6 @@ async fn get_user_items(
     } else {
         HttpResponse::InternalServerError().finish()
     }
-}
-
-pub(crate) fn user_item() -> impl HttpServiceFactory {
-    let cors = Cors::default()
-        .allow_any_header()
-        .allow_any_origin()
-        .allow_any_method()
-        .send_wildcard()
-        .max_age(3600);
-    web::scope("api/v1/user_item")
-        .wrap(cors)
-        .route("", web::post().to(increment_amount))
-        .route("/user", web::get().to(get_user_items))
 }
 
 impl UserItem {

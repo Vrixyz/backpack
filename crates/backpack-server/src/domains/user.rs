@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct UserId(i32);
+pub struct UserId(pub(super) i32);
 
 impl std::ops::Deref for UserId {
     type Target = i32;
@@ -25,14 +25,6 @@ pub struct UserInput {
     pub name: String,
 }
 
-async fn create_user(connection: web::Data<PgPool>, user: web::Json<UserInput>) -> impl Responder {
-    if let Ok(user_id) = user.0.create(&connection).await {
-        HttpResponse::Ok().json(user_id)
-    } else {
-        HttpResponse::InternalServerError().finish()
-    }
-}
-
 pub(crate) fn user() -> impl HttpServiceFactory {
     let cors = Cors::default()
         .allow_any_header()
@@ -43,6 +35,14 @@ pub(crate) fn user() -> impl HttpServiceFactory {
     web::scope("api/v1/users")
         .wrap(cors)
         .route("", web::post().to(create_user))
+}
+
+async fn create_user(connection: web::Data<PgPool>, user: web::Json<UserInput>) -> impl Responder {
+    if let Ok(user_id) = user.0.create(&connection).await {
+        HttpResponse::Ok().json(user_id)
+    } else {
+        HttpResponse::InternalServerError().finish()
+    }
 }
 
 impl UserInput {

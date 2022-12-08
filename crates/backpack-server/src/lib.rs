@@ -1,22 +1,33 @@
-use actix_web::{dev::Server, middleware::Logger, web::Data, App, HttpServer};
+use actix_web::{
+    dev::Server,
+    middleware::Logger,
+    web::{self, Data},
+    App, HttpServer,
+};
+use configuration::get_configuration;
 use sqlx::PgPool;
 use std::net::TcpListener;
 
+pub mod configuration;
 pub mod domains;
 
 pub fn run(listener: TcpListener, connection_pool: PgPool) -> Result<Server, std::io::Error> {
+    let config = Data::new(get_configuration());
+    let root = Data::new(config.get_keypair());
     let connection = Data::new(connection_pool);
 
     let server = HttpServer::new(move || {
         App::new()
             .app_data(connection.clone())
+            .app_data(root.clone())
+            .app_data(config.clone())
             .wrap(Logger::default())
-            /*            .route(
+            .route(
                 "/health_check",
                 web::get().to(domains::healthcheck::health_check),
-            )*/
+            )
             //.service(domains::config::config(config.clone()))
-            //.service(domains::oauth::oauth())
+            .service(domains::oauth::oauth())
             //.service(domains::admin::admin(root.clone()))
             //.service(domains::leaderboard::leaderboard(root.clone()))
             .service(domains::user::user())

@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 use crate::configuration::Settings;
 
-use super::user::{AdminAccount, GithubUser};
+use super::user::UserId;
 
 pub const TOKEN_TTL: i64 = 600;
 
@@ -25,46 +25,17 @@ trait BiscuitFact: Sized {
     fn from_authorizer(authorizer: &mut Authorizer) -> Option<Self>;
 }
 
-impl BiscuitFact for AdminAccount {
+impl BiscuitFact for UserId {
     fn as_biscuit_fact(&self) -> Fact {
-        Fact::new("user".to_string(), vec![Term::Str(self.id.to_string())])
+        Fact::new("user".to_string(), vec![Term::Str((*self).to_string())])
     }
 
     fn from_authorizer(authorizer: &mut Authorizer) -> Option<Self> {
         let res: Vec<(String,)> = authorizer.query("data($id) <- user($id)").ok()?;
-        Some(AdminAccount {
-            id: Uuid::parse_str(res.get(0)?.0.as_str()).ok()?,
-        })
+        Some(UserId(res.get(0)?.0.as_str().parse::<i32>().ok()?))
     }
 }
 
-#[derive(Deserialize)]
-struct UuidInput {
-    uuid: Uuid,
-}
-
-async fn by_uuid(
-    root: web::Data<KeyPair>,
-    connection: web::Data<PgPool>,
-    uuid: web::Json<UuidInput>,
-) -> impl Responder {
-    let account = AdminAccount { id: uuid.uuid };
-    match (
-        account.exist(&connection).await,
-        account.has_github(&connection).await,
-    ) {
-        (_, Some(_)) => return HttpResponse::InternalServerError().finish(),
-        (false, _) => {
-            account.create(&connection).await;
-        }
-        (true, _) => (),
-    }
-
-    let biscuit = account.create_biscuit(root.as_ref());
-    HttpResponse::Ok().json(TokenReply {
-        token: biscuit.to_base64().unwrap(),
-    })
-}
 pub fn authorize(token: &Biscuit) -> Option<AdminAccount> {
     let mut authorizer = token.authorizer().ok()?;
 
@@ -136,9 +107,7 @@ async fn oauth_callback(
 }
 
 pub(crate) fn oauth() -> Scope {
-    web::scope("oauth")
-        .route("by_uuid", web::post().to(by_uuid))
-        .route("callback", web::get().to(oauth_callback))
+    web::scope("oauth").route("callback", web::get().to(oauth_callback))
 }
 
 #[derive(Serialize)]

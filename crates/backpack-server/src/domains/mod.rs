@@ -1,3 +1,5 @@
+pub mod healthcheck;
 pub mod item;
+pub mod oauth;
 pub mod user;
 pub mod user_item;
