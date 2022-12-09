@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use actix_web::{web, HttpResponse, Responder, Scope};
+use actix_web::{
+    cookie::time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime},
+    web, HttpResponse, Responder, Scope,
+};
 use biscuit_auth::{
     builder::{Fact, Term},
     Authorizer, Biscuit, KeyPair,
@@ -9,9 +12,12 @@ use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::configuration::Settings;
+use crate::{configuration::Settings, random_names::random_name};
 
-use super::user::UserId;
+use super::{
+    user::{User, UserId},
+    user_github::GithubUser,
+};
 
 pub const TOKEN_TTL: i64 = 600;
 
@@ -36,14 +42,35 @@ impl BiscuitFact for UserId {
     }
 }
 
-pub fn authorize(token: &Biscuit) -> Option<AdminAccount> {
+impl UserId {
+    pub fn create_biscuit(&self, root: &KeyPair) -> Biscuit {
+        let mut builder = Biscuit::builder(root);
+        builder.add_authority_fact(self.as_biscuit_fact()).unwrap();
+
+        builder
+            .add_authority_check(
+                format!(
+                    r#"check if time($time), $time < {}"#,
+                    (OffsetDateTime::now_utc() + Duration::seconds(TOKEN_TTL))
+                        .format(&Rfc3339)
+                        .unwrap()
+                )
+                .as_str(),
+            )
+            .unwrap();
+
+        builder.build().unwrap()
+    }
+}
+
+pub fn authorize(token: &Biscuit) -> Option<UserId> {
     let mut authorizer = token.authorizer().ok()?;
 
     authorizer.set_time();
     authorizer.allow().map_err(|_| ()).ok()?;
     authorizer.authorize().map_err(|_| ()).ok()?;
 
-    AdminAccount::from_authorizer(&mut authorizer)
+    UserId::from_authorizer(&mut authorizer)
 }
 
 #[derive(Debug, Deserialize)]
@@ -80,7 +107,7 @@ async fn oauth_callback(
         .await
         .unwrap()
         .access_token;
-    let user = client
+    let gh_user = client
         .get("https://api.github.com/user")
         .bearer_auth(github_bearer)
         .header("user-agent", "backpack")
@@ -91,16 +118,15 @@ async fn oauth_callback(
         .await
         .unwrap();
 
-    let admin = if user.exist(&connection).await {
-        user.has_admin(&connection).await.unwrap()
+    let user = if gh_user.exist(&connection).await {
+        gh_user.get_user(&connection).await.unwrap()
     } else {
-        let account = AdminAccount { id: Uuid::new_v4() };
-        account.create(&connection).await;
-        user.create(&account, &connection).await;
-        account
+        let user = UserId::create(&connection, &random_name()).await.unwrap();
+        assert!(gh_user.create(&connection, user).await);
+        user
     };
 
-    let biscuit = admin.create_biscuit(&root);
+    let biscuit = user.create_biscuit(&root);
     HttpResponse::Ok().json(TokenReply {
         token: biscuit.to_base64().unwrap(),
     })
@@ -112,6 +138,6 @@ pub(crate) fn oauth() -> Scope {
 
 #[derive(Serialize)]
 struct Identity<'a> {
-    admin: &'a AdminAccount,
+    admin: &'a UserId,
     github: Option<GithubUser>,
 }

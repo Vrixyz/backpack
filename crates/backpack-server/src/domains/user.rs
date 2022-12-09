@@ -61,19 +61,19 @@ impl UserInput {
     }
 }
 
-impl User {
-    pub async fn exist(connection: &PgPool, user_id: UserId) -> bool {
-        sqlx::query!("SELECT id FROM users WHERE id = $1", *user_id)
+impl UserId {
+    pub async fn exist(&self, connection: &PgPool) -> bool {
+        sqlx::query!("SELECT id FROM users WHERE id = $1", **self)
             .fetch_one(connection)
             .await
             .is_ok()
     }
-    pub async fn get(id: UserId, connection: &PgPool) -> Option<User> {
+    pub async fn get(&self, connection: &PgPool) -> Option<User> {
         sqlx::query!(
             r#"
             SELECT id, name FROM users WHERE id = $1
             "#,
-            id.0,
+            **self,
         )
         .fetch_one(connection)
         .await
@@ -82,5 +82,18 @@ impl User {
             name: r.name.clone(),
         })
         .ok()
+    }
+    pub async fn create(connection: &PgPool, name: &str) -> Result<UserId, sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+            INSERT INTO users (name) VALUES ($1)
+            RETURNING id
+            "#,
+            name,
+        )
+        .fetch_one(connection)
+        .await?;
+
+        Ok(UserId(rec.id))
     }
 }

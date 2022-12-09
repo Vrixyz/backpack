@@ -1,5 +1,52 @@
+use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+
+use super::user::UserId;
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GithubUser {
     login: String,
     id: u32,
+}
+
+impl GithubUser {
+    pub async fn exist(&self, connection: &PgPool) -> bool {
+        sqlx::query!(
+            "SELECT id FROM users_github WHERE id = $1 AND login = $2",
+            self.id as i32,
+            self.login
+        )
+        .fetch_one(connection)
+        .await
+        .is_ok()
+    }
+    // FIXME: this shouldn't exist as-is,
+    // it should be a single query to create user and user_github with the same operation.
+    // WHY: if database crashes between those 2 calls, we end up with a rogue UserId.
+    pub async fn create(&self, connection: &PgPool, account: UserId) -> bool {
+        // Create
+        sqlx::query!(
+            r#"
+            INSERT INTO users_github (id, login, user_id) VALUES ($1, $2, $3)
+            "#,
+            self.id as i64,
+            self.login,
+            *account,
+        )
+        .fetch_one(connection)
+        .await
+        .is_ok()
+    }
+
+    pub async fn get_user(&self, connection: &PgPool) -> Option<UserId> {
+        sqlx::query!(
+            "SELECT user_id FROM users_github WHERE id = $1 AND login = $2",
+            self.id as i32,
+            self.login
+        )
+        .fetch_one(connection)
+        .await
+        .map(|record| UserId(record.user_id))
+        .ok()
+    }
 }

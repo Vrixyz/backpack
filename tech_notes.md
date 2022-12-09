@@ -12,3 +12,10 @@ please reach out if you think I'm writing nonsense :heart:.
 ## Auth
 
 - (wip) dropped authentication by id for only oauth.
+
+
+## Data "renames"
+
+- Admin is now User
+  - AdminAccount -> UserId
+- 

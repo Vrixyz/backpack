@@ -10,6 +10,7 @@ use std::net::TcpListener;
 
 pub mod configuration;
 pub mod domains;
+pub mod random_names;
 
 pub fn run(listener: TcpListener, connection_pool: PgPool) -> Result<Server, std::io::Error> {
     let config = Data::new(get_configuration());
