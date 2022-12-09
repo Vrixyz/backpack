@@ -23,6 +23,18 @@ async fn increment_amount(
     }
 }
 
+/// For a given user, returns all the items who have at least 1 amount.
+async fn get_user_items(
+    connection: web::Data<PgPool>,
+    user_id: web::Json<UserId>,
+) -> impl Responder {
+    if let Ok(res) = user_id.get_items(&connection).await {
+        HttpResponse::Ok().json(user_id)
+    } else {
+        HttpResponse::InternalServerError().finish()
+    }
+}
+
 pub(crate) fn user_item() -> impl HttpServiceFactory {
     let cors = Cors::default()
         .allow_any_header()
@@ -30,9 +42,10 @@ pub(crate) fn user_item() -> impl HttpServiceFactory {
         .allow_any_method()
         .send_wildcard()
         .max_age(3600);
-    web::scope("api/v1/items")
+    web::scope("api/v1/user_item")
         .wrap(cors)
         .route("", web::post().to(increment_amount))
+        .route("/user", web::get().to(get_user_items))
 }
 
 impl UserItem {

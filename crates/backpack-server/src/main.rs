@@ -6,7 +6,7 @@ use std::net::TcpListener;
 async fn main() -> std::io::Result<()> {
     let pool = PgPoolOptions::new()
         .max_connections(5)
-        .connect("postgres://postgres@localhost/backpack")
+        .connect("postgres://postgres:password@localhost/backpack")
         .await
         .expect("Failed to connect to Postgres.");
 

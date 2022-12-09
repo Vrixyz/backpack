@@ -3,6 +3,8 @@ use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
+use super::user::UserId;
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ItemId(i32);
 
@@ -14,10 +16,43 @@ impl std::ops::Deref for ItemId {
     }
 }
 
+impl UserId {
+    pub async fn get_items(&self, pool: &PgPool) -> Result<Vec<ItemAmount>, sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+        SELECT  item_id as id, amount, items.name as name
+        FROM users_items
+        JOIN items
+        ON items.id = item_id
+        WHERE user_id = $1
+            "#,
+            **self,
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rec
+            .iter()
+            .map(|item| ItemAmount {
+                item: Item {
+                    id: ItemId(item.id),
+                    name: item.name.clone(),
+                },
+                amount: item.amount,
+            })
+            .collect())
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct Item {
     pub id: ItemId,
     pub name: String,
+}
+#[derive(Serialize, Deserialize)]
+pub struct ItemAmount {
+    pub item: Item,
+    pub amount: i32,
 }
 
 #[derive(Deserialize, Serialize)]

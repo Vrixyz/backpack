@@ -1,9 +1,4 @@
-use actix_web::{
-    dev::Server,
-    middleware::Logger,
-    web::{self, Data},
-    App, HttpServer,
-};
+use actix_web::{dev::Server, middleware::Logger, web::Data, App, HttpServer};
 use sqlx::PgPool;
 use std::net::TcpListener;
 
