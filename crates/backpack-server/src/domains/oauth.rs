@@ -96,17 +96,22 @@ async fn oauth_callback(
 
     let client = reqwest::Client::new();
 
-    let github_bearer = client
+    dbg!(&params);
+    let response = dbg!(client
         .post("https://github.com/login/oauth/access_token")
         .form(&params)
         .header("Accept", "application/json")
         .send()
         .await
-        .unwrap()
+        .unwrap());
+    //dbg!(response.text().await);
+
+    let github_bearer = response
         .json::<GithubOauthResponse>()
         .await
         .unwrap()
         .access_token;
+    dbg!(&github_bearer);
     let gh_user = client
         .get("https://api.github.com/user")
         .bearer_auth(github_bearer)

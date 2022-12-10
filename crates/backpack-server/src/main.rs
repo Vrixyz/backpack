@@ -1,17 +1,21 @@
-use backpack_server::run;
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use backpack_server::{configuration::get_configuration, run};
+use dotenv::dotenv;
+use sqlx::PgPool;
 use std::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
-    let pool = PgPoolOptions::new()
-        .max_connections(5)
-        .connect("postgres://postgres:password@localhost/backpack")
+    dotenv().ok();
+    let configuration = get_configuration();
+
+    let address = format!(
+        "{}:{}",
+        configuration.application_host, configuration.application_port
+    );
+
+    let listener = TcpListener::bind(&address)?;
+    let connection_pool = PgPool::connect(&configuration.database.connection_string())
         .await
         .expect("Failed to connect to Postgres.");
-
-    let address = "0.0.0.0:8080";
-    let listener = TcpListener::bind(address)?;
-
-    run(listener, pool)?.await
+    run(listener, connection_pool, configuration)?.await
 }

@@ -17,3 +17,4 @@ biscuit-auth = "2.2"
 uuid = { version = "1.1", features = ["v4", "serde"] }
 base64 = "0.13"
 rand = "0.8"
+dotenv = "0.15.0"

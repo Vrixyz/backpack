@@ -1,3 +1,4 @@
 /target
-secrets.txt
 .env*
+private_key
+secrets.txt

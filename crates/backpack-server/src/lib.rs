@@ -4,7 +4,7 @@ use actix_web::{
     web::{self, Data},
     App, HttpServer,
 };
-use configuration::get_configuration;
+use configuration::Settings;
 use sqlx::PgPool;
 use std::net::TcpListener;
 
@@ -12,8 +12,12 @@ pub mod configuration;
 pub mod domains;
 pub mod random_names;
 
-pub fn run(listener: TcpListener, connection_pool: PgPool) -> Result<Server, std::io::Error> {
-    let config = Data::new(get_configuration());
+pub fn run(
+    listener: TcpListener,
+    connection_pool: PgPool,
+    settings: Settings,
+) -> Result<Server, std::io::Error> {
+    let config = Data::new(settings);
     let root = Data::new(config.get_keypair());
     let connection = Data::new(connection_pool);
 
@@ -30,8 +34,6 @@ pub fn run(listener: TcpListener, connection_pool: PgPool) -> Result<Server, std
             //.service(domains::config::config(config.clone()))
             .service(domains::oauth::oauth())
             //.service(domains::admin::admin(root.clone()))
-            //.service(domains::leaderboard::leaderboard(root.clone()))
-            .service(domains::user::user())
             .service(domains::item::item())
             .service(domains::user_item::user_item())
         //.route("/{filename:.*}", web::get().to(spa))
