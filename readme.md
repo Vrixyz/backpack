@@ -2,6 +2,8 @@
 
 Inventory backend system
 
+![Raw target implementation](Docs/Backpack.drawio.png)
+
 ## Features
 
 - [ ] authentication via https://www.biscuitsec.org/ ; through third party oauth (github...)
@@ -15,7 +17,7 @@ Inventory backend system
   - [x] oauth third party
   - [x] database connection
 - [x] start the backpack server
-- [ ] use the admin interface to set items
+- [ ] use the admin interface to set up items and server to server communication
 - [ ] To signin/signup, client identify through an oauth third party which callbacks to backpack server to create a new user or identify and get a biscuit token.
 - [ ] Clients call to another logic server to refill or use their items, those operations should be done through server-server communication. 
 - [ ] this logic server uses data from backpack.
