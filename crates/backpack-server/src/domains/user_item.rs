@@ -21,15 +21,17 @@ pub(crate) fn user_item() -> impl HttpServiceFactory {
         .max_age(3600);
     web::scope("api/v1")
         .wrap(cors)
-        .route("user/item", web::post().to(increment_amount))
+        .route("user/item", web::post().to(modify_amount))
         .route("user/{user_id}/item", web::get().to(get_user_items))
 }
 
-async fn increment_amount(
+async fn modify_amount(
     connection: web::Data<PgPool>,
     user_item_increment: web::Json<UserItem>,
 ) -> impl Responder {
-    if let Ok(user_id) = user_item_increment.0.increment_amount(&connection).await {
+    // TODO: check if user has the right to modify this item.
+
+    if let Ok(user_id) = user_item_increment.0.modify_amount(&connection).await {
         HttpResponse::Ok().json(user_id)
     } else {
         HttpResponse::InternalServerError().finish()
@@ -47,7 +49,7 @@ async fn get_user_items(connection: web::Data<PgPool>, user_id: web::Path<i32>) 
 }
 
 impl UserItem {
-    pub async fn increment_amount(&self, pool: &PgPool) -> Result<i32, sqlx::Error> {
+    pub async fn modify_amount(&self, pool: &PgPool) -> Result<i32, sqlx::Error> {
         let rec = self.increment_amount_raw(pool).await;
         match rec {
             Ok(amount) => Ok(amount),
@@ -74,6 +76,7 @@ impl UserItem {
 
         Ok(rec.amount)
     }
+    /// Can also be used to subtract.
     async fn increment_amount_raw(
         &self,
         pool: &sqlx::Pool<sqlx::Postgres>,

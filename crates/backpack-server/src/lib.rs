@@ -8,6 +8,7 @@ use configuration::Settings;
 use sqlx::PgPool;
 use std::net::TcpListener;
 
+pub mod auth_user;
 pub mod configuration;
 pub mod domains;
 pub mod random_names;
@@ -33,7 +34,7 @@ pub fn run(
             )
             //.service(domains::config::config(config.clone()))
             .service(domains::oauth::oauth())
-            //.service(domains::admin::admin(root.clone()))
+            .service(domains::app_admin::app_admin(root.clone()))
             .service(domains::item::item())
             .service(domains::user_item::user_item())
         //.route("/{filename:.*}", web::get().to(spa))

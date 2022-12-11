@@ -1,3 +1,5 @@
+pub mod app;
+pub mod app_admin;
 pub mod healthcheck;
 pub mod item;
 pub mod oauth;

@@ -10,7 +10,6 @@ use biscuit_auth::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use uuid::Uuid;
 
 use crate::{configuration::Settings, random_names::random_name};
 
@@ -26,7 +25,7 @@ pub struct TokenReply {
     pub token: String,
 }
 
-trait BiscuitFact: Sized {
+pub trait BiscuitFact: Sized {
     fn as_biscuit_fact(&self) -> Fact;
     fn from_authorizer(authorizer: &mut Authorizer) -> Option<Self>;
 }
@@ -143,6 +142,13 @@ pub(crate) fn oauth() -> Scope {
 
 #[derive(Serialize)]
 struct Identity<'a> {
-    admin: &'a UserId,
-    github: Option<GithubUser>,
+    user_id: &'a UserId,
+    name: String,
+}
+
+async fn whoami(account: web::ReqData<UserId>, connection: web::Data<PgPool>) -> impl Responder {
+    HttpResponse::Ok().json(Identity {
+        user_id: &account,
+        name: account.get(&*connection).await.unwrap().name,
+    })
 }
