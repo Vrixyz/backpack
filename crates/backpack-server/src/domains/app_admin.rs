@@ -1,4 +1,3 @@
-use actix_cors::Cors;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use biscuit_auth::KeyPair;
@@ -7,7 +6,7 @@ use sqlx::PgPool;
 
 use crate::auth_user::validator;
 
-use super::{app::AppId, item::ItemId, user::UserId};
+use super::{app::AppId, user::UserId};
 
 #[derive(Serialize, Deserialize)]
 pub struct AppAdmin {
@@ -38,18 +37,17 @@ pub(crate) fn app_admin(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
         .route("app", web::post().to(create_app))
 }
 
+/// FIXME: This should do app creation and admin association in a single request.
 async fn create_app(
     user_id: web::ReqData<UserId>,
     connection: web::Data<PgPool>,
 ) -> impl Responder {
-    let app_id = AppId::create(&*connection, "Placeholder app")
-        .await
-        .unwrap();
+    let app_id = AppId::create(&connection, "Placeholder app").await.unwrap();
     AppAdmin {
         user_id: *user_id,
         app_id,
     }
-    .create_app_admin_relation(&*connection)
+    .create_app_admin_relation(&connection)
     .await
     .unwrap();
     HttpResponse::Created()

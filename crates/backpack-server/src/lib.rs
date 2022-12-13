@@ -36,7 +36,7 @@ pub fn run(
             .service(domains::oauth::oauth())
             .service(domains::app_admin::app_admin(root.clone()))
             .service(domains::item::item())
-            .service(domains::user_item::user_item())
+            .service(domains::user_item::user_item(root.clone()))
         //.route("/{filename:.*}", web::get().to(spa))
     })
     .listen(listener)?

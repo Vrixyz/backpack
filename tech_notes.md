@@ -11,8 +11,9 @@ please reach out if you think I'm writing nonsense :heart:.
 
 ## Auth
 
-- (wip) dropped authentication by id for only oauth.
-
+- dropped authentication by id for only oauth.
+- relax rules of BiscuitInfo to allow adding multiple facts for a given data structure
+- use TryFrom rather that BiscuitFact
 
 ## Data "renames"
 

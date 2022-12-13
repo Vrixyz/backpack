@@ -1,9 +1,6 @@
-use actix_cors::Cors;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-
-use super::user::UserId;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AppId(pub(super) i32);

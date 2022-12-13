@@ -1,7 +1,10 @@
-use actix_cors::Cors;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
+use actix_web_httpauth::middleware::HttpAuthentication;
+use biscuit_auth::KeyPair;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+
+use crate::auth_user::validator;
 
 use super::{item::ItemId, user::UserId};
 
@@ -12,25 +15,26 @@ pub struct UserItem {
     pub amount: i32,
 }
 
-pub(crate) fn user_item() -> impl HttpServiceFactory {
-    let cors = Cors::default()
-        .allow_any_header()
-        .allow_any_origin()
-        .allow_any_method()
-        .send_wildcard()
-        .max_age(3600);
+pub(crate) fn user_item(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
     web::scope("api/v1")
-        .wrap(cors)
+        .app_data(kp)
+        .wrap(HttpAuthentication::bearer(validator))
         .route("user/item", web::post().to(modify_amount))
         .route("user/{user_id}/item", web::get().to(get_user_items))
 }
 
+/// Attempts to modify an item.
+/// It does check:
+/// - For item's app owner
+///   - if
+/// - If the item allows for gains
 async fn modify_amount(
     connection: web::Data<PgPool>,
     user_item_increment: web::Json<UserItem>,
 ) -> impl Responder {
     // TODO: check if user has the right to modify this item.
 
+    //
     if let Ok(user_id) = user_item_increment.0.modify_amount(&connection).await {
         HttpResponse::Ok().json(user_id)
     } else {

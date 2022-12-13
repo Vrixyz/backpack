@@ -107,7 +107,7 @@ impl Item {
         .await
         .map(|r| Item {
             id: ItemId(r.id),
-            name: r.name.clone(),
+            name: r.name,
         })
         .ok()
     }

@@ -20,9 +20,9 @@ impl GithubUser {
         .await
         .is_ok()
     }
-    // FIXME: this shouldn't exist as-is,
-    // it should be a single query to create user and user_github with the same operation.
-    // WHY: if database crashes between those 2 calls, we end up with a rogue UserId.
+
+    /// Meant to be used with another query following, to link it to an authentication method.
+    /// FIXME: This API could be reworked to be misuse resistant.
     pub async fn create(&self, connection: &PgPool, account: UserId) -> bool {
         // Create
         sqlx::query!(
