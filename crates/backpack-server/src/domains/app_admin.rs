@@ -16,7 +16,7 @@ pub struct AppAdmin {
 
 impl AppAdmin {
     async fn create_app_admin_relation(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
-        let rec = sqlx::query!(
+        let _rec = sqlx::query!(
             r#"
     INSERT INTO apps_admins ( user_id, app_id )
     VALUES ( $1, $2)

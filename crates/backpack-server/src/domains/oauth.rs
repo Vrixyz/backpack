@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, collections::HashMap, ops::DerefMut};
+use std::collections::HashMap;
 
 use actix_web::{
     cookie::time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime},
@@ -6,7 +6,7 @@ use actix_web::{
 };
 use biscuit_auth::{
     builder::{BiscuitBuilder, Fact, Term},
-    error, Authorizer, Biscuit, KeyPair,
+    Authorizer, Biscuit, KeyPair,
 };
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
@@ -17,11 +17,7 @@ use crate::{
     random_names::random_name,
 };
 
-use super::{
-    app::AppId,
-    user::{User, UserId},
-    user_github::GithubUser,
-};
+use super::{app::AppId, user::UserId, user_github::GithubUser};
 
 pub const TOKEN_TTL: i64 = 600;
 
@@ -41,7 +37,7 @@ impl<'a> TryFrom<&'a mut Authorizer<'a>> for Role {
         let admin: Option<Vec<(bool,)>> =
             authorizer.query("data($is_admin) <- role($is_admin)").ok();
         match admin {
-            Some(res) if res.len() > 0 && res[0].0 => Ok(Role::Admin),
+            Some(res) if !res.is_empty() && res[0].0 => Ok(Role::Admin),
             _ => {
                 let app_id: Vec<(String,)> = authorizer
                     .query("data($app_id) <- user_app_id($app_id)")
@@ -93,7 +89,8 @@ impl<'a, 'b: 'a> BiscuitBaker<'b, UserId> for BiscuitBuilder<'a> {
         self.add_authority_fact(Fact::new(
             "user".to_string(),
             vec![Term::Str((*ingredient).to_string())],
-        ));
+        ))
+        .unwrap();
         self
     }
 }
@@ -102,13 +99,15 @@ impl<'a> BiscuitBaker<'a, Role> for BiscuitBuilder<'a> {
     fn bake(&'a mut self, ingredient: Role) -> &'a mut BiscuitBuilder<'a> {
         match ingredient {
             Role::Admin => {
-                self.add_authority_fact(Fact::new("admin".to_string(), vec![Term::Bool(true)]));
+                self.add_authority_fact(Fact::new("admin".to_string(), vec![Term::Bool(true)]))
+                    .unwrap();
             }
             Role::User(app_id) => {
                 self.add_authority_fact(Fact::new(
                     "user_app_id".to_string(),
                     vec![Term::Str((app_id).to_string())],
-                ));
+                ))
+                .unwrap();
             }
         }
         self
@@ -121,12 +120,13 @@ impl UserId {
 
         // FIXME: this should be better in a function but borrowing said no :(
         {
-            let ref mut this = builder;
+            let this = &mut builder;
             let ingredient = *self;
             this.add_authority_fact(Fact::new(
                 "user".to_string(),
                 vec![Term::Str((*ingredient).to_string())],
-            ));
+            ))
+            .unwrap();
             this
         }
         .add_authority_check(
