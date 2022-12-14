@@ -5,8 +5,8 @@ use super::user::UserId;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GithubUser {
-    login: String,
-    id: u32,
+    pub(crate) login: String,
+    pub(crate) id: u32,
 }
 
 impl GithubUser {

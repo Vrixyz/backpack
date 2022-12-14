@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-
 use actix_web::{
     cookie::time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime},
+    dev::HttpServiceFactory,
     web, HttpResponse, Responder, Scope,
 };
+use actix_web_httpauth::middleware::HttpAuthentication;
 use biscuit_auth::{
     builder::{BiscuitBuilder, Fact, Term},
     Authorizer, Biscuit, KeyPair,
@@ -11,31 +11,31 @@ use biscuit_auth::{
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
-use crate::{
-    auth_user::{BiscuitInfo, Role},
-    configuration::Settings,
-    random_names::random_name,
-};
+use crate::auth_user::{validator, BiscuitInfo, Role};
 
-use super::{app::AppId, user::UserId, user_github::GithubUser};
+use super::{app::AppId, user::UserId};
 
 pub const TOKEN_TTL: i64 = 600;
 
+/// Contains a biscuit token.
 #[derive(Serialize, Deserialize)]
 pub struct TokenReply {
+    /// Biscuit token.
     pub token: String,
 }
 
-pub trait BiscuitBaker<'a, T> {
-    fn bake(&'a mut self, ingredient: T) -> &'a mut BiscuitBuilder<'a>;
+pub trait BiscuitBaker<T> {
+    fn bake(builder: BiscuitBuilder, ingredient: T) -> BiscuitBuilder;
 }
 
 impl<'a> TryFrom<&'a mut Authorizer<'a>> for Role {
     type Error = String;
 
     fn try_from(authorizer: &mut Authorizer) -> Result<Self, Self::Error> {
-        let admin: Option<Vec<(bool,)>> =
-            authorizer.query("data($is_admin) <- role($is_admin)").ok();
+        let admin: Option<Vec<(bool,)>> = authorizer
+            .query("data($is_admin) <- is_admin($is_admin)")
+            .ok();
+        dbg!(&admin);
         match admin {
             Some(res) if !res.is_empty() && res[0].0 => Ok(Role::Admin),
             _ => {
@@ -61,7 +61,7 @@ impl<'a> TryFrom<&'a mut Authorizer<'a>> for UserId {
 
     fn try_from(value: &mut Authorizer) -> Result<Self, Self::Error> {
         let res: Vec<(String,)> = value
-            .query("data($id) <- role($id)")
+            .query("data($id) <- user($id)")
             .map_err(|_| "query error")?;
         Ok(UserId(
             res.get(0)
@@ -78,67 +78,62 @@ impl<'a, 'b: 'a> TryFrom<&'b mut Authorizer<'a>> for BiscuitInfo {
 
     fn try_from(authorizer: &'a mut Authorizer<'b>) -> Result<Self, Self::Error> {
         Ok(Self {
-            user_id: UserId::try_from(&mut authorizer.clone())?,
-            role: Role::try_from(authorizer)?,
+            user_id: dbg!(UserId::try_from(&mut authorizer.clone()))?,
+            role: dbg!(Role::try_from(authorizer))?,
         })
     }
 }
 
-impl<'a, 'b: 'a> BiscuitBaker<'b, UserId> for BiscuitBuilder<'a> {
-    fn bake(&'a mut self, ingredient: UserId) -> &'a mut BiscuitBuilder<'a> {
-        self.add_authority_fact(Fact::new(
-            "user".to_string(),
-            vec![Term::Str((*ingredient).to_string())],
-        ))
-        .unwrap();
-        self
-    }
-}
-
-impl<'a> BiscuitBaker<'a, Role> for BiscuitBuilder<'a> {
-    fn bake(&'a mut self, ingredient: Role) -> &'a mut BiscuitBuilder<'a> {
-        match ingredient {
-            Role::Admin => {
-                self.add_authority_fact(Fact::new("admin".to_string(), vec![Term::Bool(true)]))
-                    .unwrap();
-            }
-            Role::User(app_id) => {
-                self.add_authority_fact(Fact::new(
-                    "user_app_id".to_string(),
-                    vec![Term::Str((app_id).to_string())],
-                ))
-                .unwrap();
-            }
-        }
-        self
-    }
-}
-
-impl UserId {
-    pub fn create_biscuit(&self, root: &KeyPair) -> Biscuit {
-        let mut builder = Biscuit::builder(root);
-
-        // FIXME: this should be better in a function but borrowing said no :(
-        {
-            let this = &mut builder;
-            let ingredient = *self;
-            this.add_authority_fact(Fact::new(
+impl<'a> BiscuitBaker<UserId> for BiscuitBuilder<'a> {
+    fn bake(mut builder: BiscuitBuilder, ingredient: UserId) -> BiscuitBuilder {
+        builder
+            .add_authority_fact(Fact::new(
                 "user".to_string(),
                 vec![Term::Str((*ingredient).to_string())],
             ))
             .unwrap();
-            this
+        builder
+    }
+}
+
+impl<'a> BiscuitBaker<Role> for BiscuitBuilder<'a> {
+    fn bake(mut builder: BiscuitBuilder, ingredient: Role) -> BiscuitBuilder {
+        match ingredient {
+            Role::Admin => {
+                builder
+                    .add_authority_fact(Fact::new("is_admin".to_string(), vec![Term::Bool(true)]))
+                    .unwrap();
+            }
+            Role::User(app_id) => {
+                builder
+                    .add_authority_fact(Fact::new(
+                        "user_app_id".to_string(),
+                        vec![Term::Str((app_id).to_string())],
+                    ))
+                    .unwrap();
+            }
         }
-        .add_authority_check(
-            format!(
-                r#"check if time($time), $time < {}"#,
-                (OffsetDateTime::now_utc() + Duration::seconds(TOKEN_TTL))
-                    .format(&Rfc3339)
-                    .unwrap()
+        builder
+    }
+}
+
+impl UserId {
+    pub fn create_biscuit(&self, root: &KeyPair, role: Role) -> Biscuit {
+        let mut builder = Biscuit::builder(root);
+
+        builder = BiscuitBuilder::bake(builder, *self);
+        builder = BiscuitBuilder::bake(builder, role);
+        builder
+            .add_authority_check(
+                format!(
+                    r#"check if time($time), $time < {}"#,
+                    (OffsetDateTime::now_utc() + Duration::seconds(TOKEN_TTL))
+                        .format(&Rfc3339)
+                        .unwrap()
+                )
+                .as_str(),
             )
-            .as_str(),
-        )
-        .unwrap();
+            .unwrap();
 
         builder.build().unwrap()
     }
@@ -156,74 +151,11 @@ pub fn authorize_user_only(token: &Biscuit) -> Option<UserId> {
         .ok()
 }
 
-#[derive(Debug, Deserialize)]
-pub struct OauthCode {
-    code: String,
-}
-
-#[derive(Deserialize)]
-pub struct GithubOauthResponse {
-    access_token: String,
-}
-
-async fn oauth_callback(
-    code: web::Query<OauthCode>,
-    config: web::Data<Settings>,
-    connection: web::Data<PgPool>,
-    root: web::Data<KeyPair>,
-) -> impl Responder {
-    let mut params = HashMap::new();
-    params.insert("client_id", &config.github_admin_app.client_id);
-    params.insert("client_secret", &config.github_admin_app.client_secret);
-    params.insert("code", &code.code);
-
-    let client = reqwest::Client::new();
-
-    dbg!(&params);
-    let response = dbg!(client
-        .post("https://github.com/login/oauth/access_token")
-        .form(&params)
-        .header("Accept", "application/json")
-        .send()
-        .await
-        .unwrap());
-    //dbg!(response.text().await);
-
-    let github_bearer = response
-        .json::<GithubOauthResponse>()
-        .await
-        .unwrap()
-        .access_token;
-    dbg!(&github_bearer);
-    let gh_user = client
-        .get("https://api.github.com/user")
-        .bearer_auth(github_bearer)
-        .header("user-agent", "backpack")
-        .send()
-        .await
-        .unwrap()
-        .json::<GithubUser>()
-        .await
-        .unwrap();
-
-    let user = if gh_user.exist(&connection).await {
-        gh_user.get_user(&connection).await.unwrap()
-    } else {
-        let user = UserId::create(&connection, &random_name()).await.unwrap();
-        assert!(gh_user.create(&connection, user).await);
-        user
-    };
-
-    let biscuit = user.create_biscuit(&root);
-    HttpResponse::Ok().json(TokenReply {
-        token: biscuit.to_base64().unwrap(),
-    })
-}
-
-pub(crate) fn oauth() -> Scope {
-    web::scope("oauth")
-        .route("callback", web::get().to(oauth_callback))
-        .route("whoami", web::get().to(whoami))
+pub(crate) fn oauth(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+    web::scope("oauth/whoami")
+        .app_data(kp)
+        .wrap(HttpAuthentication::bearer(validator))
+        .route("", web::get().to(whoami))
 }
 
 #[derive(Serialize)]
@@ -232,9 +164,12 @@ struct Identity<'a> {
     name: String,
 }
 
-async fn whoami(account: web::ReqData<UserId>, connection: web::Data<PgPool>) -> impl Responder {
+async fn whoami(
+    account: web::ReqData<BiscuitInfo>,
+    connection: web::Data<PgPool>,
+) -> impl Responder {
     HttpResponse::Ok().json(Identity {
-        user_id: &account,
-        name: account.get(&connection).await.unwrap().name,
+        user_id: &account.user_id,
+        name: account.user_id.get(&connection).await.unwrap().name,
     })
 }

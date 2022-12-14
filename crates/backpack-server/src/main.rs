@@ -12,6 +12,7 @@ async fn main() -> std::io::Result<()> {
         "{}:{}",
         configuration.application_host, configuration.application_port
     );
+    dbg!(&address);
 
     let listener = TcpListener::bind(&address)?;
     let connection_pool = PgPool::connect(&configuration.database.connection_string())
