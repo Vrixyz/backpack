@@ -10,10 +10,8 @@ Games can be social beyond their limited scope:
 - My mom did beat the 654th level of her favorite match3 game, she was able to send me a skin for my favorite FPS, I love it!
 - Hey Friend, thanks for hatching more eggs in your clicker game, so I can spawn more dragons in my RTS
 
-Players can be accompanied from their preferred game to their next:
-- I finished my exploration game and gained a garden to use in that other construction game
-
 Single players can find their value too:
+- I finished my exploration game and gained a garden to use in that other construction game
 - I'm going to play this god-simulation game to add a few planets to my other galaxy-simulation game.
 
 # Tech scribbles
