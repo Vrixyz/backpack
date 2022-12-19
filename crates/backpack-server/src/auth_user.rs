@@ -27,15 +27,10 @@ pub async fn validator(
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
     let root = req.app_data::<web::Data<KeyPair>>().unwrap();
-    dbg!(credentials.token());
-    if let Some(biscuit_info) = dbg!(Biscuit::from_base64(credentials.token(), |_| root.public()))
+    if let Some(biscuit_info) = Biscuit::from_base64(credentials.token(), |_| root.public())
         .ok()
-        .and_then(|biscuit| {
-            dbg!(&biscuit);
-            authorize(&biscuit)
-        })
+        .and_then(|biscuit| authorize(&biscuit))
     {
-        dbg!(biscuit_info.user_id);
         req.extensions_mut().insert(biscuit_info);
         Ok(req)
     } else {
@@ -50,7 +45,7 @@ pub fn authorize(token: &Biscuit) -> Option<BiscuitInfo> {
     authorizer.allow().map_err(|_| ()).ok()?;
     authorizer.authorize().map_err(|_| ()).ok()?;
 
-    dbg!(BiscuitInfo::try_from(&mut authorizer))
+    BiscuitInfo::try_from(&mut authorizer)
         .map_err(|_| "failed ")
         .ok()
 }

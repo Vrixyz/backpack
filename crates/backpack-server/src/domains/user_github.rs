@@ -28,6 +28,7 @@ impl GithubUser {
         sqlx::query!(
             r#"
             INSERT INTO users_github (id, login, user_id) VALUES ($1, $2, $3)
+            RETURNING id
             "#,
             self.id as i64,
             self.login,
@@ -35,6 +36,7 @@ impl GithubUser {
         )
         .fetch_one(connection)
         .await
+        .map(|_| true)
         .is_ok()
     }
 

@@ -35,7 +35,6 @@ impl<'a> TryFrom<&'a mut Authorizer<'a>> for Role {
         let admin: Option<Vec<(bool,)>> = authorizer
             .query("data($is_admin) <- is_admin($is_admin)")
             .ok();
-        dbg!(&admin);
         match admin {
             Some(res) if !res.is_empty() && res[0].0 => Ok(Role::Admin),
             _ => {
@@ -78,8 +77,8 @@ impl<'a, 'b: 'a> TryFrom<&'b mut Authorizer<'a>> for BiscuitInfo {
 
     fn try_from(authorizer: &'a mut Authorizer<'b>) -> Result<Self, Self::Error> {
         Ok(Self {
-            user_id: dbg!(UserId::try_from(&mut authorizer.clone()))?,
-            role: dbg!(Role::try_from(authorizer))?,
+            user_id: UserId::try_from(&mut authorizer.clone())?,
+            role: Role::try_from(authorizer)?,
         })
     }
 }

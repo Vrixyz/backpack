@@ -35,17 +35,14 @@ async fn oauth_fake_success(
         gh_user.get_user(&connection).await.unwrap()
     } else {
         let user = UserId::create(&connection, &random_name()).await.unwrap();
-        dbg!(user);
-        // FIXME: this fails when run with tests
-
         assert!(gh_user.create(&connection, user).await);
         user
     };
 
     let biscuit = user.create_biscuit(&root, Role::Admin);
-    dbg!(HttpResponse::Ok().json(TokenReply {
+    HttpResponse::Ok().json(TokenReply {
         token: biscuit.to_base64().unwrap(),
-    }))
+    })
 }
 
 #[cfg(debug_assertions)]

@@ -32,7 +32,6 @@ async fn get_test_token() {
         .build()
         .unwrap();
 
-    dbg!(&app.address);
     let response = client
         .get(&format!("{}/oauth/fake/success", app.address))
         .header("keep-alive", "")
@@ -40,10 +39,19 @@ async fn get_test_token() {
         .await
         .expect("Failed to execute request.");
 
-    assert!(dbg!(response.status()).is_success());
+    assert!(response.status().is_success());
 
     sqlx::query!("SELECT id FROM users",)
         .fetch_one(&app.db_pool)
         .await
         .expect("Failed to fetch saved subscription.");
+
+    let response = client
+        .get(&format!("{}/oauth/fake/success", app.address))
+        .header("keep-alive", "")
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    assert!(response.status().is_success());
 }
