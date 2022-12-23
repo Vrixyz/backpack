@@ -15,9 +15,8 @@ pub struct UserItem {
     pub amount: i32,
 }
 
-pub(crate) fn user_item(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+pub(crate) fn user_item() -> impl HttpServiceFactory {
     web::scope("api/v1")
-        .app_data(kp)
         .wrap(HttpAuthentication::bearer(validator))
         .route("user/item", web::post().to(modify_amount))
         .route("user/{user_id}/item", web::get().to(get_user_items))

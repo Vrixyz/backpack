@@ -150,9 +150,8 @@ pub fn authorize_user_only(token: &Biscuit) -> Option<UserId> {
         .ok()
 }
 
-pub(crate) fn oauth(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+pub(crate) fn oauth() -> impl HttpServiceFactory {
     web::scope("oauth/whoami")
-        .app_data(kp)
         .wrap(HttpAuthentication::bearer(validator))
         .route("", web::get().to(whoami))
 }

@@ -30,9 +30,8 @@ impl AppAdmin {
     }
 }
 
-pub(crate) fn app_admin(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+pub(crate) fn app_admin() -> impl HttpServiceFactory {
     web::scope("api/v1")
-        .app_data(kp)
         .wrap(HttpAuthentication::bearer(validator))
         .route("app", web::post().to(create_app))
 }

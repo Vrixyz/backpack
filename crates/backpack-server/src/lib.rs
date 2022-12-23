@@ -33,12 +33,12 @@ pub fn run(
                 web::get().to(domains::healthcheck::health_check),
             )
             //.service(domains::config::config(config.clone()))
-            .service(domains::oauth::oauth(root.clone()))
+            .service(domains::oauth::oauth())
             .service(domains::oauth_github::oauth_github())
             .service(domains::oauth_fake::oauth_fake())
-            .service(domains::app_admin::app_admin(root.clone()))
+            .service(domains::app_admin::app_admin())
             .service(domains::item::item())
-            .service(domains::user_item::user_item(root.clone()))
+            .service(domains::user_item::user_item())
         //.route("/{filename:.*}", web::get().to(spa))
     })
     .listen(listener)?

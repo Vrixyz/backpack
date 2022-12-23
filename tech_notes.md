@@ -11,9 +11,10 @@ please reach out if you think I'm writing nonsense :heart:.
 
 ## Auth
 
-- dropped authentication by id for only oauth.
+- dropped authentication by id for only oauth, added a fake auth to ease testing.
 - relax rules of BiscuitInfo to allow adding multiple facts for a given data structure
 - use TryFrom rather that BiscuitFact
+- https://github.com/maidsafe-archive/system_uri could help with redirect from browser to app.
 
 ## Data "renames"
 
