@@ -3,6 +3,7 @@ pub mod app_admin;
 pub mod healthcheck;
 pub mod item;
 pub mod oauth;
+pub mod oauth_email_password;
 pub mod oauth_fake;
 pub mod oauth_github;
 pub mod user;

@@ -15,6 +15,7 @@ please reach out if you think I'm writing nonsense :heart:.
 - relax rules of BiscuitInfo to allow adding multiple facts for a given data structure
 - use TryFrom rather that BiscuitFact
 - https://github.com/maidsafe-archive/system_uri could help with redirect from browser to app.
+  - osx functions used are deprecated, I guess https://github.com/burtonageo/cargo-bundle could help declaring url schemes. :warning: use it from git https://github.com/burtonageo/cargo-bundle/issues/125
 
 ## Data "renames"
 

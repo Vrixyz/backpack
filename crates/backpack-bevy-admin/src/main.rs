@@ -3,6 +3,14 @@ mod data;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
 use data::BiscuitInfo;
+use lettre::transport::smtp::authentication::Credentials;
+use lettre::{Message, SmtpTransport, Transport};
+
+// use system_uri::{install, open, SystemUriError};
+
+fn install_and_open() -> Result<(), ()> {
+    Ok(())
+}
 
 fn main() {
     dotenv::dotenv().ok();
@@ -33,7 +41,7 @@ fn ui_auth(mut egui_context: ResMut<EguiContext>, auth_data: Res<AuthData>) {
         if ui.button("Authenticate with Github").clicked() {
             drop(open::that(format!(
                 "https://github.com/login/oauth/authorize?client_id={}",
-                dotenv::var("BACKPACK_CLIENT_ID").unwrap()
+                dotenv::var("BACKPACK_GITHUB_CLIENT_ID").unwrap()
             )));
         }
     });
