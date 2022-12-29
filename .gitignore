@@ -1,4 +1,5 @@
 /target
 .env*
+!.env.template
 private_key
 secrets.txt
