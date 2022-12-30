@@ -1,0 +1,13 @@
+version: "3"
+services:
+  db:
+    image: "postgres:15"
+    container_name: "backpack"
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    ports:
+      - "54320:5432"
+    volumes:
+      - my_dbdata:/var/lib/postgresql/data
+volumes:
+  my_dbdata:
