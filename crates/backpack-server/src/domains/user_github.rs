@@ -21,7 +21,7 @@ impl GithubUser {
         .is_ok()
     }
 
-    /// Meant to be used with another query following, to link it to an authentication method.
+    /// Meant to be used with another query following, to link it to this authentication method.
     /// FIXME: This API could be reworked to be misuse resistant.
     pub async fn create(&self, connection: &PgPool, account: UserId) -> bool {
         // Create

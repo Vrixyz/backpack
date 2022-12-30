@@ -20,6 +20,7 @@ base64 = "0.13"
 rand = "0.8"
 dotenv = "0.15.0"
 lettre = "0.10"
+bcrypt = "0.13"
 
 [dev-dependencies]
 sqlx = { version = "0.6", default-features = false, features = ["migrate"] }
