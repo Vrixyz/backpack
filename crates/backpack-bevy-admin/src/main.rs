@@ -3,8 +3,6 @@ mod data;
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
 use data::BiscuitInfo;
-use lettre::transport::smtp::authentication::Credentials;
-use lettre::{Message, SmtpTransport, Transport};
 
 // use system_uri::{install, open, SystemUriError};
 
