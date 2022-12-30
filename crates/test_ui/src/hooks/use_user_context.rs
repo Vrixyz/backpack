@@ -59,6 +59,5 @@ impl fmt::Debug for UseUserContextHandle {
 pub fn use_user_context() -> UseUserContextHandle {
     let inner = use_context::<UseStateHandle<UserInfo>>().unwrap();
     let navigator = use_navigator().unwrap();
-
     UseUserContextHandle { inner, navigator }
 }

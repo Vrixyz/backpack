@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 mod auth;
 pub use auth::*;
+mod profiles;
+pub use profiles::*;
 
 /// Conduit api error info for Unprocessable Entity error
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

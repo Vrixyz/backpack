@@ -1,7 +1,9 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
-use crate::prelude::nav::Nav;
+use crate::prelude::{
+    footer::Footer, nav::Nav, switch, user_context_provider::UserContextProvider, AppRoute,
+};
 
 // Use `std::alloc` as the global allocator.
 #[global_allocator]
@@ -13,9 +15,13 @@ pub fn app() -> Html {
 
     html! {
         <BrowserRouter>
-            <div class="flex flex-col h-screen">
-                <Nav/>
-            </div>
+            <UserContextProvider>
+                <div class="flex flex-col h-screen">
+                    <Nav/>
+                    <Switch<AppRoute> render={switch} />
+                    <Footer />
+                </div>
+            </UserContextProvider>
         </BrowserRouter>
     }
 }

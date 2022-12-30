@@ -1,6 +1,18 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
 
+pub mod home;
+pub mod login;
+pub mod profile;
+pub mod register;
+pub mod settings;
+
+use home::Home;
+use login::Login;
+use profile::{Profile, ProfileTab};
+use register::Register;
+use settings::Settings;
+
 /// App routes
 #[derive(Routable, PartialEq, Eq, Clone, Debug)]
 pub enum AppRoute {
@@ -13,6 +25,12 @@ pub enum AppRoute {
     #[at("/")]
     Home,
 
+    #[at("/:username")]
+    Profile { username: String },
+
+    #[at("/settings")]
+    Settings,
+
     #[not_found]
     #[at("/404")]
     NotFound,
@@ -20,9 +38,13 @@ pub enum AppRoute {
 
 pub fn switch(route: AppRoute) -> Html {
     match route {
-        AppRoute::Login => todo!(),
-        AppRoute::Register => todo!(),
-        AppRoute::Home => todo!(),
+        AppRoute::Login => html! {<Login />},
+        AppRoute::Register => html! {<Register />},
+        AppRoute::Home => html! {<Home />},
+        AppRoute::Profile { username } => html! {
+            <Profile username={username} tab={ProfileTab::ByAuthor} />
+        },
+        AppRoute::Settings => html! {<Settings />},
         AppRoute::NotFound => html! { "Page not found" },
     }
 }
