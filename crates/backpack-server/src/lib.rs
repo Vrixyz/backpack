@@ -35,6 +35,7 @@ pub fn run(
             //.service(domains::config::config(config.clone()))
             .service(domains::oauth::oauth())
             .service(domains::oauth_github::oauth_github())
+            .service(domains::oauth_email_password::oauth_email_password())
             .service(domains::oauth_fake::oauth_fake())
             .service(domains::app_admin::app_admin())
             .service(domains::item::item())
