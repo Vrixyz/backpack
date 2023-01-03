@@ -1,0 +1,196 @@
+openapi: 3.0.3
+info:
+  title: Backpack API
+  description: |-
+    🚧 Work In Progress API specification for [Backpack](https://github.com/Vrixyz/backpack)
+  contact:
+    email: contact@thierryberger.com
+  license:
+    name: MIT
+    url: https://github.com/Vrixyz/backpack/blob/main/LICENCE-MIT.txt
+  version: 0.0.1
+externalDocs:
+  description: Find out more about Backpack.
+  url: https://github.com/Vrixyz/backpack
+servers:
+  - url: https://localhost/api/v3
+tags:
+  - name: authentication
+    description: Everything to get a Biscuit authentication token.
+    externalDocs:
+      description: Find out more
+      url: https://github.com/Vrixyz/backpack
+  - name: user
+    description: A user owns items, he can authenticate as admin to create and modify apps and items he manages.
+    externalDocs:
+      description: Find out more about our store
+      url: https://github.com/Vrixyz/backpack
+  - name: app
+    description: Operations about apps
+  - name: item
+    description: Operations about items
+paths:
+  # authentication
+  /login_password:
+    get:
+      tags:
+        - authentication
+      summary: Login with an user/email
+      description: Login with an account created via `/create_email_password`.
+      operationId: loginUserEmailPassword
+      requestBody:
+        description: The email and password of the existing user.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "new.user@example.com"
+                password_plain:
+                  type: string
+                  example: "Password copypasted from email on creation"
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg=="
+        "403":
+          description: User not existing or wrong credentials.
+  # user
+  /create_email_password:
+    get:
+      tags:
+        - user
+      summary: Create a new user
+      description: If no existing users have provided email, the user is created and a password is sent by mail.
+      operationId: createUserEmail
+      requestBody:
+        description: The email of the created user.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "new.user@example.com"
+        required: true
+      responses:
+        "201":
+          description: Successful creation of the user
+        "500":
+          description: Internal server error
+        "404":
+          description: Pet not found
+        "405":
+          description: Validation exception
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+  # apps
+  /apps:
+    post:
+      tags:
+        - app
+      summary: Create a new app
+      description: Create a new app with given name.
+      operationId: createApp
+      requestBody:
+        description: Create an app
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: the id of the created app.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+    get:
+      tags:
+        - app
+      summary: Get apps.
+      description: Get all apps the user is admin of.
+      operationId: getApp
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: all apps the user is admin of.
+                type: array
+                items:
+                  $ref: "#/components/schemas/App"
+      security:
+        - biscuit_token:
+            - admin
+    delete:
+      tags:
+        - app
+      summary: Delete an existing app
+      description: Delete existing app with provided id.
+      operationId: deleteApp
+      requestBody:
+        description: "Deletes an existing app. It should fail if it owns items.\
+          Items should be removed or transferred before."
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  description: the id of the app to be deleted
+                  type: integer
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+        "401":
+          description: Unauthorized. (User is not admin for this app?)
+      security:
+        - biscuit_token:
+            - admin
+components:
+  schemas:
+    App:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 100000
+        name:
+          type: string
+          example: "Game name"
+  securitySchemes:
+    github_auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://github.com/login/oauth/access_token
+          tokenUrl: todo
+          scopes:
+            admin: modify managed apps and items definitions
+            user: used for modifying user items in low security apps, or authentication forwarded to trusted game server.
+    biscuit_token:
+      type: http
+      scheme: bearer
+      bearerFormat: Biscuit
