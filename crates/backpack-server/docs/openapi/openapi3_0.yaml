@@ -10,21 +10,15 @@ info:
     url: https://github.com/Vrixyz/backpack/blob/main/LICENCE-MIT.txt
   version: 0.0.1
 externalDocs:
-  description: Find out more about Backpack.
+  description: github
   url: https://github.com/Vrixyz/backpack
 servers:
   - url: https://localhost/api/v3
 tags:
   - name: authentication
     description: Everything to get a Biscuit authentication token.
-    externalDocs:
-      description: Find out more
-      url: https://github.com/Vrixyz/backpack
   - name: user
     description: A user owns items, he can authenticate as admin to create and modify apps and items he manages.
-    externalDocs:
-      description: Find out more about our store
-      url: https://github.com/Vrixyz/backpack
   - name: app
     description: Operations about apps
   - name: item
@@ -63,8 +57,8 @@ paths:
         "403":
           description: User not existing or wrong credentials.
   # user
-  /create_email_password:
-    get:
+  /user/create_email_password:
+    post:
       tags:
         - user
       summary: Create a new user
@@ -94,8 +88,8 @@ paths:
         - petstore_auth:
             - write:pets
             - read:pets
-  # apps
-  /apps:
+  # app
+  /app:
     post:
       tags:
         - app
@@ -168,6 +162,121 @@ paths:
       security:
         - biscuit_token:
             - admin
+  /app/{appId}/item/{itemId}/app:
+    get:
+      tags:
+        - app
+      summary: 🚧 Get all apps authorized for this item 🚧
+      description: (🚧 not currently worked on) Create a new item with given name, with given app as owner.
+      operationId: createItem
+      parameters:
+        - in: path
+          name: appId
+          schema:
+            type: integer
+          required: true
+        - in: path
+          name: itemId
+          schema:
+            type: integer
+          required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created item.
+          content:
+            application/json:
+              schema:
+                description: the id of the created item.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+  # item
+  /app/{appId}/item:
+    post:
+      tags:
+        - item
+      summary: Create a new item
+      description: Create a new item with given name, with given app as owner.
+      operationId: createItem
+      parameters:
+        - in: path
+          name: appId
+          schema:
+            type: integer
+          required: true
+      requestBody:
+        description: Create an item
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created item.
+          content:
+            application/json:
+              schema:
+                description: the id of the created item.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+    get:
+      tags:
+        - item
+      summary: Get app's items.
+      description: Get all items definitions which can be interacted through a given app.
+      operationId: getItems
+      parameters:
+        - in: path
+          name: appId
+          schema:
+            type: integer
+          required: true
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items interactable through a given app.
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+      security:
+        - biscuit_token:
+            - admin
+  /item:
+    delete:
+      tags:
+        - item
+      summary: Delete an existing item
+      description: Delete existing item with provided id.
+      operationId: deleteItem
+      requestBody:
+        description: "Deletes an existing item. It should fail if more than 1 app can interact with this item."
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  description: the id of the app to be deleted
+                  type: integer
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+        "401":
+          description: Unauthorized. (User is not admin of the owner app?)
+      security:
+        - biscuit_token:
+            - admin
 components:
   schemas:
     App:
@@ -180,6 +289,19 @@ components:
         name:
           type: string
           example: "Game name"
+    Item:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 100000
+        name:
+          type: string
+          example: "Game name"
+        ownerAppId:
+          type: integer
+          example: 4242
   securitySchemes:
     github_auth:
       type: oauth2
