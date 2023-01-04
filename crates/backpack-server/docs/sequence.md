@@ -5,6 +5,7 @@ The first step to use backpack is to create a user account.
 With any user account, you can login as admin, then:
 - create apps
 - add items to an app you created.
+- :construction: later, give rights to foreign apps for an item you manage ; with specific rights (read/write/increase/substract ?)
 
 ```mermaid
 sequenceDiagram
@@ -39,7 +40,7 @@ sequenceDiagram
 
 The second step to using backpack is to use items through apps.
 
-## TODO
+## :construction: TODO
 - login as a user
 - use an item (insecurely)
 - use an item (securely through a server)
