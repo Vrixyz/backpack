@@ -2,7 +2,10 @@
 
 The first step to use backpack is to create a user account.
 
-With any user account, you can authenticate as admin, create an app and add items to it.
+With any user account, you can:
+- login as admin
+- create an app
+- add items to an app you created.
 
 ```mermaid
 sequenceDiagram
