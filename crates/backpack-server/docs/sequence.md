@@ -16,9 +16,9 @@ sequenceDiagram
     app->>+backpack: login?
     backpack->>DB: check user/password
     backpack->>-app: credentials
+    app->>app: store credentials
     app->>-user: credentials
 
-    user->>user: store credentials
     user->>app: I want to create an app
     app->>+backpack: create the app?
     backpack->>backpack: check credentials
