@@ -14,6 +14,11 @@ Single players can find their value too:
 - I finished my exploration game and gained a garden to use in that other construction game
 - I'm going to play this god-simulation game to add a few planets to my other galaxy-simulation game.
 
+# Documentation
+
+- [sequence diagram](crates/backpack-server/docs/sequence.md) explained
+- [OpenAPI](crates/backpack-server/docs/openapi/openapi3_0.yaml)
+
 # Tech scribbles
 
 ![Raw target implementation](Docs/Backpack.drawio.png)
@@ -21,7 +26,7 @@ Single players can find their value too:
 ## Features
 
 - [ ] authentication via https://www.biscuitsec.org/ ; through third party oauth (github...)
-- [ ] Create users via first authentication
+- [x] Create users via first authentication
 - [ ] Create, Read, Update (addition), Delete items (string, int)
 
 ## High level usage
