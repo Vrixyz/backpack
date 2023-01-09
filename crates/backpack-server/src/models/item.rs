@@ -1,5 +1,3 @@
-use actix_cors::Cors;
-use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
@@ -61,7 +59,7 @@ pub async fn create(name: &str, connection: &PgPool) -> Result<ItemId, sqlx::Err
         INSERT INTO items (name) VALUES ($1)
         RETURNING id
         "#,
-        self.name,
+        name,
     )
     .fetch_one(connection)
     .await?;

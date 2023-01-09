@@ -251,24 +251,42 @@ paths:
       security:
         - biscuit_token:
             - admin
-  /item:
+  /item/{itemId}:
     delete:
       tags:
         - item
       summary: Delete an existing item
       description: Delete existing item with provided id.
       operationId: deleteItem
-      requestBody:
-        description: "Deletes an existing item. It should fail if more than 1 app can interact with this item."
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id:
-                  description: the id of the app to be deleted
-                  type: integer
-        required: true
+      parameters:
+        - in: path
+          name: itemId
+          schema:
+            type: integer
+          required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+        "401":
+          description: Unauthorized. (User is not admin of the owner app?)
+      security:
+        - biscuit_token:
+            - admin
+  /item/{itemId}/modify:
+    post:
+      tags:
+        - item
+      summary: modify given item by amount
+      description: "🚧 Logged as user or admin. \
+        - User fails if its app has no rights to modify (or has not this app in its biscuit) \
+        - Admin fails if he's not managing this app"
+      operationId: modifyItem
+      parameters:
+        - in: path
+          name: itemId
+          schema:
+            type: integer
+          required: true
       responses:
         "201":
           description: Successful operation returns the id of created app.

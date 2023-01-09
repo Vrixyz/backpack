@@ -5,8 +5,8 @@ use actix_web_httpauth::extractors::{
 };
 use biscuit_auth::{Biscuit, KeyPair};
 
-use crate::domains::app::AppId;
-use crate::domains::user::UserId;
+use crate::models::app::AppId;
+use crate::models::user::UserId;
 
 #[derive(Clone, Copy, Debug)]
 pub enum Role {

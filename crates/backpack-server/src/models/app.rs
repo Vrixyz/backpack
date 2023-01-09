@@ -1,9 +1,8 @@
-
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct AppId(pub(super) i32);
+pub struct AppId(pub i32);
 
 impl std::ops::Deref for AppId {
     type Target = i32;

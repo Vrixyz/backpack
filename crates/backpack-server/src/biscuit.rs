@@ -13,7 +13,8 @@ use sqlx::PgPool;
 
 use crate::auth_user::{validator, BiscuitInfo, Role};
 
-use super::{app::AppId, user::UserId};
+use super::models::app::AppId;
+use super::models::user::UserId;
 
 pub const TOKEN_TTL: i64 = 600;
 
@@ -148,26 +149,4 @@ pub fn authorize_user_only(token: &Biscuit) -> Option<UserId> {
     UserId::try_from(&mut authorizer)
         .map_err(|_| "authorize error")
         .ok()
-}
-
-pub(crate) fn oauth() -> impl HttpServiceFactory {
-    web::scope("oauth/whoami")
-        .wrap(HttpAuthentication::bearer(validator))
-        .route("", web::get().to(whoami))
-}
-
-#[derive(Serialize)]
-struct Identity<'a> {
-    user_id: &'a UserId,
-    name: String,
-}
-
-async fn whoami(
-    account: web::ReqData<BiscuitInfo>,
-    connection: web::Data<PgPool>,
-) -> impl Responder {
-    HttpResponse::Ok().json(Identity {
-        user_id: &account.user_id,
-        name: account.user_id.get(&connection).await.unwrap().name,
-    })
 }

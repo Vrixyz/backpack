@@ -7,8 +7,9 @@ use sqlx::PgPool;
 
 use crate::{
     auth_user::Role,
+    biscuit::TokenReply,
     configuration::Settings,
-    domains::{oauth::TokenReply, user::UserId, user_github::GithubUser},
+    models::{user::UserId, user_github::GithubUser},
     random_names::random_name,
 };
 
@@ -17,7 +18,13 @@ pub struct OauthCode {
     code: String,
 }
 
-async fn oauth_fake_success(
+#[derive(Deserialize)]
+pub struct GithubOauthResponse {
+    access_token: String,
+}
+
+async fn oauth_callback(
+    code: web::Query<OauthCode>,
     config: web::Data<Settings>,
     connection: web::Data<PgPool>,
     root: web::Data<KeyPair>,
@@ -25,11 +32,33 @@ async fn oauth_fake_success(
     let mut params = HashMap::new();
     params.insert("client_id", &config.github_admin_app.client_id);
     params.insert("client_secret", &config.github_admin_app.client_secret);
+    params.insert("code", &code.code);
 
-    let gh_user = GithubUser {
-        login: "fake".into(),
-        id: 0,
-    };
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post("https://github.com/login/oauth/access_token")
+        .form(&params)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .unwrap();
+
+    let github_bearer = response
+        .json::<GithubOauthResponse>()
+        .await
+        .unwrap()
+        .access_token;
+    let gh_user = client
+        .get("https://api.github.com/user")
+        .bearer_auth(github_bearer)
+        .header("user-agent", "backpack")
+        .send()
+        .await
+        .unwrap()
+        .json::<GithubUser>()
+        .await
+        .unwrap();
 
     let user = if gh_user.exist(&connection).await {
         gh_user.get_user(&connection).await.unwrap()
@@ -44,13 +73,6 @@ async fn oauth_fake_success(
         token: biscuit.to_base64().unwrap(),
     })
 }
-
-#[cfg(debug_assertions)]
-pub(crate) fn oauth_fake() -> Scope {
-    web::scope("oauth/fake").route("success", web::get().to(oauth_fake_success))
-}
-#[cfg(not(debug_assertions))]
-pub(crate) fn oauth_fake() -> Scope {
-    web::scope("oauth").route("success", web::get().to(oauth_fake_success))
-    //   web::scope("api/v1/oauth/").route("success", web::get().to(|_| {}))
+pub(crate) fn oauth_github() -> Scope {
+    web::scope("oauth/github").route("callback", web::get().to(oauth_callback))
 }

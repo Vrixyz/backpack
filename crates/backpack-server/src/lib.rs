@@ -9,9 +9,11 @@ use sqlx::PgPool;
 use std::net::TcpListener;
 
 pub mod auth_user;
+pub mod biscuit;
 pub mod configuration;
-pub mod domains;
+pub mod models;
 pub mod random_names;
+pub mod routes;
 
 pub fn run(
     listener: TcpListener,
@@ -30,16 +32,16 @@ pub fn run(
             .wrap(Logger::default())
             .route(
                 "/health_check",
-                web::get().to(domains::healthcheck::health_check),
+                web::get().to(routes::healthcheck::health_check),
             )
             //.service(domains::config::config(config.clone()))
-            .service(domains::oauth::oauth())
-            .service(domains::oauth_github::oauth_github())
-            .service(domains::oauth_email_password::oauth_email_password())
-            .service(domains::oauth_fake::oauth_fake())
-            .service(domains::app_admin::app_admin())
-            .service(domains::item::item())
-            .service(domains::user_item::user_item())
+            .service(routes::oauth::routes())
+            .service(models::oauth_github::oauth_github())
+            .service(routes::email_password::oauth_email_password())
+            .service(routes::oauth_fake::oauth_fake())
+            .service(models::app_admin::app_admin())
+            .service(routes::item::item())
+            .service(routes::user_item::user_item())
         //.route("/{filename:.*}", web::get().to(spa))
     })
     .listen(listener)?
