@@ -20,3 +20,6 @@ DB_NAME="${POSTGRES_DB:=backpack}"
 DB_PORT="${POSTGRES_PORT:=5432}"
 # Launch postgres
 
+sqlx database drop
+sqlx database create
+sqlx mig run

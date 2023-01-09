@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
+use super::user::UserId;
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AppId(pub i32);
 
@@ -16,6 +18,27 @@ impl std::ops::Deref for AppId {
 pub struct App {
     pub id: AppId,
     pub name: String,
+}
+#[derive(Serialize, Deserialize)]
+pub struct AppAdmin {
+    pub user_id: UserId,
+    pub app_id: AppId,
+}
+
+impl AppAdmin {
+    pub async fn create_app_admin_relation(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
+        let _rec = sqlx::query!(
+            r#"
+    INSERT INTO apps_admins ( user_id, app_id )
+    VALUES ( $1, $2)
+            "#,
+            *self.user_id,
+            *self.app_id
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
+    }
 }
 
 impl AppId {

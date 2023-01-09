@@ -1,5 +1,4 @@
 pub mod app;
-pub mod app_admin;
 pub mod email_password;
 pub mod item;
 pub mod oauth_github;

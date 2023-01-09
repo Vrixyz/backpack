@@ -1,3 +1,4 @@
+pub mod app;
 pub mod email_password;
 pub mod healthcheck;
 pub mod item;

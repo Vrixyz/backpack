@@ -35,11 +35,11 @@ pub fn run(
                 web::get().to(routes::healthcheck::health_check),
             )
             //.service(domains::config::config(config.clone()))
-            .service(routes::oauth::routes())
             .service(models::oauth_github::oauth_github())
+            .service(routes::oauth::routes())
             .service(routes::email_password::oauth_email_password())
             .service(routes::oauth_fake::oauth_fake())
-            .service(models::app_admin::app_admin())
+            .service(routes::app::app_admin())
             .service(routes::item::item())
             .service(routes::user_item::user_item())
         //.route("/{filename:.*}", web::get().to(spa))
