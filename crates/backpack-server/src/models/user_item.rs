@@ -8,35 +8,39 @@ use crate::auth_user::validator;
 
 use super::{item::ItemId, user::UserId};
 
-#[derive(Serialize, Deserialize)]
-pub struct UserItem {
-    pub user_id: UserId,
-    pub item_id: ItemId,
-    pub amount: i32,
-}
-
-impl UserItem {
-    pub async fn modify_amount(&self, pool: &PgPool) -> Result<i32, sqlx::Error> {
-        let rec = self.increment_amount_raw(pool).await;
+impl ItemId {
+    pub async fn modify_amount(
+        &self,
+        user: UserId,
+        amount: i32,
+        pool: &PgPool,
+    ) -> Result<i32, sqlx::Error> {
+        let rec = self.increment_amount_raw(user, amount, pool).await;
         match rec {
             Ok(amount) => Ok(amount),
             Err(_err) => {
-                self.create_item_to_user_relation(pool).await?;
-                self.increment_amount_raw(pool).await
+                self.create_item_to_user_relation(user, amount, pool)
+                    .await?;
+                self.increment_amount_raw(user, amount, pool).await
             }
         }
     }
 
-    async fn create_item_to_user_relation(&self, pool: &PgPool) -> Result<i32, sqlx::Error> {
+    async fn create_item_to_user_relation(
+        &self,
+        user: UserId,
+        amount: i32,
+        pool: &PgPool,
+    ) -> Result<i32, sqlx::Error> {
         let rec = sqlx::query!(
             r#"
     INSERT INTO users_items ( user_id, item_id, amount )
     VALUES ( $1, $2, $3 )
     RETURNING amount
             "#,
-            *self.user_id,
-            *self.item_id,
-            self.amount
+            user.0,
+            self.0,
+            amount
         )
         .fetch_one(pool)
         .await?;
@@ -46,6 +50,8 @@ impl UserItem {
     /// Can also be used to subtract.
     async fn increment_amount_raw(
         &self,
+        user: UserId,
+        amount: i32,
         pool: &sqlx::Pool<sqlx::Postgres>,
     ) -> Result<i32, sqlx::Error> {
         let rec = sqlx::query!(
@@ -54,15 +60,12 @@ UPDATE users_items SET amount = amount + $1
   WHERE user_id = $2 AND item_id = $3
   RETURNING amount
         "#,
-            self.amount,
-            *self.user_id,
-            *self.item_id
+            amount,
+            user.0,
+            self.0
         )
         .fetch_one(pool)
-        .await;
-        match rec {
-            Ok(rec) => Ok(rec.amount),
-            Err(err) => Err(err),
-        }
+        .await?;
+        Ok(rec.amount)
     }
 }

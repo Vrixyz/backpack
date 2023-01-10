@@ -9,7 +9,7 @@ use crate::auth_user::validator;
 use super::{item::ItemId, user::UserId};
 
 #[derive(Serialize, Deserialize)]
-pub struct UserItem {
+pub struct AppItem {
     pub app_id: AppId,
     pub item_id: ItemId,
     pub amount: i32,

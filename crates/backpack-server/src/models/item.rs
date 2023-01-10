@@ -14,6 +14,21 @@ impl std::ops::Deref for ItemId {
     }
 }
 
+impl ItemId {
+    pub async fn delete(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+                DELETE FROM items
+                WHERE id = $1;
+            "#,
+            self.0,
+        )
+        .fetch_one(pool)
+        .await?;
+        Ok(())
+    }
+}
+
 impl UserId {
     pub async fn get_items(&self, pool: &PgPool) -> Result<Vec<ItemAmount>, sqlx::Error> {
         let rec = sqlx::query!(

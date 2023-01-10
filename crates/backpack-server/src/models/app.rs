@@ -3,7 +3,7 @@ use sqlx::PgPool;
 
 use super::user::UserId;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AppId(pub i32);
 
 impl std::ops::Deref for AppId {
@@ -22,6 +22,12 @@ pub struct App {
 #[derive(Serialize, Deserialize)]
 pub struct AppAdmin {
     pub user_id: UserId,
+    pub app_id: AppId,
+}
+
+#[derive(Serialize)]
+pub struct AppWithName {
+    pub name: String,
     pub app_id: AppId,
 }
 
@@ -75,5 +81,44 @@ impl AppId {
         .await?;
 
         Ok(AppId(rec.id))
+    }
+
+    pub async fn get_all_for_user(
+        &self,
+        user: UserId,
+        pool: &PgPool,
+    ) -> Result<Vec<AppWithName>, sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+        SELECT app_id, name
+        FROM apps_admins
+        JOIN apps
+        ON apps.id = app_id
+        WHERE user_id = $1
+            "#,
+            *user,
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rec
+            .iter()
+            .map(|r| AppWithName {
+                name: r.name.to_string(),
+                app_id: AppId(r.app_id),
+            })
+            .collect())
+    }
+    pub async fn delete(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+                DELETE FROM apps
+                WHERE id = $1;
+            "#,
+            self.0,
+        )
+        .fetch_one(pool)
+        .await?;
+        Ok(())
     }
 }
