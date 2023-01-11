@@ -50,6 +50,33 @@ Helpful documentations for the project:
   - **Lazy:** Clients call directly to Backpack, potentially enabling users to abuse forging requests.
   - **Secure:** Clients call to another logic server *(which you are responsible of)* to refill or use their items, those operations are done through server-server communication.
 
+# Trust
+
+# Items management
+
+At the core of backpack is a trust system. as an app admin, you will trust any app you give rights to your items, to behave accordingly. There will be rights to limit the kind of operations apps can do on items, but logic is ultimately owned by the trusted app, so beware of who you trust, and how you trust.
+
+A trusted app, who has been given rights to an unowned item, will trust its item's admin to let it use the item, and to be sensible when adding other items' rightholders.
+
+# DDOS
+
+For now, It may be easy to DDOS Backpack, as it's possible technically to create thousands of accounts, apps, items... but I trust users to be responsible.
+
+When the project is more mature, app limits, item limits, and "under attack" mode (freezing admin routes?) will be brought to the discussion.
+
+# Development roadmap
+
+I'm bad at forecasting, but here is a plan:
+
+- v1: minimalist single example game prototype, using backpack as inventory with **Lazy** system.
+  - Estimated Date: mid 2023
+- v2: 2 minimalist games prototypes, using backpack with shared items, still **Lazy** system
+  - Estimated Date: early 2024
+- v3: 2 minimalist games prototypes, using **secure** system
+  - Estimated Date: late 2024
+
+An admin interface and a Backpack library using [bevy](https://bevyengine.org/) will be worked on alongside these milestones
+
 # Thanks
 
 A lot of code originally inspired by https://github.com/vleue/jornet
