@@ -84,10 +84,6 @@ paths:
           description: Pet not found
         "405":
           description: Validation exception
-      security:
-        - petstore_auth:
-            - write:pets
-            - read:pets
   # app
   /app:
     post:
@@ -179,7 +175,7 @@ paths:
         - app
       summary: 🚧 Get all apps authorized for this item 🚧
       description: (🚧 not currently worked on) Create a new item with given name, with given app as owner.
-      operationId: createItem
+      operationId: getAppsItem
       responses:
         "201":
           description: Successful operation returns the id of created item.
