@@ -8,24 +8,49 @@ info:
   license:
     name: MIT
     url: https://github.com/Vrixyz/backpack/blob/main/LICENCE-MIT.txt
-  version: 0.0.1
+  version: 1.0.0
 externalDocs:
   description: github
   url: https://github.com/Vrixyz/backpack
 servers:
-  - url: https://localhost/api/v3
+  - url: https://localhost/api/v1
 tags:
   - name: authentication
     description: Everything to get a Biscuit authentication token.
-  - name: user
-    description: A user owns items, he can authenticate as admin to create and modify apps and items he manages.
+  # - name: user
+  #   description: A user owns items, he can authenticate as admin to create and modify apps and items he manages.
   - name: app
     description: Operations about apps
   - name: item
-    description: Operations about items
+    description: Operations about items, authenticated as admin
+  - name: item as user
+    description: Operations about items, authenticated as user
 paths:
   # authentication
-  /login_password:
+  /auth/email_password/create:
+    post:
+      tags:
+        - authentication
+      summary: Create a new user
+      description: If no existing users have provided email, the user is created and a password is sent by mail.
+      operationId: createUserEmail
+      requestBody:
+        description: The email of the created user.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "new.user@example.com"
+        required: true
+      responses:
+        "201":
+          description: Successful creation of the user
+        "500":
+          description: Internal server error
+  /auth/email_password/login:
     get:
       tags:
         - authentication
@@ -56,34 +81,6 @@ paths:
                 example: "En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg=="
         "403":
           description: User not existing or wrong credentials.
-  # user
-  /user/create_email_password:
-    post:
-      tags:
-        - user
-      summary: Create a new user
-      description: If no existing users have provided email, the user is created and a password is sent by mail.
-      operationId: createUserEmail
-      requestBody:
-        description: The email of the created user.
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email:
-                  type: string
-                  example: "new.user@example.com"
-        required: true
-      responses:
-        "201":
-          description: Successful creation of the user
-        "500":
-          description: Internal server error
-        "404":
-          description: Pet not found
-        "405":
-          description: Validation exception
   # app
   /app:
     post:
@@ -237,7 +234,7 @@ paths:
                 description: items interactable through a given app.
                 type: array
                 items:
-                  $ref: "#/components/schemas/Item"
+                  $ref: "#/components/schemas/ItemDef"
       security:
         - biscuit_token:
             - admin
@@ -263,17 +260,28 @@ paths:
                 description: items interactable through a given app.
                 type: array
                 items:
-                  $ref: "#/components/schemas/Item"
+                  $ref: "#/components/schemas/ItemDef"
       security:
         - biscuit_token:
             - admin
             - user
+  /item:
     delete:
       tags:
         - item
       summary: Delete an existing item
       description: Delete existing item with provided id.
       operationId: deleteItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  description: the id of the item to be deleted
+                  type: integer
+        required: true
       responses:
         "201":
           description: Successful operation returns the id of created app.
@@ -282,6 +290,69 @@ paths:
       security:
         - biscuit_token:
             - admin
+  /user/{user_id}/item:
+    parameters:
+      - in: path
+        name: user_id
+        description: user_id is in path to allow asking for other users' items.
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: Get user's items
+      description: "Logged as user or admin."
+      operationId: getUserItems
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items details
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemAmount"
+
+        "401":
+          description: Unauthorized.
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /user/{user_id}/item/{item_id}:
+    parameters:
+      - in: path
+        name: user_id
+        description: user_id is in path to allow asking for other users' items.
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: item_id
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: Get a specific item amount
+      description: "Logged as user or admin."
+      operationId: getUserItem
+      responses:
+        "201":
+          description: amount of the item.
+          content:
+            application/json:
+              schema:
+                type: integer
+        "401":
+          description: Unauthorized.
+      security:
+        - biscuit_token:
+            - admin
+            - user
   /item/{itemId}/modify:
     parameters:
       - in: path
@@ -291,7 +362,7 @@ paths:
         required: true
     post:
       tags:
-        - item
+        - item as user
       summary: modify given item by amount
       description: "🚧 Logged as user or admin. \
         - User fails if its app has no rights to modify (or has not this app in its biscuit) \
@@ -302,28 +373,6 @@ paths:
           description: Successful operation returns the id of created app.
         "401":
           description: Unauthorized. (User is not admin of the owner app?)
-      security:
-        - biscuit_token:
-            - admin
-            - user
-  /user/{user_id}/item:
-    parameters:
-      - in: path
-        name: userId
-        schema:
-          type: integer
-        required: true
-    post:
-      tags:
-        - item
-      summary: Get user's items
-      description: "Logged as user or admin."
-      operationId: getUserItems
-      responses:
-        "201":
-          description: Successful operation returns the id of created app.
-        "401":
-          description: Unauthorized.
       security:
         - biscuit_token:
             - admin
@@ -340,7 +389,7 @@ components:
         name:
           type: string
           example: "Game name"
-    Item:
+    ItemWithName:
       type: object
       properties:
         id:
@@ -349,10 +398,23 @@ components:
           example: 100000
         name:
           type: string
-          example: "Game name"
+          example: "Item name"
+    ItemDef:
+      type: object
+      properties:
+        item:
+          $ref: "#/components/schemas/ItemWithName"
         ownerAppId:
           type: integer
-          example: 4242
+          example: 19
+    ItemAmount:
+      type: object
+      properties:
+        item:
+          $ref: "#/components/schemas/ItemWithName"
+        amount:
+          type: integer
+          example: 42
   securitySchemes:
     github_auth:
       type: oauth2

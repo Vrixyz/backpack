@@ -16,7 +16,7 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use crate::models::user::UserId;
 
 pub(crate) fn oauth_email_password() -> Scope {
-    web::scope("oauth/email_password")
+    web::scope("auth/email_password")
         .route("create", web::post().to(oauth_create_email_password))
         .route("login", web::post().to(oauth_login_email_password))
 }

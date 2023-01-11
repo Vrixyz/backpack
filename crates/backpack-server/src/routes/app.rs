@@ -1,6 +1,7 @@
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use actix_web::{HttpMessage, HttpRequest};
 use actix_web_httpauth::middleware::HttpAuthentication;
+use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::auth_user::{validator_admin, BiscuitInfo};
@@ -13,13 +14,23 @@ pub(crate) fn app_admin() -> impl HttpServiceFactory {
         .wrap(HttpAuthentication::bearer(validator_admin))
         .route("app", web::post().to(create_app))
         .route("app", web::get().to(get_apps_for_admin))
+        .route("app/{app_id}", web::delete().to(delete_app))
 }
 
-async fn create_app(connection: web::Data<PgPool>, req: HttpRequest) -> impl Responder {
+#[derive(Debug, Deserialize, Clone)]
+pub struct CreateAppData {
+    pub name: String,
+}
+
+async fn create_app(
+    connection: web::Data<PgPool>,
+    req_data: web::ReqData<CreateAppData>,
+    req: HttpRequest,
+) -> impl Responder {
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
         return HttpResponse::Unauthorized().finish();
     };
-    let app_id = AppId::create(&connection, "Placeholder app").await.unwrap();
+    let app_id = AppId::create(&connection, &req_data.name).await.unwrap();
     AppAdmin {
         user_id: user,
         app_id,

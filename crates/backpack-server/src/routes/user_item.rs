@@ -6,13 +6,17 @@ use sqlx::PgPool;
 
 use crate::auth_user::{validator, BiscuitInfo};
 
-use crate::models::item::ItemId;
+use crate::models::item::{ItemAmount, ItemId};
 use crate::models::user::UserId;
 
 pub(crate) fn user_item() -> impl HttpServiceFactory {
     web::scope("api/v1")
         .wrap(HttpAuthentication::bearer(validator))
         .route("user/{user_id}/item", web::get().to(get_user_items))
+        .route(
+            "user/{user_id}/item/{item_id}",
+            web::get().to(get_user_item),
+        )
         .route("item/{item_id}/modify", web::post().to(modify_item))
 }
 
@@ -21,7 +25,7 @@ pub struct UserItemModify {
     pub amount: i32,
 }
 
-/// For a given user, returns all the items who have at least 1 amount.
+/// For a given user, returns all its existing items.
 async fn get_user_items(
     connection: web::Data<PgPool>,
     user_id: web::Path<i32>,
@@ -29,6 +33,21 @@ async fn get_user_items(
 ) -> impl Responder {
     let user_id = UserId(*user_id);
     if let Ok(res) = user_id.get_items(&connection).await {
+        HttpResponse::Ok().json(res)
+    } else {
+        HttpResponse::InternalServerError().finish()
+    }
+}
+
+async fn get_user_item(
+    connection: web::Data<PgPool>,
+    user_id: web::Path<i32>,
+    item_id: web::Path<i32>,
+    req: HttpRequest,
+) -> impl Responder {
+    let user_id = UserId(*user_id);
+    let item_id = ItemId(*item_id);
+    if let Ok(res) = ItemAmount::get(&connection, user_id, item_id).await {
         HttpResponse::Ok().json(res)
     } else {
         HttpResponse::InternalServerError().finish()

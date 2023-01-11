@@ -29,6 +29,21 @@ impl ItemId {
     }
 }
 
+pub async fn create(name: &str, app_id: AppId, connection: &PgPool) -> Result<ItemId, sqlx::Error> {
+    let rec = sqlx::query!(
+        r#"
+        INSERT INTO items (name, app_id) VALUES ($1, $2)
+        RETURNING id
+        "#,
+        name,
+        *app_id,
+    )
+    .fetch_one(connection)
+    .await?;
+
+    Ok(ItemId(rec.id))
+}
+
 impl UserId {
     pub async fn get_items(&self, pool: &PgPool) -> Result<Vec<ItemAmount>, sqlx::Error> {
         let rec = sqlx::query!(
@@ -59,8 +74,7 @@ impl UserId {
 
 #[derive(Serialize, Deserialize)]
 pub struct ItemFull {
-    pub id: ItemId,
-    pub name: String,
+    pub item: ItemWithName,
     pub app_id: AppId,
 }
 #[derive(Serialize, Deserialize)]
@@ -74,19 +88,35 @@ pub struct ItemAmount {
     pub amount: i32,
 }
 
-pub async fn create(name: &str, app_id: AppId, connection: &PgPool) -> Result<ItemId, sqlx::Error> {
-    let rec = sqlx::query!(
-        r#"
-        INSERT INTO items (name, app_id) VALUES ($1, $2)
-        RETURNING id
-        "#,
-        name,
-        *app_id,
-    )
-    .fetch_one(connection)
-    .await?;
+impl ItemAmount {
+    pub async fn get(
+        pool: &PgPool,
+        user_id: UserId,
+        item_id: ItemId,
+    ) -> Result<ItemAmount, sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+        SELECT  item_id as id, amount, items.name as name
+        FROM users_items
+        JOIN items
+        ON items.id = item_id
+        WHERE user_id = $1
+        AND item_id = $2
+            "#,
+            *user_id,
+            *item_id
+        )
+        .fetch_one(pool)
+        .await?;
 
-    Ok(ItemId(rec.id))
+        Ok(ItemAmount {
+            item: ItemWithName {
+                id: ItemId(rec.id),
+                name: rec.name.clone(),
+            },
+            amount: rec.amount,
+        })
+    }
 }
 
 impl ItemFull {
@@ -100,8 +130,10 @@ impl ItemFull {
         .fetch_one(connection)
         .await
         .map(|r| ItemFull {
-            id: ItemId(r.id),
-            name: r.name,
+            item: ItemWithName {
+                id: ItemId(r.id),
+                name: r.name,
+            },
             app_id: AppId(r.app_id),
         })
         .ok()
