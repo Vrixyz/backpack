@@ -52,13 +52,13 @@ Helpful documentations for the project:
 
 # Trust
 
-# Items management
+## Items management
 
 At the core of backpack is a trust system. as an app admin, you will trust any app you give rights to your items, to behave accordingly. There will be rights to limit the kind of operations apps can do on items, but logic is ultimately owned by the trusted app, so beware of who you trust, and how you trust.
 
 A trusted app, who has been given rights to an unowned item, will trust its item's admin to let it use the item, and to be sensible when adding other items' rightholders.
 
-# DDOS
+## DDOS
 
 For now, It may be easy to DDOS Backpack, as it's possible technically to create thousands of accounts, apps, items... but I trust users to be responsible.
 
