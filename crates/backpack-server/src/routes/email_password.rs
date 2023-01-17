@@ -127,12 +127,11 @@ async fn oauth_login_email_password(
             // We do not return not found, to avoid giving information about an account existance.
             return HttpResponse::Unauthorized().finish();
         };
-    if matches!(
-        verify(&req_data.password_plain, &password_hash_existing),
-        Ok(true)
-    ) {
+    let Ok(true) =
+        verify(dbg!(&req_data.password_plain), &password_hash_existing)
+        else {
         return HttpResponse::Unauthorized().finish();
-    }
+    };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
     let biscuit = user_id.create_biscuit(&root, Role::Admin);
     HttpResponse::Ok().json(dbg!(TokenReply {

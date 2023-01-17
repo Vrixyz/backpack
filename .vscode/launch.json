@@ -1,0 +1,139 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'backpack-bevy-admin'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=backpack-bevy-admin",
+                    "--package=backpack-bevy-admin"
+                ],
+                "filter": {
+                    "name": "backpack-bevy-admin",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'backpack-bevy-admin'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=backpack-bevy-admin",
+                    "--package=backpack-bevy-admin"
+                ],
+                "filter": {
+                    "name": "backpack-bevy-admin",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'backpack-server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=backpack-server"
+                ],
+                "filter": {
+                    "name": "backpack-server",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/crates/backpack-server"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'backpack-server'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=backpack-server",
+                    "--package=backpack-server"
+                ],
+                "filter": {
+                    "name": "backpack-server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}/crates/backpack-server"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'backpack-server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=backpack-server",
+                    "--package=backpack-server"
+                ],
+                "filter": {
+                    "name": "backpack-server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'helper'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=helper",
+                    "--package=backpack-server"
+                ],
+                "filter": {
+                    "name": "helper",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'user'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=user",
+                    "--package=backpack-server"
+                ],
+                "filter": {
+                    "name": "user",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
