@@ -20,13 +20,13 @@ pub(crate) fn app_admin(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
         .max_age(3600);
     web::scope("api/v1")
         .app_data(kp)
-        .wrap(cors)
         // FIXME: this lines makes it fail, read the doc...
         .wrap(HttpAuthentication::bearer(validator_admin))
+        .wrap(cors)
         //
         .route("app", web::post().to(create_app))
         .route("app", web::get().to(get_apps_for_admin))
-        .route("app/{app_id}", web::delete().to(delete_app))
+        .route("app", web::delete().to(delete_app))
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -50,36 +50,35 @@ async fn create_app(
     .create_app_admin_relation(&connection)
     .await
     .unwrap();
-    HttpResponse::Created().finish()
+    HttpResponse::Created().json(app_id.0)
 }
-async fn get_apps_for_admin(
-    connection: web::Data<PgPool>,
-    app_id: web::Path<i32>,
-    req: HttpRequest,
-) -> impl Responder {
+async fn get_apps_for_admin(connection: web::Data<PgPool>, req: HttpRequest) -> impl Responder {
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
         return HttpResponse::Unauthorized().finish();
     };
-    let app = AppId(*app_id);
 
-    if let Ok(apps) = app.get_all_for_user(user, &connection).await {
+    if let Ok(apps) = AppId::get_all_for_user(user, &connection).await {
         HttpResponse::Ok().json(apps)
     } else {
         HttpResponse::InternalServerError().finish()
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct DeleteAppData {
+    pub id: i32,
+}
 async fn delete_app(
     connection: web::Data<PgPool>,
-    app_id: web::Path<i32>,
+    app_id: web::Json<DeleteAppData>,
     req: HttpRequest,
 ) -> impl Responder {
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
         return HttpResponse::Unauthorized().finish();
     };
-    let app = AppId(*app_id);
+    let app = AppId(app_id.id);
 
-    let Ok(apps) = app.get_all_for_user(user, &connection).await
+    let Ok(apps) = AppId::get_all_for_user(user, &connection).await
     else {
         return HttpResponse::InternalServerError().finish();
     };
@@ -90,6 +89,7 @@ async fn delete_app(
         .unwrap_or(false)
     {
         app.delete(&connection).await.unwrap();
+        return HttpResponse::Ok().finish();
     }
     return HttpResponse::Unauthorized().finish();
 }

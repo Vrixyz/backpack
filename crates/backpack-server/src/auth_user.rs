@@ -52,8 +52,10 @@ pub async fn validator_admin(
             req.extensions_mut().insert(biscuit_info);
             return Ok(req);
         }
+        dbg!("not admin");
         return Err((AuthenticationError::from(Config::default()).into(), req));
     } else {
+        dbg!("cannot read biscuit");
         Err((AuthenticationError::from(Config::default()).into(), req))
     }
 }

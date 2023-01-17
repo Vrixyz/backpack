@@ -41,12 +41,11 @@ async fn get_user_items(
 
 async fn get_user_item(
     connection: web::Data<PgPool>,
-    user_id: web::Path<i32>,
-    item_id: web::Path<i32>,
+    user_id_item_id: web::Path<(i32, i32)>,
     req: HttpRequest,
 ) -> impl Responder {
-    let user_id = UserId(*user_id);
-    let item_id = ItemId(*item_id);
+    let user_id = UserId(user_id_item_id.0);
+    let item_id = ItemId(user_id_item_id.1);
     if let Ok(res) = ItemAmount::get(&connection, user_id, item_id).await {
         HttpResponse::Ok().json(res)
     } else {

@@ -84,7 +84,6 @@ impl AppId {
     }
 
     pub async fn get_all_for_user(
-        &self,
         user: UserId,
         pool: &PgPool,
     ) -> Result<Vec<AppWithName>, sqlx::Error> {
@@ -117,7 +116,7 @@ impl AppId {
             "#,
             self.0,
         )
-        .fetch_one(pool)
+        .execute(pool)
         .await?;
         Ok(())
     }

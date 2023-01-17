@@ -149,8 +149,8 @@ paths:
                   type: integer
         required: true
       responses:
-        "201":
-          description: Successful operation returns the id of created app.
+        "200":
+          description: Successful deletion of app.
         "401":
           description: Unauthorized. (User is not admin for this app?)
       security:
