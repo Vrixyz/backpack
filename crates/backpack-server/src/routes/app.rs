@@ -1,6 +1,8 @@
+use actix_cors::Cors;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use actix_web::{HttpMessage, HttpRequest};
 use actix_web_httpauth::middleware::HttpAuthentication;
+use biscuit_auth::KeyPair;
 use serde::Deserialize;
 use sqlx::PgPool;
 
@@ -9,9 +11,19 @@ use crate::auth_user::{validator_admin, BiscuitInfo};
 use crate::models::app::AppAdmin;
 use crate::models::{app::AppId, user::UserId};
 
-pub(crate) fn app_admin() -> impl HttpServiceFactory {
+pub(crate) fn app_admin(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+    let cors = Cors::default()
+        .allow_any_header()
+        .allow_any_origin()
+        .allow_any_method()
+        .send_wildcard()
+        .max_age(3600);
     web::scope("api/v1")
+        .app_data(kp)
+        .wrap(cors)
+        // FIXME: this lines makes it fail, read the doc...
         .wrap(HttpAuthentication::bearer(validator_admin))
+        //
         .route("app", web::post().to(create_app))
         .route("app", web::get().to(get_apps_for_admin))
         .route("app/{app_id}", web::delete().to(delete_app))
@@ -24,7 +36,7 @@ pub struct CreateAppData {
 
 async fn create_app(
     connection: web::Data<PgPool>,
-    req_data: web::ReqData<CreateAppData>,
+    req_data: web::Json<CreateAppData>,
     req: HttpRequest,
 ) -> impl Responder {
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {

@@ -1,4 +1,5 @@
-use actix_web::{web, HttpResponse, Responder, Scope};
+use actix_cors::Cors;
+use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder, Scope};
 use biscuit_auth::KeyPair;
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
 use serde::Deserialize;
@@ -15,8 +16,16 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 
 use crate::models::user::UserId;
 
-pub(crate) fn oauth_email_password() -> Scope {
-    web::scope("auth/email_password")
+pub(crate) fn oauth_email_password(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+    let cors = Cors::default()
+        .allow_any_header()
+        .allow_any_origin()
+        .allow_any_method()
+        .send_wildcard()
+        .max_age(3600);
+    web::scope("api/v1/auth/email_password")
+        .app_data(kp)
+        .wrap(cors)
         .route("create", web::post().to(oauth_create_email_password))
         .route("login", web::post().to(oauth_login_email_password))
 }
@@ -27,10 +36,8 @@ pub struct CreateEmailPasswordData {
 }
 
 async fn oauth_create_email_password(
-    req_data: web::ReqData<CreateEmailPasswordData>,
-    config: web::Data<Settings>,
+    req_data: web::Json<CreateEmailPasswordData>,
     connection: web::Data<PgPool>,
-    root: web::Data<KeyPair>,
 ) -> impl Responder {
     use rand::Rng;
     if exist(connection.as_ref(), &req_data.email).await {
@@ -111,8 +118,7 @@ pub struct LoginEmailPasswordData {
 }
 
 async fn oauth_login_email_password(
-    req_data: web::ReqData<LoginEmailPasswordData>,
-    config: web::Data<Settings>,
+    req_data: web::Json<LoginEmailPasswordData>,
     connection: web::Data<PgPool>,
     root: web::Data<KeyPair>,
 ) -> impl Responder {
@@ -129,7 +135,7 @@ async fn oauth_login_email_password(
     }
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
     let biscuit = user_id.create_biscuit(&root, Role::Admin);
-    HttpResponse::Ok().json(TokenReply {
+    HttpResponse::Ok().json(dbg!(TokenReply {
         token: biscuit.to_base64().unwrap(),
-    })
+    }))
 }

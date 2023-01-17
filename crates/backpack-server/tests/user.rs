@@ -32,7 +32,7 @@ async fn get_test_token() {
         .unwrap();
 
     let response = client
-        .get(&format!("{}/oauth/fake/success", app.address))
+        .get(&format!("{}/api/v1/oauth/fake/success", app.address))
         .header("keep-alive", "")
         .send()
         .await
@@ -46,7 +46,7 @@ async fn get_test_token() {
         .expect("Failed to fetch saved subscription.");
 
     let response = client
-        .get(&format!("{}/oauth/fake/success", app.address))
+        .get(&format!("{}/api/v1/oauth/fake/success", app.address))
         .header("keep-alive", "")
         .send()
         .await

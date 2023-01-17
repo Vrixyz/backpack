@@ -42,10 +42,10 @@ async fn oauth_fake_success(
 
 #[cfg(debug_assertions)]
 pub(crate) fn oauth_fake() -> Scope {
-    web::scope("oauth/fake").route("success", web::get().to(oauth_fake_success))
+    web::scope("api/v1/oauth/fake").route("success", web::get().to(oauth_fake_success))
 }
 #[cfg(not(debug_assertions))]
 pub(crate) fn oauth_fake() -> Scope {
-    web::scope("oauth").route("success", web::get().to(oauth_fake_success))
+    web::scope("api/v1/oauth").route("success", web::get().to(oauth_fake_success))
     //   web::scope("api/v1/oauth/").route("success", web::get().to(|_| {}))
 }

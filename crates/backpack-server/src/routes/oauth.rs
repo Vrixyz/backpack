@@ -9,7 +9,7 @@ use crate::auth_user::{validator, BiscuitInfo};
 use crate::models::user::UserId;
 
 pub(crate) fn routes() -> impl HttpServiceFactory {
-    web::scope("oauth/whoami")
+    web::scope("api/v1/oauth/whoami")
         .wrap(HttpAuthentication::bearer(validator))
         .route("", web::get().to(whoami))
 }

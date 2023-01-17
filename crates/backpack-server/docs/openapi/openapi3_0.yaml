@@ -13,6 +13,7 @@ externalDocs:
   description: github
   url: https://github.com/Vrixyz/backpack
 servers:
+  - url: http://127.0.0.1:8080/api/v1
   - url: https://localhost/api/v1
 tags:
   - name: authentication
@@ -51,7 +52,7 @@ paths:
         "500":
           description: Internal server error
   /auth/email_password/login:
-    get:
+    post:
       tags:
         - authentication
       summary: Login with an user/email

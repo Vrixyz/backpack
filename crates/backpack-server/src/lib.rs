@@ -27,19 +27,19 @@ pub fn run(
     let server = HttpServer::new(move || {
         App::new()
             .app_data(connection.clone())
-            .app_data(root.clone())
             .app_data(config.clone())
+            .app_data(root.clone())
             .wrap(Logger::default())
             .route(
-                "/health_check",
+                "api/v1/health_check",
                 web::get().to(routes::healthcheck::health_check),
             )
             //.service(domains::config::config(config.clone()))
             .service(models::oauth_github::oauth_github())
             .service(routes::oauth::routes())
-            .service(routes::email_password::oauth_email_password())
+            .service(routes::email_password::oauth_email_password(root.clone()))
             .service(routes::oauth_fake::oauth_fake())
-            .service(routes::app::app_admin())
+            .service(routes::app::app_admin(root.clone()))
             .service(routes::item::item())
             .service(routes::user_item::user_item())
         //.route("/{filename:.*}", web::get().to(spa))

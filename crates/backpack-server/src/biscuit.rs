@@ -19,7 +19,7 @@ use super::models::user::UserId;
 pub const TOKEN_TTL: i64 = 600;
 
 /// Contains a biscuit token.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TokenReply {
     /// Biscuit token.
     pub token: String,

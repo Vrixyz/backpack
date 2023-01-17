@@ -42,6 +42,7 @@ pub async fn validator_admin(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+    dbg!("validator");
     let root = req.app_data::<web::Data<KeyPair>>().unwrap();
     if let Some(biscuit_info) = Biscuit::from_base64(credentials.token(), |_| root.public())
         .ok()
