@@ -2,7 +2,7 @@ use actix_cors::Cors;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder, Scope};
 use biscuit_auth::KeyPair;
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
-use serde::Deserialize;
+use serde::{de::value, Deserialize};
 use sqlx::PgPool;
 
 use crate::{
@@ -134,7 +134,7 @@ async fn oauth_login_email_password(
     };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
     let biscuit = user_id.create_biscuit(&root, Role::Admin);
-    HttpResponse::Ok().json(dbg!(TokenReply {
-        token: biscuit.to_base64().unwrap(),
-    }))
+    HttpResponse::Ok()
+        .content_type(actix_web::http::header::ContentType::plaintext())
+        .body(biscuit.to_base64().unwrap())
 }

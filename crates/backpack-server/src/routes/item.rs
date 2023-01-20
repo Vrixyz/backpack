@@ -1,18 +1,19 @@
 use actix_cors::Cors;
-use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
+use actix_web::{dev::HttpServiceFactory, web, HttpMessage, HttpRequest, HttpResponse, Responder};
 use actix_web_httpauth::middleware::HttpAuthentication;
+use biscuit_auth::KeyPair;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 use crate::{
-    auth_user::validator_admin,
+    auth_user::{validator_admin, BiscuitInfo},
     models::{
         app::AppId,
-        item::{create, ItemFull, ItemId, ItemWithName},
+        item::{create, ItemFull, ItemId},
     },
 };
 
-pub(crate) fn item() -> impl HttpServiceFactory {
+pub(crate) fn item(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
     let cors = Cors::default()
         .allow_any_header()
         .allow_any_origin()
@@ -20,11 +21,12 @@ pub(crate) fn item() -> impl HttpServiceFactory {
         .send_wildcard()
         .max_age(3600);
     web::scope("api/v1")
+        .app_data(kp)
         .wrap(HttpAuthentication::bearer(validator_admin))
         .wrap(cors)
-        .route("/app/{app_id}/item", web::post().to(create_item))
-        .route("/item/{item_id}", web::get().to(get_item))
-        .route("/item/{item_id}", web::delete().to(delete_item))
+        .route("app/{app_id}/item", web::post().to(create_item))
+        .route("item/{item_id}", web::get().to(get_item))
+        .route("item/{item_id}", web::delete().to(delete_item))
 }
 
 #[derive(Deserialize, Serialize)]
@@ -34,9 +36,23 @@ pub struct ItemInput {
 
 async fn create_item(
     connection: web::Data<PgPool>,
-    app_id: web::Path<i32>,
     item: web::Json<ItemInput>,
+    req: HttpRequest,
+    app_id: web::Path<i32>,
 ) -> impl Responder {
+    let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
+        return HttpResponse::Unauthorized().body("Bad biscuit");
+    };
+    let Ok(owned_apps) = AppId::get_all_for_user(user, &connection).await else {
+        return HttpResponse::Unauthorized().body("no apps for user");
+    };
+    if owned_apps
+        .iter()
+        .find(|app| app.app_id.0 == *app_id)
+        .is_none()
+    {
+        return HttpResponse::Unauthorized().body("app not authorized for user");
+    }
     if let Ok(item_id) = create(&item.0.name, AppId(*app_id), &connection).await {
         HttpResponse::Ok().json(item_id)
     } else {
@@ -52,9 +68,13 @@ async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> imp
     }
 }
 async fn delete_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> impl Responder {
+    // TODO: check no user have this item, Please refer to openapi spec for more details.
+    return HttpResponse::NotImplemented().finish();
+    /*
     if let Ok(_) = ItemId(*item_id).delete(&connection).await {
         HttpResponse::Ok().finish()
     } else {
         HttpResponse::InternalServerError().finish()
     }
+    */
 }

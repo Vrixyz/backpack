@@ -20,10 +20,8 @@ pub(crate) fn app_admin(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
         .max_age(3600);
     web::scope("api/v1")
         .app_data(kp)
-        // FIXME: this lines makes it fail, read the doc...
         .wrap(HttpAuthentication::bearer(validator_admin))
         .wrap(cors)
-        //
         .route("app", web::post().to(create_app))
         .route("app", web::get().to(get_apps_for_admin))
         .route("app", web::delete().to(delete_app))

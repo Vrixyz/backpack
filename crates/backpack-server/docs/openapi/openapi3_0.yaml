@@ -76,10 +76,10 @@ paths:
         "200":
           description: OK
           content:
-            application/json:
+            text/plain:
               schema:
                 type: string
-                example: "En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg=="
+                example: En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
         "403":
           description: User not existing or wrong credentials.
   # app
@@ -156,13 +156,9 @@ paths:
       security:
         - biscuit_token:
             - admin
-  /app/{appId}/item/{itemId}/app:
+  # item
+  /item/{itemId}/app:
     parameters:
-      - in: path
-        name: appId
-        schema:
-          type: integer
-        required: true
       - in: path
         name: itemId
         schema:
@@ -170,7 +166,7 @@ paths:
         required: true
     get:
       tags:
-        - app
+        - item
       summary: 🚧 Get all apps authorized for this item 🚧
       description: (🚧 not currently worked on) Create a new item with given name, with given app as owner.
       operationId: getAppsItem
@@ -185,7 +181,6 @@ paths:
       security:
         - biscuit_token:
             - admin
-  # item
   /app/{appId}/item:
     parameters:
       - in: path
@@ -270,8 +265,17 @@ paths:
     delete:
       tags:
         - item
-      summary: Delete an existing item
-      description: Delete existing item with provided id.
+      summary: 🚧 Delete an existing item
+      description: 'Delete existing item with provided id.<br><br>
+        🚧 hard because we should check if no users have this items.<br>
+        But It''s a pain to remove with such a constraint,
+        so we should probably be able to:
+        <ol>
+        <li>"quarantine" it.</li>
+        <li>Then forbid its use/addition.</li>
+        <li>Then operate a migration (refund, whatever...)</li>
+        <li>Then remove all its users_items, and lastly remove the item.</li>
+        </ol>'
       operationId: deleteItem
       requestBody:
         content:
@@ -405,7 +409,7 @@ components:
       properties:
         item:
           $ref: "#/components/schemas/ItemWithName"
-        ownerAppId:
+        app_id:
           type: integer
           example: 19
     ItemAmount:
