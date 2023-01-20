@@ -28,7 +28,7 @@ tags:
     description: Operations about items, authenticated as user
 paths:
   # authentication
-  /auth/email_password/create:
+  /notauthenticated/email_password/create:
     post:
       tags:
         - authentication
@@ -51,7 +51,7 @@ paths:
           description: Successful creation of the user
         "500":
           description: Internal server error
-  /auth/email_password/login:
+  /notauthenticated/email_password/login:
     post:
       tags:
         - authentication
