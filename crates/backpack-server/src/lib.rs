@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{
     dev::Server,
     middleware::Logger,
@@ -25,11 +26,18 @@ pub fn run(
     let connection = Data::new(connection_pool);
 
     let server = HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_header()
+            .allow_any_origin()
+            .allow_any_method()
+            .send_wildcard()
+            .max_age(3600);
         App::new()
             .app_data(connection.clone())
             .app_data(config.clone())
             .app_data(root.clone())
             .wrap(Logger::default())
+            .wrap(cors)
             .route(
                 "api/v1/health_check",
                 web::get().to(routes::healthcheck::health_check),
@@ -41,7 +49,7 @@ pub fn run(
             .service(routes::oauth_fake::oauth_fake())
             .service(routes::item::item(root.clone()))
             .service(routes::app::app_admin(root.clone()))
-            .service(routes::user_item::user_item())
+            .service(routes::user_item::user_item(root.clone()))
         //.route("/{filename:.*}", web::get().to(spa))
     })
     .listen(listener)?

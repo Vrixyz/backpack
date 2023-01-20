@@ -18,7 +18,7 @@ pub(crate) fn app_admin(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
         .allow_any_method()
         .send_wildcard()
         .max_age(3600);
-    web::scope("api/v1")
+    web::scope("api/v1/admin")
         .app_data(kp)
         .wrap(HttpAuthentication::bearer(validator_admin))
         .wrap(cors)

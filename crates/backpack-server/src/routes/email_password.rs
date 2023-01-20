@@ -17,15 +17,8 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 use crate::models::user::UserId;
 
 pub(crate) fn oauth_email_password(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
-    let cors = Cors::default()
-        .allow_any_header()
-        .allow_any_origin()
-        .allow_any_method()
-        .send_wildcard()
-        .max_age(3600);
     web::scope("api/v1/auth/email_password")
         .app_data(kp)
-        .wrap(cors)
         .route("create", web::post().to(oauth_create_email_password))
         .route("login", web::post().to(oauth_login_email_password))
 }

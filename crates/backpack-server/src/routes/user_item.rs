@@ -1,6 +1,8 @@
+use actix_cors::Cors;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use actix_web::{HttpMessage, HttpRequest};
 use actix_web_httpauth::middleware::HttpAuthentication;
+use biscuit_auth::KeyPair;
 use serde::Deserialize;
 use sqlx::PgPool;
 
@@ -9,14 +11,12 @@ use crate::auth_user::{validator, BiscuitInfo};
 use crate::models::item::{ItemAmount, ItemId};
 use crate::models::user::UserId;
 
-pub(crate) fn user_item() -> impl HttpServiceFactory {
-    web::scope("api/v1")
+pub(crate) fn user_item(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+    web::scope("api/v1/user")
+        .app_data(kp)
         .wrap(HttpAuthentication::bearer(validator))
-        .route("user/{user_id}/item", web::get().to(get_user_items))
-        .route(
-            "user/{user_id}/item/{item_id}",
-            web::get().to(get_user_item),
-        )
+        .route("{user_id}/item", web::get().to(get_user_items))
+        .route("{user_id}/item/{item_id}", web::get().to(get_user_item))
         .route("item/{item_id}/modify", web::post().to(modify_item))
 }
 
@@ -28,8 +28,8 @@ pub struct UserItemModify {
 /// For a given user, returns all its existing items.
 async fn get_user_items(
     connection: web::Data<PgPool>,
-    user_id: web::Path<i32>,
     req: HttpRequest,
+    user_id: web::Path<i32>,
 ) -> impl Responder {
     let user_id = UserId(*user_id);
     if let Ok(res) = user_id.get_items(&connection).await {

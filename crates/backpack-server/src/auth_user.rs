@@ -26,6 +26,7 @@ pub async fn validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+    dbg!("validator");
     let root = req.app_data::<web::Data<KeyPair>>().unwrap();
     if let Some(biscuit_info) = Biscuit::from_base64(credentials.token(), |_| root.public())
         .ok()
@@ -34,6 +35,7 @@ pub async fn validator(
         req.extensions_mut().insert(biscuit_info);
         Ok(req)
     } else {
+        dbg!("cannot read biscuit");
         Err((AuthenticationError::from(Config::default()).into(), req))
     }
 }
@@ -42,7 +44,7 @@ pub async fn validator_admin(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
-    dbg!("validator");
+    dbg!("validator_admin");
     let root = req.app_data::<web::Data<KeyPair>>().unwrap();
     if let Some(biscuit_info) = Biscuit::from_base64(credentials.token(), |_| root.public())
         .ok()

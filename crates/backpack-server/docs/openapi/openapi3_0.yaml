@@ -83,7 +83,7 @@ paths:
         "403":
           description: User not existing or wrong credentials.
   # app
-  /app:
+  /admin/app:
     post:
       tags:
         - app
@@ -108,25 +108,6 @@ paths:
               schema:
                 description: the id of the created app.
                 type: integer
-      security:
-        - biscuit_token:
-            - admin
-    get:
-      tags:
-        - app
-      summary: Get apps.
-      description: Get all apps the user is admin of.
-      operationId: getApp
-      responses:
-        "200":
-          description: Successful operation returns the id of created app.
-          content:
-            application/json:
-              schema:
-                description: all apps the user is admin of.
-                type: array
-                items:
-                  $ref: "#/components/schemas/App"
       security:
         - biscuit_token:
             - admin
@@ -156,32 +137,27 @@ paths:
       security:
         - biscuit_token:
             - admin
-  # item
-  /item/{itemId}/app:
-    parameters:
-      - in: path
-        name: itemId
-        schema:
-          type: integer
-        required: true
     get:
       tags:
-        - item
-      summary: 🚧 Get all apps authorized for this item 🚧
-      description: (🚧 not currently worked on) Create a new item with given name, with given app as owner.
-      operationId: getAppsItem
+        - app
+      summary: Get apps.
+      description: Get all apps the user is admin of.
+      operationId: getApp
       responses:
-        "201":
-          description: Successful operation returns the id of created item.
+        "200":
+          description: Successful operation returns the id of created app.
           content:
             application/json:
               schema:
-                description: the id of the created item.
-                type: integer
+                description: all apps the user is admin of.
+                type: array
+                items:
+                  $ref: "#/components/schemas/App"
       security:
         - biscuit_token:
             - admin
-  /app/{appId}/item:
+  # item
+  /admin/app/{appId}/item:
     parameters:
       - in: path
         name: appId
@@ -215,53 +191,7 @@ paths:
       security:
         - biscuit_token:
             - admin
-    get:
-      tags:
-        - item
-      summary: 🚧 Get app's items.
-      description: Get all items definitions which can be interacted through a given app.
-      operationId: getItems
-      responses:
-        "200":
-          description: Successful operation returns the id of created app.
-          content:
-            application/json:
-              schema:
-                description: items interactable through a given app.
-                type: array
-                items:
-                  $ref: "#/components/schemas/ItemDef"
-      security:
-        - biscuit_token:
-            - admin
-  /item/{itemId}:
-    parameters:
-      - in: path
-        name: itemId
-        schema:
-          type: integer
-        required: true
-    get:
-      tags:
-        - item
-      summary: 👻 Get item details (temporary)
-      description: Get item details, with owner app, useful before having the more complicated route getting all app's items
-      operationId: getItem
-      responses:
-        "200":
-          description: Successful operation returns the id of created app.
-          content:
-            application/json:
-              schema:
-                description: items interactable through a given app.
-                type: array
-                items:
-                  $ref: "#/components/schemas/ItemDef"
-      security:
-        - biscuit_token:
-            - admin
-            - user
-  /item:
+  /admin/item:
     delete:
       tags:
         - item
@@ -295,7 +225,105 @@ paths:
       security:
         - biscuit_token:
             - admin
-  /user/{user_id}/item:
+
+  # Authentified
+
+  /authentified/item/{itemId}/modify:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - item as user
+      summary: modify given item by amount
+      description: "🚧 Logged as user or admin. \
+        - User fails if its app has no rights to modify (or has not this app in its biscuit) \
+        - Admin fails if he's not managing this app"
+      operationId: modifyItem
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+        "401":
+          description: Unauthorized. (User is not admin of the owner app?)
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authentified/item/{itemId}/app:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: 🚧 Get all apps authorized for this item 🚧
+      description: (🚧 not currently worked on) Create a new item with given name, with given app as owner.
+      operationId: getAppsItem
+      responses:
+        "201":
+          description: Successful operation returns the id of created item.
+          content:
+            application/json:
+              schema:
+                description: the id of the created item.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+  /authentified/app/{appId}/item:
+    get:
+      tags:
+        - item as user
+      summary: 🚧 Get app's items.
+      description: Get all items definitions which can be interacted through a given app.
+      operationId: getItems
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items interactable through a given app.
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemDef"
+      security:
+        - biscuit_token:
+            - admin
+  /authentified/item/{itemId}:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: 👻 Get item details (temporary)
+      description: Get item details, with owner app, useful before having the more complicated route getting all app's items
+      operationId: getItem
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items interactable through a given app.
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemDef"
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authentified/user/{user_id}/item:
     parameters:
       - in: path
         name: user_id
@@ -326,7 +354,7 @@ paths:
         - biscuit_token:
             - admin
             - user
-  /user/{user_id}/item/{item_id}:
+  /authentified/user/{user_id}/item/{item_id}:
     parameters:
       - in: path
         name: user_id
@@ -354,30 +382,6 @@ paths:
                 type: integer
         "401":
           description: Unauthorized.
-      security:
-        - biscuit_token:
-            - admin
-            - user
-  /item/{itemId}/modify:
-    parameters:
-      - in: path
-        name: itemId
-        schema:
-          type: integer
-        required: true
-    post:
-      tags:
-        - item as user
-      summary: modify given item by amount
-      description: "🚧 Logged as user or admin. \
-        - User fails if its app has no rights to modify (or has not this app in its biscuit) \
-        - Admin fails if he's not managing this app"
-      operationId: modifyItem
-      responses:
-        "201":
-          description: Successful operation returns the id of created app.
-        "401":
-          description: Unauthorized. (User is not admin of the owner app?)
       security:
         - biscuit_token:
             - admin
