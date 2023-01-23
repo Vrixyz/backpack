@@ -58,14 +58,14 @@ async fn get_user_item(
 /// - :construction: If the item allows for gains
 async fn modify_item(
     connection: web::Data<PgPool>,
-    item_id: web::Path<i32>,
+    user_id_item_id: web::Path<(i32, i32)>,
     req: HttpRequest,
     user_item_modify: web::Json<UserItemModify>,
 ) -> impl Responder {
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
         return HttpResponse::Unauthorized().finish();
     };
-    let item_id = ItemId(*item_id);
+    let item_id = ItemId(user_id_item_id.1);
     if let Ok(user_id) = item_id
         .modify_amount(user, user_item_modify.amount, &connection)
         .await

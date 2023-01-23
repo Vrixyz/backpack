@@ -18,11 +18,7 @@ impl ItemId {
         let rec = self.increment_amount_raw(user, amount, pool).await;
         match rec {
             Ok(amount) => Ok(amount),
-            Err(_err) => {
-                self.create_item_to_user_relation(user, amount, pool)
-                    .await?;
-                self.increment_amount_raw(user, amount, pool).await
-            }
+            Err(_err) => self.create_item_to_user_relation(user, amount, pool).await,
         }
     }
 

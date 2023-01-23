@@ -259,6 +259,16 @@ paths:
         - User fails if they have no right onto that user_item combination. Could be useful to give/take<br>
         - Admin fails if he's not managing this app"
       operationId: modifyItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  description: the amount to add (or remove if negative).<br>🚧 Specific rights should be checked for negative/positive values.
+                  type: integer
+        required: true
       responses:
         "201":
           description: Successful operation returns the id of created app.
@@ -331,6 +341,12 @@ paths:
             - admin
             - user
   /authenticated/app/{appId}/item:
+    parameters:
+      - in: path
+        name: appId
+        schema:
+          type: integer
+        required: true
     get:
       tags:
         - item as user
