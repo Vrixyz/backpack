@@ -16,22 +16,22 @@ servers:
   - url: http://127.0.0.1:8080/api/v1
   - url: https://localhost/api/v1
 tags:
-  - name: authentication
-    description: Everything to get a Biscuit authentication token.
+  - name: Unauthenticated
+    description: Everything you can do without being authenticated. Mainly to get a Biscuit authentication token.
   # - name: user
   #   description: A user owns items, he can authenticate as admin to create and modify apps and items he manages.
   - name: app
-    description: Operations about apps
+    description: Operations about apps, authenticated as admin
   - name: item
     description: Operations about items, authenticated as admin
   - name: item as user
-    description: Operations about items, authenticated as user
+    description: Operations about items, authenticated as user or admin
 paths:
   # authentication
-  /notauthenticated/email_password/create:
+  /unauthenticated/email_password/create:
     post:
       tags:
-        - authentication
+        - Unauthenticated
       summary: Create a new user
       description: If no existing users have provided email, the user is created and a password is sent by mail.
       operationId: createUserEmail
@@ -51,10 +51,10 @@ paths:
           description: Successful creation of the user
         "500":
           description: Internal server error
-  /notauthenticated/email_password/login:
+  /unauthenticated/email_password/login:
     post:
       tags:
-        - authentication
+        - Unauthenticated
       summary: Login with an user/email
       description: Login with an account created via `/create_email_password`.
       operationId: loginUserEmailPassword
@@ -82,6 +82,16 @@ paths:
                 example: En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
         "403":
           description: User not existing or wrong credentials.
+  /unauthenticated/healthcheck:
+    post:
+      tags:
+        - Unauthenticated
+      summary: Returns 200
+      description: Useful to verify the server is up.
+      operationId: healthcheck
+      responses:
+        "200":
+          description: OK
   # app
   /admin/app:
     post:
@@ -157,7 +167,7 @@ paths:
         - biscuit_token:
             - admin
   # item
-  /admin/app/{appId}/item:
+  /admin/item/create/app/{appId}:
     parameters:
       - in: path
         name: appId
@@ -226,10 +236,15 @@ paths:
         - biscuit_token:
             - admin
 
-  # Authentified
+  # authenticated
 
-  /authentified/item/{itemId}/modify:
+  /authenticated/user/{userId}/item/{itemId}/modify:
     parameters:
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
       - in: path
         name: itemId
         schema:
@@ -239,8 +254,9 @@ paths:
       tags:
         - item as user
       summary: modify given item by amount
-      description: "🚧 Logged as user or admin. \
-        - User fails if its app has no rights to modify (or has not this app in its biscuit) \
+      description: "🚧 Logged as user or admin.<br>
+        - User fails if its app has no rights to modify (or has not this app in its biscuit)<br>
+        - User fails if they have no right onto that user_item combination. Could be useful to give/take<br>
         - Admin fails if he's not managing this app"
       operationId: modifyItem
       responses:
@@ -252,8 +268,44 @@ paths:
         - biscuit_token:
             - admin
             - user
-  /authentified/item/{itemId}/app:
+  /authenticated/user/{userId}/item:
     parameters:
+      - in: path
+        name: userId
+        description: userId is in path to allow asking for other users' items.
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: Get user's items
+      description: "Logged as user or admin."
+      operationId: getUserItems
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items details
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemAmount"
+        "401":
+          description: Unauthorized.
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/user/{userId}/item/{itemId}:
+    parameters:
+      - in: path
+        name: userId
+        description: userId is in path to allow asking for other users' items.
+        schema:
+          type: integer
+        required: true
       - in: path
         name: itemId
         schema:
@@ -262,21 +314,23 @@ paths:
     get:
       tags:
         - item as user
-      summary: 🚧 Get all apps authorized for this item 🚧
-      description: (🚧 not currently worked on) Create a new item with given name, with given app as owner.
-      operationId: getAppsItem
+      summary: Get a specific item amount
+      description: "Logged as user or admin."
+      operationId: getUserItem
       responses:
         "201":
-          description: Successful operation returns the id of created item.
+          description: amount of the item.
           content:
             application/json:
               schema:
-                description: the id of the created item.
                 type: integer
+        "401":
+          description: Unauthorized.
       security:
         - biscuit_token:
             - admin
-  /authentified/app/{appId}/item:
+            - user
+  /authenticated/app/{appId}/item:
     get:
       tags:
         - item as user
@@ -296,7 +350,31 @@ paths:
       security:
         - biscuit_token:
             - admin
-  /authentified/item/{itemId}:
+  /authenticated/item/{itemId}/app:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: 🚧 Get all apps authorized for this item 🚧
+      description: (🚧 not currently worked on).
+      operationId: getAppsItem
+      responses:
+        "201":
+          description: Successful operation returns the id of created item.
+          content:
+            application/json:
+              schema:
+                description: the id of the created item.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+  /authenticated/item/{itemId}:
     parameters:
       - in: path
         name: itemId
@@ -319,69 +397,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ItemDef"
-      security:
-        - biscuit_token:
-            - admin
-            - user
-  /authentified/user/{user_id}/item:
-    parameters:
-      - in: path
-        name: user_id
-        description: user_id is in path to allow asking for other users' items.
-        schema:
-          type: integer
-        required: true
-    get:
-      tags:
-        - item as user
-      summary: Get user's items
-      description: "Logged as user or admin."
-      operationId: getUserItems
-      responses:
-        "201":
-          description: Successful operation returns the id of created app.
-          content:
-            application/json:
-              schema:
-                description: items details
-                type: array
-                items:
-                  $ref: "#/components/schemas/ItemAmount"
-
-        "401":
-          description: Unauthorized.
-      security:
-        - biscuit_token:
-            - admin
-            - user
-  /authentified/user/{user_id}/item/{item_id}:
-    parameters:
-      - in: path
-        name: user_id
-        description: user_id is in path to allow asking for other users' items.
-        schema:
-          type: integer
-        required: true
-      - in: path
-        name: item_id
-        schema:
-          type: integer
-        required: true
-    get:
-      tags:
-        - item as user
-      summary: Get a specific item amount
-      description: "Logged as user or admin."
-      operationId: getUserItem
-      responses:
-        "201":
-          description: amount of the item.
-          content:
-            application/json:
-              schema:
-                type: integer
-        "401":
-          description: Unauthorized.
       security:
         - biscuit_token:
             - admin

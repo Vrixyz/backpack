@@ -13,13 +13,11 @@ use crate::{
     },
 };
 
-pub(crate) fn item(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
-    web::scope("api/v1/admin")
-        .app_data(kp)
-        .wrap(HttpAuthentication::bearer(validator_admin))
-        .route("app/{app_id}/item", web::post().to(create_item))
-        .route("item/{item_id}", web::get().to(get_item))
-        .route("item/{item_id}", web::delete().to(delete_item))
+pub fn config() -> impl HttpServiceFactory {
+    web::scope("/item")
+        .route("create/app/{app_id}", web::post().to(create_item))
+        .route("{item_id}", web::get().to(get_item))
+        .route("{item_id}", web::delete().to(delete_item))
 }
 
 #[derive(Deserialize, Serialize)]

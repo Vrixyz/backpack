@@ -38,18 +38,25 @@ pub fn run(
             .app_data(root.clone())
             .wrap(Logger::default())
             .wrap(cors)
-            .route(
-                "api/v1/health_check",
-                web::get().to(routes::healthcheck::health_check),
+            .service(
+                web::scope("/api/v1")
+                    .service(routes::admin::config(root.clone()))
+                    .service(routes::authenticated::config(root.clone()))
+                    .service(routes::unauthenticated::config(root.clone())),
             )
+            //
+            //
+            // WIP
+            //
+            //
             //.service(domains::config::config(config.clone()))
             .service(models::oauth_github::oauth_github())
             .service(routes::oauth::routes())
-            .service(routes::email_password::oauth_email_password(root.clone()))
             .service(routes::oauth_fake::oauth_fake())
-            .service(routes::item::item(root.clone()))
-            .service(routes::app::app_admin(root.clone()))
-            .service(routes::user_item::user_item(root.clone()))
+
+        //
+        //
+
         //.route("/{filename:.*}", web::get().to(spa))
     })
     .listen(listener)?

@@ -16,8 +16,8 @@ use bcrypt::{hash, verify, DEFAULT_COST};
 
 use crate::models::user::UserId;
 
-pub(crate) fn oauth_email_password(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
-    web::scope("api/v1/auth/email_password")
+pub fn config(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+    web::scope("/email_password")
         .app_data(kp)
         .route("create", web::post().to(oauth_create_email_password))
         .route("login", web::post().to(oauth_login_email_password))

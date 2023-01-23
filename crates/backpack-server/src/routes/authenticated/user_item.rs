@@ -11,13 +11,11 @@ use crate::auth_user::{validator, BiscuitInfo};
 use crate::models::item::{ItemAmount, ItemId};
 use crate::models::user::UserId;
 
-pub(crate) fn user_item(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
-    web::scope("api/v1/user")
-        .app_data(kp)
-        .wrap(HttpAuthentication::bearer(validator))
-        .route("{user_id}/item", web::get().to(get_user_items))
-        .route("{user_id}/item/{item_id}", web::get().to(get_user_item))
-        .route("item/{item_id}/modify", web::post().to(modify_item))
+pub(crate) fn config() -> impl HttpServiceFactory {
+    web::scope("user/{user_id}/item")
+        .route("", web::get().to(get_user_items))
+        .route("/{item_id}", web::get().to(get_user_item))
+        .route("/{item_id}/modify", web::post().to(modify_item))
 }
 
 #[derive(Deserialize)]

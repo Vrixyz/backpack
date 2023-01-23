@@ -11,24 +11,15 @@ use crate::auth_user::{validator_admin, BiscuitInfo};
 use crate::models::app::AppAdmin;
 use crate::models::{app::AppId, user::UserId};
 
-pub(crate) fn app_admin(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
-    let cors = Cors::default()
-        .allow_any_header()
-        .allow_any_origin()
-        .allow_any_method()
-        .send_wildcard()
-        .max_age(3600);
-    web::scope("api/v1/admin")
-        .app_data(kp)
-        .wrap(HttpAuthentication::bearer(validator_admin))
-        .wrap(cors)
-        .route("app", web::post().to(create_app))
-        .route("app", web::get().to(get_apps_for_admin))
-        .route("app", web::delete().to(delete_app))
+pub(super) fn config() -> impl HttpServiceFactory {
+    web::resource("/app")
+        .route(web::post().to(create_app))
+        .route(web::get().to(get_apps_for_admin))
+        .route(web::delete().to(delete_app))
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct CreateAppData {
+struct CreateAppData {
     pub name: String,
 }
 
@@ -50,6 +41,7 @@ async fn create_app(
     .unwrap();
     HttpResponse::Created().json(app_id.0)
 }
+
 async fn get_apps_for_admin(connection: web::Data<PgPool>, req: HttpRequest) -> impl Responder {
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
         return HttpResponse::Unauthorized().finish();
@@ -63,9 +55,10 @@ async fn get_apps_for_admin(connection: web::Data<PgPool>, req: HttpRequest) -> 
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct DeleteAppData {
+struct DeleteAppData {
     pub id: i32,
 }
+
 async fn delete_app(
     connection: web::Data<PgPool>,
     app_id: web::Json<DeleteAppData>,
