@@ -60,11 +60,11 @@ impl UserId {
         .await?;
 
         Ok(rec
-            .iter()
+            .into_iter()
             .map(|item| ItemAmount {
                 item: ItemWithName {
                     id: ItemId(item.id),
-                    name: item.name.clone(),
+                    name: item.name,
                 },
                 amount: item.amount,
             })
@@ -137,5 +137,28 @@ impl ItemFull {
             app_id: AppId(r.app_id),
         })
         .ok()
+    }
+}
+
+impl ItemWithName {
+    pub async fn get_for_app(
+        connection: &PgPool,
+        app_id: AppId,
+    ) -> Result<Vec<ItemWithName>, sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+            SELECT id, name FROM items WHERE app_id = $1
+            "#,
+            app_id.0
+        )
+        .fetch_all(connection)
+        .await?;
+        Ok(rec
+            .into_iter()
+            .map(|r| ItemWithName {
+                id: ItemId(r.id),
+                name: r.name,
+            })
+            .collect())
     }
 }

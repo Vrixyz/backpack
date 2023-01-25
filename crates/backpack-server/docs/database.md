@@ -8,7 +8,7 @@ classDiagram
 
     class Item {
         int id
-        int owner_app_id
+        int app_id
         String name
     }
     class ItemUser {

@@ -167,7 +167,7 @@ paths:
         - biscuit_token:
             - admin
   # item
-  /admin/item/create/app/{appId}:
+  /admin/item/app/{appId}:
     parameters:
       - in: path
         name: appId
@@ -238,7 +238,7 @@ paths:
 
   # authenticated
 
-  /authenticated/user/{userId}/item/{itemId}/modify:
+  /authenticated/item/{itemId}/user/{userId}/modify:
     parameters:
       - in: path
         name: userId
@@ -278,7 +278,7 @@ paths:
         - biscuit_token:
             - admin
             - user
-  /authenticated/user/{userId}/item:
+  /authenticated/item/user/{userId}:
     parameters:
       - in: path
         name: userId
@@ -308,16 +308,16 @@ paths:
         - biscuit_token:
             - admin
             - user
-  /authenticated/user/{userId}/item/{itemId}:
+  /authenticated/item/{itemId}/user/{userId}:
     parameters:
       - in: path
-        name: userId
-        description: userId is in path to allow asking for other users' items.
+        name: itemId
         schema:
           type: integer
         required: true
       - in: path
-        name: itemId
+        name: userId
+        description: userId is in path to allow asking for other users' items.
         schema:
           type: integer
         required: true
@@ -340,56 +340,6 @@ paths:
         - biscuit_token:
             - admin
             - user
-  /authenticated/app/{appId}/item:
-    parameters:
-      - in: path
-        name: appId
-        schema:
-          type: integer
-        required: true
-    get:
-      tags:
-        - item as user
-      summary: 🚧 Get app's items.
-      description: Get all items definitions which can be interacted through a given app.
-      operationId: getItems
-      responses:
-        "200":
-          description: Successful operation returns the id of created app.
-          content:
-            application/json:
-              schema:
-                description: items interactable through a given app.
-                type: array
-                items:
-                  $ref: "#/components/schemas/ItemDef"
-      security:
-        - biscuit_token:
-            - admin
-  /authenticated/item/{itemId}/app:
-    parameters:
-      - in: path
-        name: itemId
-        schema:
-          type: integer
-        required: true
-    get:
-      tags:
-        - item as user
-      summary: 🚧 Get all apps authorized for this item 🚧
-      description: (🚧 not currently worked on).
-      operationId: getAppsItem
-      responses:
-        "201":
-          description: Successful operation returns the id of created item.
-          content:
-            application/json:
-              schema:
-                description: the id of the created item.
-                type: integer
-      security:
-        - biscuit_token:
-            - admin
   /authenticated/item/{itemId}:
     parameters:
       - in: path
@@ -400,7 +350,7 @@ paths:
     get:
       tags:
         - item as user
-      summary: 👻 Get item details (temporary)
+      summary: 👻 Get item details (is it useful?)
       description: Get item details, with owner app, useful before having the more complicated route getting all app's items
       operationId: getItem
       responses:
@@ -417,6 +367,55 @@ paths:
         - biscuit_token:
             - admin
             - user
+  /authenticated/item/app/{appId}:
+    parameters:
+      - in: path
+        name: appId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: Get app's items.
+      description: Get all items definitions which can be interacted through a given app.
+      operationId: getItems
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items interactable through a given app.
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemDef"
+      security:
+        - biscuit_token:
+            - admin
+  /authenticated/app/item/{itemId}:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: Get all apps authorized for this item
+      operationId: getAppsItem
+      responses:
+        "201":
+          description: Successful operation returns the id of created item.
+          content:
+            application/json:
+              schema:
+                description: the id of the created item.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
 components:
   schemas:
     App:

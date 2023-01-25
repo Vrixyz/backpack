@@ -8,14 +8,20 @@ use sqlx::PgPool;
 
 use crate::auth_user::{validator, BiscuitInfo};
 
-use crate::models::item::{ItemAmount, ItemId};
+use crate::models::app::AppId;
+use crate::models::item::{ItemAmount, ItemFull, ItemId, ItemWithName};
 use crate::models::user::UserId;
 
 pub(crate) fn config() -> impl HttpServiceFactory {
-    web::scope("user/{user_id}/item")
-        .route("", web::get().to(get_user_items))
-        .route("/{item_id}", web::get().to(get_user_item))
-        .route("/{item_id}/modify", web::post().to(modify_item))
+    web::scope("/item")
+        .route("/{item_id}", web::get().to(get_item))
+        .route("/user/{user_id}", web::get().to(get_user_items))
+        .route("/{item_id}/user/{user_id}", web::get().to(get_user_item))
+        .route(
+            "/{item_id}/user/{user_id}/modify",
+            web::post().to(modify_item),
+        )
+        .route("/app/{item_id}", web::get().to(get_app_items))
 }
 
 #[derive(Deserialize)]
@@ -23,6 +29,13 @@ pub struct UserItemModify {
     pub amount: i32,
 }
 
+async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> impl Responder {
+    if let Some(item_full) = ItemFull::get(ItemId(*item_id), &connection).await {
+        HttpResponse::Ok().json(item_full)
+    } else {
+        HttpResponse::InternalServerError().finish()
+    }
+}
 /// For a given user, returns all its existing items.
 async fn get_user_items(
     connection: web::Data<PgPool>,
@@ -71,6 +84,19 @@ async fn modify_item(
         .await
     {
         HttpResponse::Ok().json(user_id)
+    } else {
+        HttpResponse::InternalServerError().finish()
+    }
+}
+
+async fn get_app_items(
+    connection: web::Data<PgPool>,
+    app_id: web::Path<i32>,
+    req: HttpRequest,
+) -> impl Responder {
+    let app_id = AppId(*app_id);
+    if let Ok(res) = ItemWithName::get_for_app(&connection, app_id).await {
+        HttpResponse::Ok().json(res)
     } else {
         HttpResponse::InternalServerError().finish()
     }

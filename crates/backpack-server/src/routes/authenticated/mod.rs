@@ -4,11 +4,13 @@ use biscuit_auth::KeyPair;
 
 use crate::auth_user::validator;
 
-mod user_item;
+mod app;
+mod item;
 
 pub fn config(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
     web::scope("/authenticated")
         .app_data(kp)
         .wrap(HttpAuthentication::bearer(validator))
-        .service(user_item::config())
+        .service(item::config())
+        .service(app::config())
 }

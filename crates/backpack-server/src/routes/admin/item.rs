@@ -15,9 +15,8 @@ use crate::{
 
 pub fn config() -> impl HttpServiceFactory {
     web::scope("/item")
-        .route("create/app/{app_id}", web::post().to(create_item))
-        .route("{item_id}", web::get().to(get_item))
-        .route("{item_id}", web::delete().to(delete_item))
+        .route("/app/{app_id}", web::post().to(create_item))
+        .route("/{item_id}", web::delete().to(delete_item))
 }
 
 #[derive(Deserialize, Serialize)]
@@ -51,13 +50,6 @@ async fn create_item(
     }
 }
 
-async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> impl Responder {
-    if let Some(item_full) = ItemFull::get(ItemId(*item_id), &connection).await {
-        HttpResponse::Ok().json(item_full)
-    } else {
-        HttpResponse::InternalServerError().finish()
-    }
-}
 async fn delete_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> impl Responder {
     // TODO: check no user have this item, Please refer to openapi spec for more details.
     return HttpResponse::NotImplemented().finish();

@@ -101,9 +101,9 @@ impl AppId {
         .await?;
 
         Ok(rec
-            .iter()
+            .into_iter()
             .map(|r| AppWithName {
-                name: r.name.to_string(),
+                name: r.name,
                 app_id: AppId(r.app_id),
             })
             .collect())
@@ -119,5 +119,31 @@ impl AppId {
         .execute(pool)
         .await?;
         Ok(())
+    }
+
+    pub async fn get_all_for_item(
+        pool: &PgPool,
+        item_id: super::item::ItemId,
+    ) -> Result<Vec<AppWithName>, sqlx::Error> {
+        let rec = sqlx::query!(
+            r#"
+        SELECT apps.id, apps.name
+        FROM apps
+        JOIN items
+        ON items.app_id = apps.id
+        WHERE items.id = $1
+            "#,
+            *item_id,
+        )
+        .fetch_all(pool)
+        .await?;
+
+        Ok(rec
+            .into_iter()
+            .map(|r| AppWithName {
+                name: r.name,
+                app_id: AppId(r.id),
+            })
+            .collect())
     }
 }
