@@ -1,15 +1,11 @@
-use actix_cors::Cors;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use actix_web::{HttpMessage, HttpRequest};
-use actix_web_httpauth::middleware::HttpAuthentication;
-use biscuit_auth::KeyPair;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::auth_user::{validator_admin, BiscuitInfo};
-
+use crate::auth_user::BiscuitInfo;
 use crate::models::app::AppAdmin;
-use crate::models::{app::AppId, user::UserId};
+use crate::models::app::AppId;
 
 pub(super) fn config() -> impl HttpServiceFactory {
     web::resource("/app")
@@ -73,14 +69,9 @@ async fn delete_app(
     else {
         return HttpResponse::InternalServerError().finish();
     };
-    if apps
-        .iter()
-        .find(|a| a.app_id == app)
-        .map(|a| true)
-        .unwrap_or(false)
-    {
+    if apps.iter().any(|a| a.app_id == app) {
         app.delete(&connection).await.unwrap();
         return HttpResponse::Ok().finish();
     }
-    return HttpResponse::Unauthorized().finish();
+    HttpResponse::Unauthorized().finish()
 }

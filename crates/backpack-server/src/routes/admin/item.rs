@@ -1,16 +1,14 @@
-use actix_cors::Cors;
-use actix_web::{dev::HttpServiceFactory, web, HttpMessage, HttpRequest, HttpResponse, Responder};
-use actix_web_httpauth::middleware::HttpAuthentication;
-use biscuit_auth::KeyPair;
+use actix_web::{
+    dev::HttpServiceFactory,
+    web::{self, ReqData},
+    HttpResponse, Responder,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 use crate::{
-    auth_user::{validator_admin, BiscuitInfo},
-    models::{
-        app::AppId,
-        item::{create, ItemFull, ItemId},
-    },
+    auth_user::BiscuitInfo,
+    models::{app::AppId, item::create},
 };
 
 pub fn config() -> impl HttpServiceFactory {
@@ -27,20 +25,14 @@ pub struct ItemInput {
 async fn create_item(
     connection: web::Data<PgPool>,
     item: web::Json<ItemInput>,
-    req: HttpRequest,
+    biscuit: ReqData<BiscuitInfo>,
     app_id: web::Path<i32>,
 ) -> impl Responder {
-    let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
-        return HttpResponse::Unauthorized().body("Bad biscuit");
-    };
+    let user = biscuit.user_id;
     let Ok(owned_apps) = AppId::get_all_for_user(user, &connection).await else {
         return HttpResponse::Unauthorized().body("no apps for user");
     };
-    if owned_apps
-        .iter()
-        .find(|app| app.app_id.0 == *app_id)
-        .is_none()
-    {
+    if !owned_apps.iter().any(|app| app.app_id.0 == *app_id) {
         return HttpResponse::Unauthorized().body("app not authorized for user");
     }
     if let Ok(item_id) = create(&item.0.name, AppId(*app_id), &connection).await {
@@ -50,9 +42,9 @@ async fn create_item(
     }
 }
 
-async fn delete_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> impl Responder {
+async fn delete_item(_connection: web::Data<PgPool>, _item_id: web::Path<i32>) -> impl Responder {
     // TODO: check no user have this item, Please refer to openapi spec for more details.
-    return HttpResponse::NotImplemented().finish();
+    HttpResponse::NotImplemented().finish()
     /*
     if let Ok(_) = ItemId(*item_id).delete(&connection).await {
         HttpResponse::Ok().finish()

@@ -1,10 +1,4 @@
-use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
-use actix_web_httpauth::middleware::HttpAuthentication;
-use biscuit_auth::KeyPair;
-use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-
-use crate::auth_user::validator;
 
 use super::{item::ItemId, user::UserId};
 

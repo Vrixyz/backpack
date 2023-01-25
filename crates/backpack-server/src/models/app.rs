@@ -3,7 +3,7 @@ use sqlx::PgPool;
 
 use super::user::UserId;
 
-#[derive(PartialEq, Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AppId(pub i32);
 
 impl std::ops::Deref for AppId {
@@ -65,7 +65,7 @@ impl AppId {
         .await
         .map(|r| App {
             id: AppId(r.id),
-            name: r.name.clone(),
+            name: r.name,
         })
         .ok()
     }
@@ -109,7 +109,7 @@ impl AppId {
             .collect())
     }
     pub async fn delete(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
-        let rec = sqlx::query!(
+        let _rec = sqlx::query!(
             r#"
                 DELETE FROM apps
                 WHERE id = $1;

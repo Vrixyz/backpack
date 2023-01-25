@@ -1,20 +1,13 @@
-use actix_web::{
-    cookie::time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime},
-    dev::HttpServiceFactory,
-    web, HttpResponse, Responder, Scope,
-};
-use actix_web_httpauth::middleware::HttpAuthentication;
+use actix_web::cookie::time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime};
 use biscuit_auth::{
     builder::{BiscuitBuilder, Fact, Term},
     Authorizer, Biscuit, KeyPair,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
-
-use crate::auth_user::{validator, BiscuitInfo, Role};
 
 use super::models::app::AppId;
 use super::models::user::UserId;
+use crate::auth_user::{BiscuitInfo, Role};
 
 pub const TOKEN_TTL: i64 = 600;
 

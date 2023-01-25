@@ -36,7 +36,7 @@ impl UserId {
         .await
         .map(|r| User {
             id: UserId(r.id),
-            name: r.name.clone(),
+            name: r.name,
         })
         .ok()
     }

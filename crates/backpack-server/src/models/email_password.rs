@@ -1,13 +1,4 @@
-use actix_web::{web, HttpResponse, Responder, Scope};
-use biscuit_auth::KeyPair;
-use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
-use serde::Deserialize;
 use sqlx::PgPool;
-
-use crate::{
-    auth_user::Role, biscuit::TokenReply, configuration::Settings, random_names::random_name,
-};
-use bcrypt::{hash, verify, DEFAULT_COST};
 
 use super::user::UserId;
 

@@ -16,7 +16,7 @@ impl std::ops::Deref for ItemId {
 
 impl ItemId {
     pub async fn delete(&self, pool: &PgPool) -> Result<(), sqlx::Error> {
-        let rec = sqlx::query!(
+        let _rec = sqlx::query!(
             r#"
                 DELETE FROM items
                 WHERE id = $1;

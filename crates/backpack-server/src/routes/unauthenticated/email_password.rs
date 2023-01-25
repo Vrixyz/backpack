@@ -1,14 +1,11 @@
-use actix_cors::Cors;
-use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder, Scope};
+use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use biscuit_auth::KeyPair;
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
-use serde::{de::value, Deserialize};
+use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::{
     auth_user::Role,
-    biscuit::TokenReply,
-    configuration::Settings,
     models::email_password::{create, exist, find},
     random_names::random_name,
 };
@@ -57,11 +54,7 @@ async fn oauth_create_email_password(
     assert!(create(&connection, &req_data.email, &password_hashed, user).await);
 
     let email = Message::builder()
-        .from(
-            format!("{}", dotenv::var("BACKPACK_EMAIL").unwrap())
-                .parse()
-                .unwrap(),
-        )
+        .from(dotenv::var("BACKPACK_EMAIL").unwrap().parse().unwrap())
         .reply_to(dotenv::var("BACKPACK_EMAIL").unwrap().parse().unwrap())
         .to(req_data.email.parse().unwrap())
         .subject("Welcome to Backpack")
@@ -72,8 +65,8 @@ async fn oauth_create_email_password(
         .unwrap();
     dbg!(&email);
     let creds = Credentials::new(
-        dotenv::var("BACKPACK_EMAIL").unwrap().to_string(),
-        dotenv::var("BACKPACK_EMAIL_PASSWORD").unwrap().to_string(),
+        dotenv::var("BACKPACK_EMAIL").unwrap(),
+        dotenv::var("BACKPACK_EMAIL_PASSWORD").unwrap(),
     );
 
     // Open a remote connection to gmail
@@ -115,7 +108,7 @@ async fn oauth_login_email_password(
     connection: web::Data<PgPool>,
     root: web::Data<KeyPair>,
 ) -> impl Responder {
-    let Ok((email_password_id, password_hash_existing, user_id)) =
+    let Ok((_email_password_id, password_hash_existing, user_id)) =
         find(connection.as_ref(), &req_data.email).await else {
             // We do not return not found, to avoid giving information about an account existance.
             return HttpResponse::Unauthorized().finish();

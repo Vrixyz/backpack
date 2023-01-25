@@ -8,7 +8,7 @@ use biscuit_auth::{Biscuit, KeyPair};
 use crate::models::app::AppId;
 use crate::models::user::UserId;
 
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub enum Role {
     /// Connected as an admin, still, the user should be admin for the apps to be able to modify admin data.
     Admin,
@@ -50,12 +50,12 @@ pub async fn validator_admin(
         .ok()
         .and_then(|biscuit| authorize(&biscuit))
     {
-        if (biscuit_info.role == Role::Admin) {
+        if biscuit_info.role == Role::Admin {
             req.extensions_mut().insert(biscuit_info);
             return Ok(req);
         }
         dbg!("not admin");
-        return Err((AuthenticationError::from(Config::default()).into(), req));
+        Err((AuthenticationError::from(Config::default()).into(), req))
     } else {
         dbg!("cannot read biscuit");
         Err((AuthenticationError::from(Config::default()).into(), req))

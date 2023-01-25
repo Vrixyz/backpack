@@ -1,13 +1,9 @@
-use actix_cors::Cors;
+use actix_web::web::ReqData;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
-use actix_web::{HttpMessage, HttpRequest};
-use actix_web_httpauth::middleware::HttpAuthentication;
-use biscuit_auth::KeyPair;
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::auth_user::{validator, BiscuitInfo};
-
+use crate::auth_user::BiscuitInfo;
 use crate::models::app::AppId;
 use crate::models::item::{ItemAmount, ItemFull, ItemId, ItemWithName};
 use crate::models::user::UserId;
@@ -37,11 +33,7 @@ async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> imp
     }
 }
 /// For a given user, returns all its existing items.
-async fn get_user_items(
-    connection: web::Data<PgPool>,
-    req: HttpRequest,
-    user_id: web::Path<i32>,
-) -> impl Responder {
+async fn get_user_items(connection: web::Data<PgPool>, user_id: web::Path<i32>) -> impl Responder {
     let user_id = UserId(*user_id);
     if let Ok(res) = user_id.get_items(&connection).await {
         HttpResponse::Ok().json(res)
@@ -53,7 +45,6 @@ async fn get_user_items(
 async fn get_user_item(
     connection: web::Data<PgPool>,
     user_id_item_id: web::Path<(i32, i32)>,
-    req: HttpRequest,
 ) -> impl Responder {
     let user_id = UserId(user_id_item_id.0);
     let item_id = ItemId(user_id_item_id.1);
@@ -66,34 +57,32 @@ async fn get_user_item(
 
 /// For a authenticated user, modify item.
 /// Attempts to modify an item.
-/// It does check:
-/// - For item's app owner
-/// - :construction: If the item allows for gains
+/// It does not check yet:
+/// - :construction: If the item is allowed to be modified by the app the user is authenticated on
+/// - :construction: If item is allowed to be modified by user
 async fn modify_item(
     connection: web::Data<PgPool>,
     user_id_item_id: web::Path<(i32, i32)>,
-    req: HttpRequest,
+    biscuit: ReqData<BiscuitInfo>,
     user_item_modify: web::Json<UserItemModify>,
 ) -> impl Responder {
-    let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
-        return HttpResponse::Unauthorized().finish();
-    };
+    let user = biscuit.user_id;
     let item_id = ItemId(user_id_item_id.1);
-    if let Ok(user_id) = item_id
+    /*match biscuit.role {
+        crate::auth_user::Role::Admin => todo!("check if admin has rights on item's app"),
+        crate::auth_user::Role::User(appId) => todo!("check if app has rights on item"),
+    }*/
+    if let Ok(new_amount) = item_id
         .modify_amount(user, user_item_modify.amount, &connection)
         .await
     {
-        HttpResponse::Ok().json(user_id)
+        HttpResponse::Ok().json(new_amount)
     } else {
         HttpResponse::InternalServerError().finish()
     }
 }
 
-async fn get_app_items(
-    connection: web::Data<PgPool>,
-    app_id: web::Path<i32>,
-    req: HttpRequest,
-) -> impl Responder {
+async fn get_app_items(connection: web::Data<PgPool>, app_id: web::Path<i32>) -> impl Responder {
     let app_id = AppId(*app_id);
     if let Ok(res) = ItemWithName::get_for_app(&connection, app_id).await {
         HttpResponse::Ok().json(res)
