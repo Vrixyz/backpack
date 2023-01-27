@@ -4,11 +4,12 @@ use actix_web_httpauth::extractors::{
     AuthenticationError,
 };
 use biscuit_auth::{Biscuit, KeyPair};
+use serde::Serialize;
 
 use crate::models::app::AppId;
 use crate::models::user::UserId;
 
-#[derive(PartialEq, Eq, Clone, Copy, Debug)]
+#[derive(PartialEq, Serialize, Eq, Clone, Copy, Debug)]
 #[non_exhaustive]
 pub enum Role {
     /// Connected as an admin, still, the user should be admin for the apps to be able to modify admin data.
@@ -17,7 +18,7 @@ pub enum Role {
     User(AppId),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Serialize, Debug)]
 pub struct BiscuitInfo {
     pub user_id: UserId,
     pub role: Role,

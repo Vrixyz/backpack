@@ -24,6 +24,8 @@ tags:
     description: Operations about apps, authenticated as admin
   - name: item
     description: Operations about items, authenticated as admin
+  - name: user as user
+    description: Operations about users, authenticated as user or admin
   - name: item as user
     description: Operations about items, authenticated as user or admin
 paths:
@@ -70,6 +72,7 @@ paths:
                   example: "new.user@example.com"
                 password_plain:
                   type: string
+                  format: password
                   example: "Password copypasted from email on creation"
         required: true
       responses:
@@ -238,6 +241,51 @@ paths:
 
   # authenticated
 
+  /authenticated/whoami:
+    get:
+      tags:
+        - user as user
+      summary: Get authentication info (biscuit info)
+      operationId: whoami
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: biscuit info
+                $ref: "#/components/schemas/BiscuitInfo"
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/user/{userId}:
+    get:
+      tags:
+        - user as user
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+      summary: Get user info (name)
+      operationId: get_user
+      responses:
+        "200":
+          description: User info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "super name"
+      security:
+        - biscuit_token:
+            - admin
+            - user
   /authenticated/item/{itemId}/user/{userId}/modify:
     parameters:
       - in: path
@@ -376,7 +424,7 @@ paths:
         required: true
     get:
       tags:
-        - item as user
+        - app as user
       summary: Get app's items.
       description: Get all items definitions which can be interacted through a given app.
       operationId: getItems
@@ -402,7 +450,7 @@ paths:
         required: true
     get:
       tags:
-        - item as user
+        - app as user
       summary: Get all apps authorized for this item
       operationId: getAppsItem
       responses:
@@ -418,6 +466,21 @@ paths:
             - admin
 components:
   schemas:
+    BiscuitInfo:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        role:
+          oneOf:
+            - $ref: RoleAdmin
+            - $ref: RoleUser
+    RoleAdmin:
+      type: string
+      enum: [Admin]
+    RoleUser:
+      type: integer
     App:
       type: object
       properties:

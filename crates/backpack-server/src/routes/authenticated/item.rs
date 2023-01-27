@@ -32,6 +32,7 @@ async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> imp
         HttpResponse::InternalServerError().finish()
     }
 }
+
 /// For a given user, returns all its existing items.
 async fn get_user_items(connection: web::Data<PgPool>, user_id: web::Path<i32>) -> impl Responder {
     let user_id = UserId(*user_id);
