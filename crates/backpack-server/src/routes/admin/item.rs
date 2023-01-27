@@ -43,7 +43,7 @@ async fn create_item(
 }
 
 async fn delete_item(_connection: web::Data<PgPool>, _item_id: web::Path<i32>) -> impl Responder {
-    // TODO: check no user have this item, Please refer to openapi spec for more details.
+    // TODO: #9 check no user have this item, Please refer to openapi spec for more details.
     HttpResponse::NotImplemented().finish()
     /*
     if let Ok(_) = ItemId(*item_id).delete(&connection).await {

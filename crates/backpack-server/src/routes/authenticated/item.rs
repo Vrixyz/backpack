@@ -68,10 +68,35 @@ async fn modify_item(
 ) -> impl Responder {
     let user = biscuit.user_id;
     let item_id = ItemId(user_id_item_id.1);
-    /*match biscuit.role {
-        crate::auth_user::Role::Admin => todo!("check if admin has rights on item's app"),
-        crate::auth_user::Role::User(appId) => todo!("check if app has rights on item"),
-    }*/
+    match biscuit.role {
+        crate::auth_user::Role::Admin => {
+            let authorized_apps = AppId::get_all_for_item(&connection, item_id).await.unwrap();
+            if !AppId::get_all_for_user(user, &connection)
+                .await
+                .unwrap()
+                .iter()
+                .any(|app| {
+                    authorized_apps
+                        .iter()
+                        .any(|authorized_app| authorized_app.app_id == app.app_id)
+                })
+            {
+                return HttpResponse::Unauthorized().finish();
+            }
+        }
+        crate::auth_user::Role::User(app_id) => {
+            if biscuit.user_id.0 != user_id_item_id.0 {
+                return HttpResponse::Unauthorized().finish();
+            }
+            let authorized_apps = AppId::get_all_for_item(&connection, item_id).await.unwrap();
+            if !authorized_apps
+                .iter()
+                .any(|authorized_app| authorized_app.app_id == app_id)
+            {
+                return HttpResponse::Unauthorized().finish();
+            }
+        }
+    }
     if let Ok(new_amount) = item_id
         .modify_amount(user, user_item_modify.amount, &connection)
         .await
