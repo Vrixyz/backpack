@@ -85,8 +85,8 @@ paths:
                 example: En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
         "403":
           description: User not existing or wrong credentials.
-  /unauthenticated/healthcheck:
-    post:
+  /unauthenticated/health_check:
+    get:
       tags:
         - Unauthenticated
       summary: Returns 200

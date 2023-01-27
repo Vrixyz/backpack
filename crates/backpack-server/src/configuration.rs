@@ -1,3 +1,4 @@
+use base64::{engine::general_purpose, Engine as _};
 use biscuit_auth::{KeyPair, PrivateKey};
 use serde::Deserialize;
 
@@ -49,9 +50,12 @@ impl Settings {
     pub fn get_keypair(&self) -> KeyPair {
         self.private_key
             .as_ref()
-            .and_then(|pk_string| base64::decode(pk_string).ok())
+            .and_then(|pk_string| general_purpose::STANDARD.decode(pk_string).ok())
             .and_then(|pk_bytes| PrivateKey::from_bytes(&pk_bytes).ok())
             .map(KeyPair::from)
-            .unwrap_or_else(KeyPair::new)
+            .unwrap_or_else(|| {
+                dbg!("Creating new private key.");
+                KeyPair::new()
+            })
     }
 }

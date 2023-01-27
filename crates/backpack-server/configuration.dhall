@@ -19,6 +19,6 @@ in
 { application_host  = env:HOST as Text ? "127.0.0.1"
 , application_port  = env:PORT ? 8080
 , database          = database
-, private_key       = Some (env:BISCUIT_KEY as Text) ? Some (./private_key) ? None Text
+, private_key       = Some (env:BISCUIT_KEY as Text) ? Some (./private_key as Text) ? None Text
 , github_admin_app  = github_admin_app
 }: types.Settings
