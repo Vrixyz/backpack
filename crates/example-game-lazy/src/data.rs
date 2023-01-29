@@ -35,7 +35,7 @@ pub struct App {
     pub name: String,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Deserialize, Copy, Debug)]
 pub enum Role {
     /// Connected as an admin, still, the user should be admin for the apps to be able to modify admin data.
     Admin,
@@ -43,7 +43,7 @@ pub enum Role {
     User(AppId),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 pub struct BiscuitInfo {
     pub user_id: UserId,
     pub role: Role,
@@ -54,7 +54,7 @@ pub struct CreateEmailPasswordData {
     pub email: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginEmailPasswordData {
     pub email: String,
     pub password_plain: String,

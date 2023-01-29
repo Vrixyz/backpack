@@ -35,7 +35,7 @@ pub async fn validator(
         .and_then(|biscuit| authorize(&biscuit))
     {
         req.extensions_mut().insert(biscuit_info);
-        Ok(req)
+        Ok(dbg!(req))
     } else {
         dbg!("cannot read biscuit");
         Err((AuthenticationError::from(Config::default()).into(), req))

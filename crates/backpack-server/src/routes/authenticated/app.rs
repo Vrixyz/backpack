@@ -8,7 +8,7 @@ pub(crate) fn config() -> impl HttpServiceFactory {
     web::scope("/app").route("/item/{item_id}", web::get().to(get_app_item))
 }
 
-/// For a given user, returns all its existing items.
+/// For a given item, returns its apps.
 async fn get_app_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> impl Responder {
     let item_id = ItemId(*item_id);
     if let Ok(res) = AppId::get_all_for_item(&connection, item_id).await {

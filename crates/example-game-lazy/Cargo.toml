@@ -10,4 +10,9 @@ bevy = "0.9"
 reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-bevy_egui = "0.18"
+bevy_egui = "0.19"
+futures-lite = "1.11.3"
+crossbeam-channel = "0.5.0"
+tokio = "*"
+async-compat = "*"
+dotenv = "*"

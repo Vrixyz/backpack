@@ -56,6 +56,8 @@ impl Settings {
             .unwrap_or_else(|| {
                 dbg!("Creating new private key.");
                 KeyPair::new()
+                // What you should store into a file, or env:
+                // dbg!(general_purpose::STANDARD.encode(key.private().to_bytes()));
             })
     }
 }
