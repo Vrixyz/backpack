@@ -11,6 +11,16 @@ impl std::ops::Deref for UserId {
         &self.0
     }
 }
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ItemId(pub(super) i32);
+
+impl std::ops::Deref for ItemId {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct User {
@@ -49,6 +59,19 @@ pub struct BiscuitInfo {
     pub role: Role,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemWithName {
+    pub id: ItemId,
+    pub name: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ItemAmount {
+    pub item: ItemWithName,
+    pub amount: i32,
+}
+
+// region: request parameters
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct CreateEmailPasswordData {
     pub email: String,
@@ -58,4 +81,9 @@ pub struct CreateEmailPasswordData {
 pub struct LoginEmailPasswordData {
     pub email: String,
     pub password_plain: String,
+}
+
+#[derive(Deserialize, Serialize)]
+pub struct UserItemModify {
+    pub amount: i32,
 }

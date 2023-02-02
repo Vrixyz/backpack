@@ -1,15 +1,22 @@
 mod data;
+mod game;
+mod password;
 
-use async_compat::{Compat, CompatExt};
-use bevy::{
-    prelude::*,
-    tasks::{AsyncComputeTaskPool, Task},
-};
+use bevy::prelude::*;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
-use data::{BiscuitInfo, CreateEmailPasswordData, LoginEmailPasswordData};
+use data::{
+    BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
+    UserItemModify,
+};
 use dotenv::dotenv;
-use futures_lite::future;
-use reqwest::{Client, Response};
+
+mod backpack_client;
+mod backpack_client_bevy;
+
+use backpack_client::*;
+use backpack_client_bevy::*;
+use game::{Game, GameDef};
+use password::password_ui;
 
 fn main() {
     dotenv().ok();
@@ -40,102 +47,40 @@ struct AuthInput {
     pub sign_in: bool,
 }
 
-#[derive(Resource, Clone, Debug)]
-struct BackpackClient {
-    url: String,
-    client: Client,
+#[derive(Resource)]
+struct BackpackCom {
+    pub client: BackpackClient,
 }
 
-impl BackpackClient {
-    pub fn new(url: String) -> Self {
+impl BackpackCom {
+    fn new(url: String) -> Self {
         Self {
-            url,
-            client: Client::new(),
-        }
-    }
-    pub fn signup(&self) -> String {
-        self.url.clone() + "/unauthenticated/email_password/create"
-    }
-    pub async fn login(
-        &self,
-        data: &LoginEmailPasswordData,
-    ) -> Result<(Vec<u8>, BiscuitInfo), reqwest::Error> {
-        let biscuit_raw = dbg!(
-            self.client
-                .post(dbg!(
-                    self.url.clone() + "/unauthenticated/email_password/login"
-                ))
-                .json(data)
-                .send()
-                .await?
-                .text()
-                .await?
-        );
-        self.whoami(biscuit_raw.as_bytes()).await
-    }
-
-    /// FIXME: this route should be avoidable by decrypting biscuit information with server public key.
-    /// Also, sending auth data could be done via secure http-only cookie.
-    pub async fn whoami(
-        &self,
-        biscuit_raw: &[u8],
-    ) -> Result<(Vec<u8>, BiscuitInfo), reqwest::Error> {
-        let biscuit = dbg!(
-            dbg!(self
-                .client
-                .get(self.url.clone() + "/authenticated/whoami")
-                .bearer_auth(std::str::from_utf8(biscuit_raw).expect("wrong auth token")))
-            .send()
-            .await?
-        )
-        .json::<BiscuitInfo>()
-        .await?;
-        Ok((biscuit_raw.into(), dbg!(biscuit)))
-    }
-}
-
-#[derive(Component)]
-struct LoginTask(Task<Result<(Vec<u8>, BiscuitInfo), reqwest::Error>>);
-
-fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: &LoginEmailPasswordData) {
-    let thread_pool = AsyncComputeTaskPool::get();
-    // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
-    let client = client.clone();
-    let data = data.clone();
-    let task = thread_pool.spawn(async move { client.login(&data.clone()).compat().await });
-    commands.spawn(LoginTask(task));
-}
-
-fn handle_login_tasks(
-    mut commands: Commands,
-    mut tasks: Query<(Entity, &mut LoginTask)>,
-    mut auth_data: ResMut<AuthData>,
-) {
-    for (entity, mut task) in &mut tasks {
-        if let Some(res) = future::block_on(Compat::new(future::poll_once(&mut task.0))) {
-            // Add our new PbrBundle of components to our tagged entity
-            if let Ok(biscuit_raw) = res {
-                auth_data.data = Some(biscuit_raw)
-            } else {
-                dbg!("failed");
-            }
-
-            // Task is complete, so remove task component from entity
-            commands.entity(entity).remove::<LoginTask>();
+            client: BackpackClient::new(url),
         }
     }
 }
+
+#[derive(Resource, Default)]
+struct BackpackItems {
+    pub items: Vec<ItemAmount>,
+}
+
 impl Plugin for AuthPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(AuthData { data: None });
+        app.add_plugin(BackpackClientPlugin);
+        app.add_plugin(Game);
         app.add_system(ui_auth);
+        app.add_system(ui_game);
+        app.add_system(handle_login_result);
+        app.add_system(handle_get_items_result);
         app.insert_resource(AuthInput {
             email: self.email.clone(),
             password: self.password.clone(),
             sign_in: true,
         });
-        app.insert_resource(BackpackClient::new("http://127.0.0.1:8080/api/v1".into()));
-        app.add_system(handle_login_tasks);
+        app.insert_resource(BackpackCom::new("http://127.0.0.1:8080/api/v1".into()));
+        app.init_resource::<BackpackItems>();
     }
 }
 
@@ -144,10 +89,10 @@ fn ui_auth(
     mut egui_context: ResMut<EguiContext>,
     mut auth_input: ResMut<AuthInput>,
     mut auth_data: ResMut<AuthData>,
-    backpack: Res<BackpackClient>,
+    backpack: Res<BackpackCom>,
 ) {
     egui::Window::new("Auth").show(egui_context.ctx_mut(), |ui| {
-        ui.label(format!("current role: {:?}", auth_data));
+        //ui.label(format!("current role: {:?}", auth_data));
         ui.horizontal(|ui| {
             ui.label("Your email: ");
             ui.text_edit_singleline(&mut auth_input.email);
@@ -158,20 +103,105 @@ fn ui_auth(
         if auth_input.sign_in {
             ui.horizontal(|ui| {
                 ui.label("Password: ");
-                ui.text_edit_singleline(&mut auth_input.password);
+                password_ui(ui, &mut auth_input.password);
             });
             if ui.button("Sign in").clicked() {
                 bevy_login(
                     &mut commands,
-                    backpack.as_ref(),
+                    &backpack.client,
                     &LoginEmailPasswordData {
                         email: auth_input.email.clone(),
                         password_plain: auth_input.password.clone(),
                     },
                 );
             }
-        } else {
-            if ui.button("Sign up").clicked() {}
+        } else if ui.button("Sign up").clicked() {
+            dbg!("Signup not implemented");
         }
     });
+}
+
+fn handle_login_result(
+    mut events: EventReader<LoginTaskResultEvent>,
+    mut auth_data: ResMut<AuthData>,
+) {
+    for res in events.iter() {
+        if let Ok(biscuit_raw) = &res.0 {
+            auth_data.data = Some(biscuit_raw.clone())
+        } else {
+            dbg!("Login failed.");
+        }
+    }
+}
+
+fn ui_game(
+    mut commands: Commands,
+    mut egui_context: ResMut<EguiContext>,
+    auth_data: Res<AuthData>,
+    items: Res<BackpackItems>,
+    mut game_def: ResMut<GameDef>,
+    backpack: Res<BackpackCom>,
+) {
+    if auth_data.data.is_none() {
+        return;
+    }
+    egui::Window::new("Game")
+        .auto_sized()
+        .show(egui_context.ctx_mut(), |ui| {
+            if let Some(auth) = &auth_data.data {
+                if ui.button("Get items").clicked() {
+                    bevy_get_items(&mut commands, &backpack.client, &auth.0, &auth.1.user_id);
+                }
+                if items.items.len() > 0 {
+                    ui.group(|ui| {
+                        for item in (*items.items).iter() {
+                            if item.item.id.0 == 1 {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!(
+                                        "{}({}): {}",
+                                        item.item.name,
+                                        item.item.id.0,
+                                        item.amount - game_def.enemy_count as i32
+                                    ));
+                                    ui.vertical(|ui| {
+                                        if item.amount > game_def.enemy_count as i32 {
+                                            if ui.button("+1 enemy").clicked() {
+                                                game_def.enemy_count += 1;
+                                                // TODO: pay 1 item
+                                            }
+                                        } else {
+                                            // Not enough item amount
+                                            if ui.button("Not enough enemy in stock").clicked() {
+                                                dbg!("not enough item amount");
+                                            }
+                                        }
+                                        if game_def.enemy_count > 0 {
+                                            // Can remove enemies
+                                            if ui.button("-1 enemy").clicked() {
+                                                game_def.enemy_count -= 1;
+                                                // TODO: pay 1 item
+                                            }
+                                        }
+                                    });
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+        });
+}
+
+fn handle_get_items_result(
+    mut events: EventReader<GetItemsTaskResultEvent>,
+    mut resource_items: ResMut<BackpackItems>,
+) {
+    for res in events.iter() {
+        if let Ok(items) = &res.0 {
+            dbg!(items);
+            resource_items.items = (*items).clone();
+        } else {
+            dbg!("get items failed.");
+        }
+    }
 }
