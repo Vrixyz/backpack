@@ -7,7 +7,9 @@ use bevy_egui::{
 };
 
 use crate::{
-    backpack_client_bevy::{bevy_get_items, GetItemsTask, GetItemsTaskResultEvent, LoginTask},
+    backpack_client_bevy::{
+        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent, LoginTask,
+    },
     AuthData, BackpackCom, BackpackItems,
 };
 
@@ -27,7 +29,7 @@ pub(super) fn ui_tuto_start(mut egui_context: ResMut<EguiContext>) {
 
 pub(super) fn handle_tap_to_start(
     mut game_state: ResMut<State<GameState>>,
-    mouse_input: Res<Input<MouseButton>>,
+    mut mouse_input: ResMut<Input<MouseButton>>,
     mouse_pos: Res<MousePos>,
     q_collisions: Query<&CollisionState>,
 ) {
@@ -40,7 +42,9 @@ pub(super) fn handle_tap_to_start(
                 return;
             }
         }
-        game_state.set(GameState::Playing);
+        dbg!("tap detected");
+        game_state.set(GameState::LoadingPlay);
+        mouse_input.clear_just_pressed(MouseButton::Left);
     }
 }
 
@@ -61,7 +65,7 @@ pub(super) fn ui_warmup(
         .show(egui_context.ctx_mut(), |ui| {
             if let Some(auth) = &auth_data.data {
                 if get_items_tasks.is_empty() {
-                    let mut get_items_button = ui.button("Get items");
+                    let get_items_button = ui.button("Get items");
                     if get_items_button.clicked() {
                         bevy_get_items(&mut commands, &backpack.client, &auth.0, &auth.1.user_id);
                     }
@@ -83,7 +87,6 @@ pub(super) fn ui_warmup(
                                         if item.amount > game_def.enemy_count as i32 {
                                             if ui.button("+1 enemy").clicked() {
                                                 game_def.enemy_count += 1;
-                                                // TODO: pay 1 item
                                             }
                                         } else {
                                             // Not enough item amount
@@ -95,9 +98,19 @@ pub(super) fn ui_warmup(
                                             // Can remove enemies
                                             if ui.button("-1 enemy").clicked() {
                                                 game_def.enemy_count -= 1;
-                                                // TODO: pay 1 item
                                             }
                                         }
+                                        /*
+                                        if ui.button("+1").clicked() {
+                                            bevy_modify_item(
+                                                &mut commands,
+                                                &backpack.client,
+                                                &auth.0,
+                                                &item.item.id,
+                                                1,
+                                                &auth.1.user_id,
+                                            );
+                                        }*/
                                     });
                                 });
                             }

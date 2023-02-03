@@ -1,5 +1,4 @@
 mod collisions;
-mod mouse;
 mod ui_warmup;
 
 use bevy::prelude::*;
@@ -7,13 +6,16 @@ use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use rand::prelude::*;
 
 use crate::{
-    backpack_client_bevy::bevy_modify_item, data::ItemId, AuthData, BackpackCom, BackpackItems,
+    backpack_client_bevy::{bevy_modify_item, GetItemsTaskResultEvent, ModifyItemTaskResultEvent},
+    data::ItemId,
+    utils::{
+        self,
+        mouse::{self, GameCamera, MousePos},
+    },
+    AuthData, BackpackCom, BackpackItems,
 };
 
-use self::{
-    collisions::StayCollisionEvent,
-    mouse::{GameCamera, MousePos},
-};
+use self::collisions::StayCollisionEvent;
 
 pub struct Game;
 
@@ -26,6 +28,7 @@ struct GameAssets {
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub enum GameState {
     Warmup,
+    LoadingPlay,
     Playing,
     EndScreen,
 }
@@ -51,6 +54,14 @@ enum CollisionState {
 struct WantedMovement {
     pub direction: Vec2,
 }
+#[derive(Debug, Resource, Eq, PartialEq)]
+enum LoadingPlayState {
+    Unknown,
+    Init,
+    WaitingResponse,
+    Failed,
+    Ok,
+}
 
 impl Plugin for Game {
     fn build(&self, app: &mut App) {
@@ -58,6 +69,7 @@ impl Plugin for Game {
             player: Handle::default(),
             enemy: Handle::default(),
         });
+        app.insert_resource(LoadingPlayState::Unknown);
         app.add_plugin(mouse::MousePlugin);
         app.add_plugin(DebugLinesPlugin::default());
         app.add_plugin(collisions::CollisionsPlugin);
@@ -79,7 +91,14 @@ impl Plugin for Game {
                 .with_system(ui_warmup::handle_tap_to_start.after(collision_warmup)),
         );
         app.add_system_set(
-            SystemSet::on_enter(GameState::Playing).with_system(enter_playing_use_currency),
+            SystemSet::on_enter(GameState::LoadingPlay).with_system(init_loading_play),
+        );
+        app.add_system_set(
+            SystemSet::on_update(GameState::LoadingPlay)
+                .with_system(loading_play_use_currency.before(handle_modify_result)),
+        );
+        app.add_system_set(
+            SystemSet::on_update(GameState::LoadingPlay).with_system(handle_modify_result),
         );
         app.add_system_set(
             SystemSet::on_update(GameState::Playing).with_system(
@@ -88,7 +107,19 @@ impl Plugin for Game {
                     .after(mouse::my_cursor_system),
             ),
         );
-        app.add_system_set(SystemSet::on_enter(GameState::Warmup).with_system(create_player));
+        app.add_system_set(SystemSet::on_update(GameState::Playing).with_system(
+            update_collisions_player_playing.after(collisions::collision_player_enemies),
+        ));
+        app.add_system_set(
+            SystemSet::on_enter(GameState::Warmup)
+                .with_system(utils::despawn::<PlayerUnit>)
+                .before(create_player),
+        );
+        app.add_system_set(
+            SystemSet::on_enter(GameState::Warmup)
+                .with_system(utils::despawn::<Enemy>)
+                .with_system(create_player),
+        );
         app.add_system(ui_warmup::handle_get_items_result);
         app.add_system(update_movement.before(collisions::collision_player_enemies))
             .add_system(bounce_enemies.after(update_movement));
@@ -109,7 +140,14 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     };
     commands.spawn((camera, GameCamera));
 }
-fn create_player(mut commands: Commands, assets: Res<GameAssets>, mut lines: ResMut<DebugLines>) {
+
+fn create_player(
+    mut commands: Commands,
+    mut game_def: ResMut<GameDef>,
+    assets: Res<GameAssets>,
+    mut lines: ResMut<DebugLines>,
+) {
+    game_def.enemy_count = 0;
     commands.spawn((
         SpriteBundle {
             texture: assets.player.clone(),
@@ -250,22 +288,66 @@ fn clear_collision_warmup(mut query: Query<(&mut Sprite, &mut CollisionState), W
     }
 }
 
-fn enter_playing_use_currency(
+fn loading_play_use_currency(
     mut commands: Commands,
     auth_data: Res<AuthData>,
     items: Res<BackpackItems>,
     mut game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
+    mut game_state: ResMut<State<GameState>>,
+    mut loading_state: ResMut<LoadingPlayState>,
 ) {
+    if *loading_state != LoadingPlayState::Init {
+        return;
+    }
     let Some(auth) = &auth_data.data else {
-        todo!("Not authentified: Set gamestate to warmup back.");
+        *loading_state =  LoadingPlayState::Failed;
+        dbg!(game_state.set(GameState::Warmup));
+        return;
     };
+    dbg!("will modify");
     bevy_modify_item(
         &mut commands,
         &backpack.client,
         &auth.0,
         &ItemId(1),
-        1,
+        -(game_def.enemy_count as i32),
         &auth.1.user_id,
     );
+    *loading_state = LoadingPlayState::WaitingResponse;
+}
+
+fn init_loading_play(mut loading_state: ResMut<LoadingPlayState>) {
+    *loading_state = dbg!(LoadingPlayState::Init);
+}
+
+fn handle_modify_result(
+    mut events: EventReader<ModifyItemTaskResultEvent>,
+    mut items: ResMut<BackpackItems>,
+    mut game_state: ResMut<State<GameState>>,
+) {
+    for ev in events.iter() {
+        let Ok(ev) = ev.0 else {
+            dbg!(game_state.set(GameState::Warmup));
+            return;
+        };
+        if let Some(elem) = items
+            .items
+            .iter_mut()
+            .enumerate()
+            .find(|element| element.1.item.id == ev.0)
+        {
+            elem.1.amount = ev.2
+        }
+        dbg!(game_state.set(GameState::Playing));
+    }
+}
+
+fn update_collisions_player_playing(
+    mut collision_event: EventReader<StayCollisionEvent>,
+    mut game_state: ResMut<State<GameState>>,
+) {
+    for ev in collision_event.iter() {
+        game_state.set(GameState::Warmup);
+    }
 }

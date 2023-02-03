@@ -11,7 +11,7 @@ impl std::ops::Deref for UserId {
         &self.0
     }
 }
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ItemId(pub(super) i32);
 
 impl std::ops::Deref for ItemId {

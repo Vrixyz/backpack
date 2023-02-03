@@ -12,6 +12,7 @@ use dotenv::dotenv;
 
 mod backpack_client;
 mod backpack_client_bevy;
+pub mod utils;
 
 use backpack_client::*;
 use backpack_client_bevy::*;
