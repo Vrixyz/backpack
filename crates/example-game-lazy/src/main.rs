@@ -71,9 +71,7 @@ impl Plugin for AuthPlugin {
         app.add_plugin(BackpackClientPlugin);
         app.add_plugin(Game);
         app.add_system(ui_auth);
-        app.add_system(ui_game);
         app.add_system(handle_login_result);
-        app.add_system(handle_get_items_result);
         app.insert_resource(AuthInput {
             email: self.email.clone(),
             password: self.password.clone(),
@@ -90,9 +88,16 @@ fn ui_auth(
     mut auth_input: ResMut<AuthInput>,
     mut auth_data: ResMut<AuthData>,
     backpack: Res<BackpackCom>,
+    login_task: Query<Entity, With<LoginTask>>,
 ) {
     egui::Window::new("Auth").show(egui_context.ctx_mut(), |ui| {
         //ui.label(format!("current role: {:?}", auth_data));
+        if auth_data.data.is_some() {
+            if ui.button("Disconnect").clicked() {
+                auth_data.data = None;
+            }
+            return;
+        }
         ui.horizontal(|ui| {
             ui.label("Your email: ");
             ui.text_edit_singleline(&mut auth_input.email);
@@ -105,15 +110,19 @@ fn ui_auth(
                 ui.label("Password: ");
                 password_ui(ui, &mut auth_input.password);
             });
-            if ui.button("Sign in").clicked() {
-                bevy_login(
-                    &mut commands,
-                    &backpack.client,
-                    &LoginEmailPasswordData {
-                        email: auth_input.email.clone(),
-                        password_plain: auth_input.password.clone(),
-                    },
-                );
+            if login_task.is_empty() {
+                if ui.button("Sign in").clicked() {
+                    bevy_login(
+                        &mut commands,
+                        &backpack.client,
+                        &LoginEmailPasswordData {
+                            email: auth_input.email.clone(),
+                            password_plain: auth_input.password.clone(),
+                        },
+                    );
+                }
+            } else {
+                ui.label("Logging in...");
             }
         } else if ui.button("Sign up").clicked() {
             dbg!("Signup not implemented");
@@ -130,78 +139,6 @@ fn handle_login_result(
             auth_data.data = Some(biscuit_raw.clone())
         } else {
             dbg!("Login failed.");
-        }
-    }
-}
-
-fn ui_game(
-    mut commands: Commands,
-    mut egui_context: ResMut<EguiContext>,
-    auth_data: Res<AuthData>,
-    items: Res<BackpackItems>,
-    mut game_def: ResMut<GameDef>,
-    backpack: Res<BackpackCom>,
-) {
-    if auth_data.data.is_none() {
-        return;
-    }
-    egui::Window::new("Game")
-        .auto_sized()
-        .show(egui_context.ctx_mut(), |ui| {
-            if let Some(auth) = &auth_data.data {
-                if ui.button("Get items").clicked() {
-                    bevy_get_items(&mut commands, &backpack.client, &auth.0, &auth.1.user_id);
-                }
-                if items.items.len() > 0 {
-                    ui.group(|ui| {
-                        for item in (*items.items).iter() {
-                            if item.item.id.0 == 1 {
-                                ui.horizontal(|ui| {
-                                    ui.label(format!(
-                                        "{}({}): {}",
-                                        item.item.name,
-                                        item.item.id.0,
-                                        item.amount - game_def.enemy_count as i32
-                                    ));
-                                    ui.vertical(|ui| {
-                                        if item.amount > game_def.enemy_count as i32 {
-                                            if ui.button("+1 enemy").clicked() {
-                                                game_def.enemy_count += 1;
-                                                // TODO: pay 1 item
-                                            }
-                                        } else {
-                                            // Not enough item amount
-                                            if ui.button("Not enough enemy in stock").clicked() {
-                                                dbg!("not enough item amount");
-                                            }
-                                        }
-                                        if game_def.enemy_count > 0 {
-                                            // Can remove enemies
-                                            if ui.button("-1 enemy").clicked() {
-                                                game_def.enemy_count -= 1;
-                                                // TODO: pay 1 item
-                                            }
-                                        }
-                                    });
-                                });
-                            }
-                        }
-                    });
-                }
-            }
-        });
-}
-
-fn handle_get_items_result(
-    mut events: EventReader<GetItemsTaskResultEvent>,
-    mut resource_items: ResMut<BackpackItems>,
-) {
-    for res in events.iter() {
-        if let Ok(items) = &res.0 {
-            dbg!(items);
-            resource_items.items = (*items).clone();
-        } else {
-            dbg!("get items failed.");
         }
     }
 }

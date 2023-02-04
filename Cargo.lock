@@ -982,6 +982,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_prototype_debug_lines"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d9e933f5bf971fbc7e83b447db6758ed3b091faf4cd8e524a9406ae7acca096"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_ptr"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2167,10 +2176,11 @@ dependencies = [
  "async-compat",
  "bevy",
  "bevy_egui 0.19.0",
+ "bevy_prototype_debug_lines",
  "crossbeam-channel",
  "dotenv",
  "futures-lite",
- "rand 0.7.3",
+ "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
@@ -4897,9 +4907,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.24.2"
+version = "1.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "597a12a59981d9e3c38d216785b0c37399f6e415e8d0712047620f189371b0bb"
+checksum = "c8e00990ebabbe4c14c08aca901caed183ecd5c09562a12c824bb53d3c3fd3af"
 dependencies = [
  "autocfg",
  "bytes",
