@@ -100,7 +100,7 @@ pub(super) fn ui_warmup(
                                                 game_def.enemy_count -= 1;
                                             }
                                         }
-                                        /*
+
                                         if ui.button("+1").clicked() {
                                             bevy_modify_item(
                                                 &mut commands,
@@ -110,7 +110,7 @@ pub(super) fn ui_warmup(
                                                 1,
                                                 &auth.1.user_id,
                                             );
-                                        }*/
+                                        }
                                     });
                                 });
                             }

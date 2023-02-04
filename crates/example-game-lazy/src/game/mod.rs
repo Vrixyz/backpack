@@ -1,4 +1,6 @@
 mod collisions;
+mod scoring;
+mod ui_playing;
 mod ui_warmup;
 
 use bevy::prelude::*;
@@ -15,7 +17,10 @@ use crate::{
     AuthData, BackpackCom, BackpackItems,
 };
 
-use self::collisions::StayCollisionEvent;
+use self::{
+    collisions::StayCollisionEvent,
+    scoring::{ScoreNear, ScoreNearDef},
+};
 
 pub struct Game;
 
@@ -73,6 +78,7 @@ impl Plugin for Game {
         app.add_plugin(mouse::MousePlugin);
         app.add_plugin(DebugLinesPlugin::default());
         app.add_plugin(collisions::CollisionsPlugin);
+        app.add_plugin(scoring::ScorePlugin);
         app.init_resource::<GameDef>();
         app.add_startup_system(load_assets);
         app.add_state(GameState::Warmup);
@@ -110,6 +116,9 @@ impl Plugin for Game {
         app.add_system_set(SystemSet::on_update(GameState::Playing).with_system(
             update_collisions_player_playing.after(collisions::collision_player_enemies),
         ));
+        app.add_system_set(
+            SystemSet::on_update(GameState::Playing).with_system(ui_playing::ui_playing),
+        );
         app.add_system_set(
             SystemSet::on_enter(GameState::Warmup)
                 .with_system(utils::despawn::<PlayerUnit>)
@@ -198,6 +207,11 @@ fn update_enemy_count(
                 Enemy,
                 WantedMovement {
                     direction: random_point_circle(1000f32, false),
+                },
+                ScoreNear::NotNear,
+                ScoreNearDef {
+                    time_to_score: 2.0,
+                    score: 1,
                 },
             ));
         }

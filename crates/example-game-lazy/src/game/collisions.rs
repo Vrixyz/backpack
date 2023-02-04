@@ -36,8 +36,8 @@ pub(super) fn collision_player_enemies(
     for p_t in player_pos {
         for (e_entity, e_t) in transforms.p1().iter() {
             let distance_to_player = p_t.1.distance(e_t.translation);
-            let enemy_size = 100f32;
-            let player_size = 200f32;
+            let enemy_size = 48f32;
+            let player_size = 128f32;
             if distance_to_player <= enemy_size + player_size {
                 collision_events.send(StayCollisionEvent {
                     entity_player: p_t.0,
