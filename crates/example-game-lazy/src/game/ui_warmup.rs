@@ -100,16 +100,20 @@ pub(super) fn ui_warmup(
                                                 game_def.enemy_count -= 1;
                                             }
                                         }
-
-                                        if ui.button("+1").clicked() {
-                                            bevy_modify_item(
-                                                &mut commands,
-                                                &backpack.client,
-                                                &auth.0,
-                                                &item.item.id,
-                                                1,
-                                                &auth.1.user_id,
-                                            );
+                                        if std::env::var("CHEAT").unwrap_or("false".into())
+                                            == "true"
+                                        {
+                                            // Cheat
+                                            if ui.button("+1").clicked() {
+                                                bevy_modify_item(
+                                                    &mut commands,
+                                                    &backpack.client,
+                                                    &auth.0,
+                                                    &item.item.id,
+                                                    1,
+                                                    &auth.1.user_id,
+                                                );
+                                            }
                                         }
                                     });
                                 });
