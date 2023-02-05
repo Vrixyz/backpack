@@ -52,6 +52,7 @@ fn update_scoring(
     for (e, mut score_near, def) in query.iter_mut() {
         match &*score_near {
             ScoreNear::Scoring(scoring) => {
+                dbg!(scoring.start_time + def.time_to_score < time.elapsed_seconds());
                 if scoring.start_time + def.time_to_score < time.elapsed_seconds() {
                     score.score += def.score;
                     *score_near = ScoreNear::Gained;
@@ -77,11 +78,11 @@ pub(super) fn collision_scoring(
         .collect();
     for p_t in player_pos {
         for (e_entity, e_t, mut score) in transforms.p1().iter_mut() {
-            if matches!(ScoreNear::Gained, score) {
+            if matches!(*score, ScoreNear::Gained) {
                 continue;
             }
             let distance_to_player = p_t.1.distance(e_t.translation);
-            let enemy_size = 48f32;
+            let enemy_size = 48f32 + 250f32;
             let player_size = 128f32;
             if distance_to_player <= enemy_size + player_size {
                 if *score == ScoreNear::NotNear {

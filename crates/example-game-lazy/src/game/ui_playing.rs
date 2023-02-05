@@ -6,7 +6,10 @@ use bevy_egui::{
 
 use crate::utils::mouse::GameCamera;
 
-use super::{scoring::ScoreNear, GameState};
+use super::{
+    scoring::{ScoreNear, ScoreNearDef},
+    GameState,
+};
 
 pub(super) fn ui_playing(
     mut egui_context: ResMut<EguiContext>,
@@ -24,11 +27,11 @@ pub(super) fn ui_playing(
 pub(super) fn ui_scoring(
     mut egui_context: ResMut<EguiContext>,
     mut camera: Query<(&GlobalTransform, &Camera), With<GameCamera>>,
-    mut q_scores: Query<(&ScoreNear, &Transform)>,
+    mut q_scores: Query<(&ScoreNear, &Transform, &ScoreNearDef)>,
     mut game_state: ResMut<State<GameState>>,
 ) {
     let camera = camera.single();
-    for (i, (score, transform)) in q_scores.iter().enumerate() {
+    for (i, (score, transform, def)) in q_scores.iter().enumerate() {
         let Some(position) = camera.1.world_to_viewport(camera.0, transform.translation) else {
             continue;
         };
@@ -38,8 +41,16 @@ pub(super) fn ui_scoring(
                 Align2::LEFT_BOTTOM,
                 egui::Vec2::new(position.x, -position.y),
             )
-            .show(egui_context.ctx_mut(), |ui| {
-                ui.label("enemy");
+            .show(egui_context.ctx_mut(), |ui| match score {
+                ScoreNear::Scoring(_) => {
+                    ui.label("scoring");
+                }
+                ScoreNear::NotNear => {
+                    ui.label(format!("enemy ({})", def.score));
+                }
+                ScoreNear::Gained => {
+                    ui.label("enemy");
+                }
             });
     }
 }
