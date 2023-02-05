@@ -1,4 +1,5 @@
 mod collisions;
+mod scoreboard;
 mod scoring;
 mod ui_playing;
 mod ui_warmup;
@@ -19,7 +20,7 @@ use crate::{
 
 use self::{
     collisions::StayCollisionEvent,
-    scoring::{ScoreNear, ScoreNearDef},
+    scoring::{Score, ScoreNear, ScoreNearDef},
 };
 
 pub struct Game;
@@ -78,6 +79,7 @@ impl Plugin for Game {
         app.add_plugin(mouse::MousePlugin);
         app.add_plugin(DebugLinesPlugin::default());
         app.add_plugin(collisions::CollisionsPlugin);
+        app.add_plugin(scoreboard::ScoreboardPlugin);
         app.add_plugin(scoring::ScorePlugin);
         app.init_resource::<GameDef>();
         app.add_startup_system(load_assets);
@@ -319,7 +321,6 @@ fn loading_play_use_currency(
         dbg!(game_state.set(GameState::Warmup));
         return;
     };
-    dbg!("will modify");
     bevy_modify_item(
         &mut commands,
         &backpack.client,
@@ -353,15 +354,18 @@ fn handle_modify_result(
         {
             elem.1.amount = ev.2
         }
-        dbg!(game_state.set(GameState::Playing));
+        game_state.set(GameState::Playing);
     }
 }
 
 fn update_collisions_player_playing(
     mut collision_event: EventReader<StayCollisionEvent>,
     mut game_state: ResMut<State<GameState>>,
+    mut leaderboard: ResMut<bevy_jornet::Leaderboard>,
+    score: Res<Score>,
 ) {
     for ev in collision_event.iter() {
-        game_state.set(GameState::Warmup);
+        leaderboard.send_score(score.score as f32);
+        game_state.set(GameState::EndScreen);
     }
 }

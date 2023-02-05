@@ -95,7 +95,6 @@ pub fn bevy_modify_item(
     amount: i32,
     user_id: &UserId,
 ) {
-    dbg!("call modify");
     let thread_pool = AsyncComputeTaskPool::get();
     // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
     let client = client.clone();

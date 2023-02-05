@@ -52,7 +52,7 @@ fn update_scoring(
     for (e, mut score_near, def) in query.iter_mut() {
         match &*score_near {
             ScoreNear::Scoring(scoring) => {
-                dbg!(scoring.start_time + def.time_to_score < time.elapsed_seconds());
+                scoring.start_time + def.time_to_score < time.elapsed_seconds();
                 if scoring.start_time + def.time_to_score < time.elapsed_seconds() {
                     score.score += def.score;
                     *score_near = ScoreNear::Gained;

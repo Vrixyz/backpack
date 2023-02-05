@@ -65,7 +65,7 @@ impl BackpackClient {
         amount: i32,
         user_id: UserId,
     ) -> Result<i32, reqwest::Error> {
-        let biscuit = dbg!(
+        let new_amount = dbg!(
             dbg!(self
                 .client
                 .post(format!(
@@ -79,7 +79,7 @@ impl BackpackClient {
         )
         .json::<i32>()
         .await?;
-        Ok(dbg!(biscuit))
+        Ok(dbg!(new_amount))
     }
     pub async fn get_items(
         &self,
