@@ -1,6 +1,7 @@
 mod collisions;
 mod scoreboard;
 mod scoring;
+mod ui_endscreen;
 mod ui_playing;
 mod ui_warmup;
 
@@ -134,6 +135,10 @@ impl Plugin for Game {
         app.add_system(ui_warmup::handle_get_items_result);
         app.add_system(update_movement.before(collisions::collision_player_enemies))
             .add_system(bounce_enemies.after(update_movement));
+
+        app.add_system_set(
+            SystemSet::on_update(GameState::EndScreen).with_system(ui_endscreen::ui_endscreen),
+        );
     }
 }
 
