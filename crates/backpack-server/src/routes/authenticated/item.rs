@@ -82,19 +82,22 @@ async fn modify_item(
                         .any(|authorized_app| authorized_app.app_id == app.app_id)
                 })
             {
-                return HttpResponse::Unauthorized().finish();
+                return HttpResponse::Unauthorized()
+                    .body("You're not admin of any app owner of this item.");
             }
         }
         crate::auth_user::Role::User(app_id) => {
             if biscuit.user_id.0 != user_id_item_id.0 {
-                return HttpResponse::Unauthorized().finish();
+                return HttpResponse::Unauthorized()
+                    .body("You are not allowed to modify other users' items (yet).");
             }
             let authorized_apps = AppId::get_all_for_item(&connection, item_id).await.unwrap();
             if !authorized_apps
                 .iter()
                 .any(|authorized_app| authorized_app.app_id == app_id)
             {
-                return HttpResponse::Unauthorized().finish();
+                return HttpResponse::Unauthorized()
+                    .body("The app does not have rights to modify this item.");
             }
         }
     }

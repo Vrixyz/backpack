@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use super::{ui_playing::ui_scoring, GameState, PlayerUnit};
+use super::{
+    ui_playing::{ui_score, ui_scoring},
+    GameState, PlayerUnit,
+};
 
 pub struct ScorePlugin;
 
@@ -12,7 +15,8 @@ impl Plugin for ScorePlugin {
             SystemSet::on_update(GameState::Playing)
                 .with_system(collision_scoring)
                 .with_system(update_scoring)
-                .with_system(ui_scoring),
+                .with_system(ui_scoring)
+                .with_system(ui_score),
         );
     }
 }

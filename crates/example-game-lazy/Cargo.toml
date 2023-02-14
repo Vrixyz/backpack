@@ -19,3 +19,4 @@ dotenv = "0.15.0"
 rand = "0.8.5"
 bevy_prototype_debug_lines = "0.9"
 bevy_jornet = "0.3"
+particles = { path = "../particles" }

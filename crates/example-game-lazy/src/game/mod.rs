@@ -5,8 +5,11 @@ mod ui_endscreen;
 mod ui_playing;
 mod ui_warmup;
 
-use bevy::prelude::*;
+use std::time::Duration;
+
+use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
+use particles::ParticleExplosion;
 use rand::prelude::*;
 
 use crate::{
@@ -82,12 +85,12 @@ impl Plugin for Game {
         app.add_plugin(collisions::CollisionsPlugin);
         app.add_plugin(scoreboard::ScoreboardPlugin);
         app.add_plugin(scoring::ScorePlugin);
+        app.add_plugin(particles::ParticlesPlugin);
         app.init_resource::<GameDef>();
         app.add_startup_system(load_assets);
         app.add_state(GameState::Warmup);
         app.add_system_set(
             SystemSet::on_update(GameState::Warmup)
-                .with_system(update_enemy_count)
                 .with_system(
                     update_wanted_movement_player
                         .before(update_movement)
@@ -116,11 +119,18 @@ impl Plugin for Game {
                     .after(mouse::my_cursor_system),
             ),
         );
-        app.add_system_set(SystemSet::on_update(GameState::Playing).with_system(
-            update_collisions_player_playing.after(collisions::collision_player_enemies),
-        ));
         app.add_system_set(
-            SystemSet::on_update(GameState::Playing).with_system(ui_playing::ui_playing),
+            SystemSet::on_update(GameState::Playing)
+                .with_system(
+                    update_collisions_player_playing.after(collisions::collision_player_enemies),
+                )
+                .with_system(juice_collisions)
+                .with_system(juice_score),
+        );
+        app.add_system_set(
+            SystemSet::on_update(GameState::Playing)
+                .with_system(ui_playing::ui_playing)
+                .with_system(more_enemies),
         );
         app.add_system_set(
             SystemSet::on_enter(GameState::Warmup)
@@ -133,11 +143,15 @@ impl Plugin for Game {
                 .with_system(create_player),
         );
         app.add_system(ui_warmup::handle_get_items_result);
+        app.add_system(ui_warmup::handle_modify_item_result);
         app.add_system(update_movement.before(collisions::collision_player_enemies))
-            .add_system(bounce_enemies.after(update_movement));
+            .add_system(bounce_enemies.after(update_movement))
+            .add_system(update_enemy_count);
 
         app.add_system_set(
-            SystemSet::on_update(GameState::EndScreen).with_system(ui_endscreen::ui_endscreen),
+            SystemSet::on_update(GameState::EndScreen)
+                .with_system(ui_endscreen::ui_endscreen)
+                .with_system(ui_endscreen::ui_end_title_and_score),
         );
     }
 }
@@ -372,5 +386,74 @@ fn update_collisions_player_playing(
     for ev in collision_event.iter() {
         leaderboard.send_score(score.score as f32);
         game_state.set(GameState::EndScreen);
+    }
+}
+
+fn juice_collisions(
+    time: Res<Time>,
+    mut particles: EventWriter<ParticleExplosion>,
+    q_scores: Query<(&ScoreNear, &Transform, &ScoreNearDef)>,
+) {
+    for (score, transform, def) in q_scores.iter() {
+        if let ScoreNear::Scoring(scoring) = score {
+            let elapsed = time.elapsed_seconds() - scoring.start_time;
+            let completion_ratio = elapsed / def.time_to_score;
+            // FIXME: #10 change spawn rate + avoid being framerate dependent
+            let particle = ParticleExplosion {
+                location: transform.translation.xy(),
+                color: Color::from(
+                    Vec4::from(Color::RED).lerp(Vec4::from(Color::GREEN), completion_ratio),
+                ),
+                count: 1,
+                size: 25f32,
+            };
+            particles.send(particle);
+        }
+    }
+}
+fn juice_score(
+    mut particles: EventWriter<ParticleExplosion>,
+    q_scores: Query<(&ScoreNear, &Transform), Changed<ScoreNear>>,
+) {
+    for (score, transform) in q_scores.iter() {
+        match score {
+            ScoreNear::Scoring(_) => {}
+            ScoreNear::NotNear => {
+                let particle = ParticleExplosion {
+                    location: transform.translation.xy(),
+                    color: Color::RED,
+                    count: 15,
+                    size: 20f32,
+                };
+                particles.send(particle);
+            }
+            ScoreNear::Gained => {
+                let particle = ParticleExplosion {
+                    location: transform.translation.xy(),
+                    color: Color::GREEN,
+                    count: 15,
+                    size: 30f32,
+                };
+                particles.send(particle);
+            }
+        }
+    }
+}
+
+pub(super) fn more_enemies(
+    time: Res<Time>,
+    mut game_def: ResMut<GameDef>,
+    mut timer: Local<Timer>,
+) {
+    if timer.duration() == Duration::default() {
+        timer.set_duration(Duration::from_secs(10));
+        return;
+    }
+    timer.tick(time.delta());
+    if timer.just_finished() {
+        game_def.enemy_count += 1;
+        let new_duration = timer.duration() + Duration::from_secs(1);
+        timer.set_duration(new_duration);
+        timer.reset();
     }
 }

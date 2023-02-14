@@ -18,8 +18,17 @@ impl BackpackClient {
             client: Client::new(),
         }
     }
-    pub fn signup(&self) -> String {
-        self.url.clone() + "/unauthenticated/email_password/create"
+    pub async fn signup(&self, data: &CreateEmailPasswordData) -> Result<(), reqwest::Error> {
+        self.client
+            .post(dbg!(
+                self.url.clone() + "/unauthenticated/email_password/create"
+            ))
+            .json(data)
+            .send()
+            .await?
+            .text()
+            .await
+            .map(|_| ())
     }
     pub async fn login(
         &self,

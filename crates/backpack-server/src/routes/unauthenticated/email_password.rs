@@ -6,7 +6,10 @@ use sqlx::PgPool;
 
 use crate::{
     auth_user::Role,
-    models::email_password::{create, exist, find},
+    models::{
+        app::AppId,
+        email_password::{create, exist, find},
+    },
     random_names::random_name,
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
@@ -101,6 +104,7 @@ async fn oauth_create_email_password(
 pub struct LoginEmailPasswordData {
     pub email: String,
     pub password_plain: String,
+    pub as_user_from_app: Option<AppId>,
 }
 
 async fn oauth_login_email_password(
@@ -119,7 +123,11 @@ async fn oauth_login_email_password(
         return HttpResponse::Unauthorized().finish();
     };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
-    let biscuit = user_id.create_biscuit(&root, Role::Admin);
+
+    let biscuit = match req_data.as_user_from_app {
+        Some(app_id) => user_id.create_biscuit(&root, Role::User(app_id)),
+        None => user_id.create_biscuit(&root, Role::Admin),
+    };
     HttpResponse::Ok()
         .content_type(actix_web::http::header::ContentType::plaintext())
         .body(biscuit.to_base64().unwrap())

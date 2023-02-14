@@ -3,10 +3,13 @@ mod game;
 mod password;
 
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContext, EguiPlugin};
+use bevy_egui::{
+    egui::{self, Color32, RichText},
+    EguiContext, EguiPlugin,
+};
 use data::{
-    BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
-    UserItemModify,
+    AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData,
+    UserId, UserItemModify,
 };
 use dotenv::dotenv;
 
@@ -73,6 +76,7 @@ impl Plugin for AuthPlugin {
         app.add_plugin(Game);
         app.add_system(ui_auth);
         app.add_system(handle_login_result);
+        app.add_system(handle_signup_result);
         app.insert_resource(AuthInput {
             email: self.email.clone(),
             password: self.password.clone(),
@@ -90,6 +94,7 @@ fn ui_auth(
     mut auth_data: ResMut<AuthData>,
     backpack: Res<BackpackCom>,
     login_task: Query<Entity, With<LoginTask>>,
+    signup_task: Query<Entity, With<SignupTask>>,
 ) {
     egui::Window::new("Auth").show(egui_context.ctx_mut(), |ui| {
         //ui.label(format!("current role: {:?}", auth_data));
@@ -104,7 +109,15 @@ fn ui_auth(
             ui.text_edit_singleline(&mut auth_input.email);
         });
         ui.horizontal(|ui| {
-            ui.checkbox(&mut auth_input.sign_in, "Already signed up?");
+            if login_task.is_empty() && signup_task.is_empty() {
+                ui.checkbox(&mut auth_input.sign_in, "Already signed up?");
+            } else {
+                let mut not_interactable = auth_input.sign_in;
+                ui.checkbox(
+                    &mut not_interactable,
+                    RichText::new("Already signed up?").color(Color32::GRAY),
+                );
+            }
         });
         if auth_input.sign_in {
             ui.horizontal(|ui| {
@@ -119,6 +132,7 @@ fn ui_auth(
                         &LoginEmailPasswordData {
                             email: auth_input.email.clone(),
                             password_plain: auth_input.password.clone(),
+                            as_app_user: Some(AppId(1)),
                         },
                     );
                 }
@@ -126,7 +140,13 @@ fn ui_auth(
                 ui.label("Logging in...");
             }
         } else if ui.button("Sign up").clicked() {
-            dbg!("Signup not implemented");
+            bevy_signup(
+                &mut commands,
+                &backpack.client,
+                &CreateEmailPasswordData {
+                    email: auth_input.email.clone(),
+                },
+            );
         }
     });
 }
@@ -138,6 +158,19 @@ fn handle_login_result(
     for res in events.iter() {
         if let Ok(biscuit_raw) = &res.0 {
             auth_data.data = Some(biscuit_raw.clone())
+        } else {
+            dbg!("Login failed.");
+        }
+    }
+}
+
+fn handle_signup_result(
+    mut events: EventReader<SignupTaskResultEvent>,
+    mut auth_input: ResMut<AuthInput>,
+) {
+    for res in events.iter() {
+        if res.0.is_ok() {
+            auth_input.sign_in = true;
         } else {
             dbg!("Login failed.");
         }

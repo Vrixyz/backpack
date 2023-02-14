@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, Align2},
+    egui::{self, Align2, FontId, RichText},
     EguiContext,
 };
 
 use crate::utils::mouse::GameCamera;
 
 use super::{
-    scoring::{ScoreNear, ScoreNearDef},
+    scoring::{Score, ScoreNear, ScoreNearDef},
     GameState,
 };
 
@@ -53,4 +53,13 @@ pub(super) fn ui_scoring(
                 }
             });
     }
+}
+
+pub(super) fn ui_score(mut egui_context: ResMut<EguiContext>, mut score: ResMut<Score>) {
+    egui::Area::new(format!("score for player"))
+        .fixed_pos(egui::pos2(0f32, 0f32))
+        .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
+        .show(egui_context.ctx_mut(), |ui| {
+            ui.label(RichText::new(score.score.to_string()).font(FontId::proportional(40.0)));
+        });
 }

@@ -9,10 +9,10 @@ impl ItemId {
         amount: i32,
         pool: &PgPool,
     ) -> Result<i32, sqlx::Error> {
-        let rec = self.increment_amount_raw(user, amount, pool).await;
+        let rec = dbg!(self.increment_amount_raw(user, amount, pool).await);
         match rec {
             Ok(amount) => Ok(amount),
-            Err(_err) => self.create_item_to_user_relation(user, amount, pool).await,
+            Err(_err) => dbg!(self.create_item_to_user_relation(user, amount, pool).await),
         }
     }
 

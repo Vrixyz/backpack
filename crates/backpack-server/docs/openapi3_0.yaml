@@ -73,7 +73,15 @@ paths:
                 password_plain:
                   type: string
                   format: password
-                  example: "Password copypasted from email on creation"
+                  description: "Password copypasted from email on creation"
+                  example: "5~#_ER]rz/..."
+                as_app_user:
+                  type: integer
+                  description: "id of the app to authenticate on"
+                  example: "42"
+              required:
+                - email
+                - password_plain
         required: true
       responses:
         "200":

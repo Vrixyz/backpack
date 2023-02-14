@@ -9,6 +9,7 @@ use bevy_egui::{
 use crate::{
     backpack_client_bevy::{
         bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent, LoginTask,
+        ModifyItemTaskResultEvent,
     },
     AuthData, BackpackCom, BackpackItems,
 };
@@ -132,7 +133,36 @@ pub(super) fn handle_get_items_result(
     for res in events.iter() {
         if let Ok(items) = &res.0 {
             dbg!(items);
-            resource_items.items = (*items).clone();
+            resource_items.items = items.clone();
+            if !resource_items.items.iter().any(|item| item.item.id.0 == 1) {
+                resource_items.items.push(crate::data::ItemAmount {
+                    item: crate::data::ItemWithName {
+                        id: crate::data::ItemId(1),
+                        name: "currency".to_string(),
+                    },
+                    amount: 0,
+                })
+            }
+        } else {
+            dbg!("get items failed.");
+        }
+    }
+}
+
+pub(super) fn handle_modify_item_result(
+    mut events: EventReader<ModifyItemTaskResultEvent>,
+    mut resource_items: ResMut<BackpackItems>,
+) {
+    for res in events.iter() {
+        if let Ok(item) = &res.0 {
+            dbg!(item);
+            if let Some(saved_item) = resource_items
+                .items
+                .iter_mut()
+                .find(|i| i.item.id == item.0)
+            {
+                saved_item.amount = item.2;
+            }
         } else {
             dbg!("get items failed.");
         }

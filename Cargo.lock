@@ -2201,6 +2201,7 @@ dependencies = [
  "crossbeam-channel",
  "dotenv",
  "futures-lite",
+ "particles",
  "rand 0.8.5",
  "reqwest",
  "serde",
@@ -3805,6 +3806,14 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "windows-sys 0.45.0",
+]
+
+[[package]]
+name = "particles"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "rand 0.8.5",
 ]
 
 [[package]]

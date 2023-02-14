@@ -72,7 +72,7 @@ pub struct ItemAmount {
 
 // region: request parameters
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct CreateEmailPasswordData {
     pub email: String,
 }
@@ -81,6 +81,7 @@ pub struct CreateEmailPasswordData {
 pub struct LoginEmailPasswordData {
     pub email: String,
     pub password_plain: String,
+    pub as_app_user: Option<AppId>,
 }
 
 #[derive(Deserialize, Serialize)]

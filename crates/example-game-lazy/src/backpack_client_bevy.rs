@@ -19,6 +19,8 @@ impl Plugin for BackpackClientPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LoginTaskResultEvent>();
         app.add_system(handle_login_tasks);
+        app.add_event::<SignupTaskResultEvent>();
+        app.add_system(handle_signup_tasks);
         app.add_event::<GetItemsTaskResultEvent>();
         app.add_system(handle_get_items_tasks);
         app.add_event::<ModifyItemTaskResultEvent>();
@@ -48,6 +50,35 @@ fn handle_login_tasks(
             result_event.send(LoginTaskResultEvent(res));
             // Task is complete, so remove task component from entity
             commands.entity(entity).remove::<LoginTask>();
+        }
+    }
+}
+#[derive(Component)]
+pub struct SignupTask(Task<Result<(()), reqwest::Error>>);
+pub struct SignupTaskResultEvent(pub Result<(()), reqwest::Error>);
+
+pub fn bevy_signup(
+    commands: &mut Commands,
+    client: &BackpackClient,
+    data: &CreateEmailPasswordData,
+) {
+    let thread_pool = AsyncComputeTaskPool::get();
+    // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
+    let client = client.clone();
+    let data = data.clone();
+    let task = thread_pool.spawn(async move { client.signup(&data.clone()).compat().await });
+    commands.spawn(SignupTask(task));
+}
+fn handle_signup_tasks(
+    mut commands: Commands,
+    mut tasks: Query<(Entity, &mut SignupTask)>,
+    mut result_event: EventWriter<SignupTaskResultEvent>,
+) {
+    for (entity, mut task) in &mut tasks {
+        if let Some(res) = future::block_on(Compat::new(future::poll_once(&mut task.0))) {
+            result_event.send(SignupTaskResultEvent(res));
+            // Task is complete, so remove task component from entity
+            commands.entity(entity).remove::<SignupTask>();
         }
     }
 }
