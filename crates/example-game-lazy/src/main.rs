@@ -64,6 +64,12 @@ impl BackpackCom {
     }
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+enum PopupSignupSuccess {
+    Shown,
+    Hidden,
+}
+
 #[derive(Resource, Default)]
 struct BackpackItems {
     pub items: Vec<ItemAmount>,
@@ -77,6 +83,10 @@ impl Plugin for AuthPlugin {
         app.add_system(ui_auth);
         app.add_system(handle_login_result);
         app.add_system(handle_signup_result);
+        app.add_state(PopupSignupSuccess::Hidden);
+        app.add_system_set(
+            SystemSet::on_update(PopupSignupSuccess::Shown).with_system(ui_signup_successful),
+        );
         app.insert_resource(AuthInput {
             email: self.email.clone(),
             password: self.password.clone(),
@@ -85,6 +95,19 @@ impl Plugin for AuthPlugin {
         app.insert_resource(BackpackCom::new("http://127.0.0.1:8080/api/v1".into()));
         app.init_resource::<BackpackItems>();
     }
+}
+
+fn ui_signup_successful(
+    mut egui_context: ResMut<EguiContext>,
+    mut popup_signup_state: ResMut<State<PopupSignupSuccess>>,
+) {
+    egui::Window::new("Popup Signup Success").show(egui_context.ctx_mut(), |ui| {
+        ui.label("Successful signed up!");
+        ui.label("We sent you an email, check your spam folder too.");
+        if ui.button("I received the mail").clicked() {
+            popup_signup_state.set(PopupSignupSuccess::Hidden);
+        }
+    });
 }
 
 fn ui_auth(
@@ -167,10 +190,12 @@ fn handle_login_result(
 fn handle_signup_result(
     mut events: EventReader<SignupTaskResultEvent>,
     mut auth_input: ResMut<AuthInput>,
+    mut popup_signup_state: ResMut<State<PopupSignupSuccess>>,
 ) {
     for res in events.iter() {
         if res.0.is_ok() {
             auth_input.sign_in = true;
+            popup_signup_state.set(PopupSignupSuccess::Shown);
         } else {
             dbg!("Login failed.");
         }
