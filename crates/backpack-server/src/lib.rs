@@ -5,8 +5,8 @@ use actix_web::{
     web::{self, Data},
     App, HttpServer,
 };
-use configuration::Settings;
-use sqlx::PgPool;
+use configuration::{DatabaseSettings, Settings};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::net::TcpListener;
 
 pub mod auth_user;
@@ -15,6 +15,13 @@ pub mod configuration;
 pub mod models;
 pub mod random_names;
 pub mod routes;
+pub mod telemetry;
+
+pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {
+    PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_secs(2))
+        .connect_lazy_with(configuration.with_db())
+}
 
 pub fn run(
     listener: TcpListener,

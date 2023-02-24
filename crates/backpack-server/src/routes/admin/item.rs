@@ -22,6 +22,11 @@ pub struct ItemInput {
     pub name: String,
 }
 
+#[tracing::instrument(
+    name = "Create item",
+    skip_all,
+    fields(biscuit=%&*biscuit, app_id=&*app_id)
+)]
 async fn create_item(
     connection: web::Data<PgPool>,
     item: web::Json<ItemInput>,

@@ -1,12 +1,19 @@
-use backpack_server::{configuration::get_configuration, run};
+use backpack_server::{
+    configuration::get_configuration,
+    run,
+    telemetry::{get_subscriber, init_subscriber},
+};
 use dotenv::dotenv;
-use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::net::TcpListener;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
     let configuration = get_configuration();
+
+    let subscriber = get_subscriber("backpack".into(), "info".into(), std::io::stdout);
+    init_subscriber(subscriber);
 
     let address = format!(
         "{}:{}",
@@ -15,8 +22,8 @@ async fn main() -> std::io::Result<()> {
     dbg!(&address);
 
     let listener = TcpListener::bind(&address)?;
-    let connection_pool = PgPool::connect(&configuration.database.connection_string())
-        .await
-        .expect("Failed to connect to Postgres.");
+    let connection_pool = PgPoolOptions::new()
+        .acquire_timeout(std::time::Duration::from_secs(2))
+        .connect_lazy_with(configuration.database.with_db());
     run(listener, connection_pool, configuration)?.await
 }

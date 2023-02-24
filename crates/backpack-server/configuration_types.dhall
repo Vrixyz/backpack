@@ -4,6 +4,7 @@ let DatabaseSettings : Type =
       , host            : Text
       , port            : Natural
       , database_name   : Text
+      , require_ssl     : Bool
       }
 
 let OAuth : Type = 

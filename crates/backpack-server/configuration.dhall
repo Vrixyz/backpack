@@ -6,6 +6,7 @@ let database: types.DatabaseSettings =
     , host          = env:POSTGRESQL_ADDON_HOST as Text ? "127.0.0.1"
     , port          = env:POSTGRESQL_ADDON_PORT ? 5432
     , database_name = env:POSTGRESQL_ADDON_DB as Text ? "backpack"
+    , require_ssl   = env:REQUIRE_SSL as Text ? False
     }
 
 let github_admin_app: types.OAuth = 

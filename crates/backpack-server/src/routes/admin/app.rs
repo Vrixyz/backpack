@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use actix_web::{HttpMessage, HttpRequest};
 use serde::Deserialize;
@@ -19,6 +21,17 @@ struct CreateAppData {
     pub name: String,
 }
 
+impl Display for CreateAppData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "CreateAppData {{name: {}}}", &self.name)
+    }
+}
+
+#[tracing::instrument(
+    name = "Create app",
+    skip_all,
+    fields(item_id=%&*req_data)
+)]
 async fn create_app(
     connection: web::Data<PgPool>,
     req_data: web::Json<CreateAppData>,
@@ -38,6 +51,7 @@ async fn create_app(
     HttpResponse::Created().json(app_id.0)
 }
 
+#[tracing::instrument(name = "Get Apps for admin", skip_all)]
 async fn get_apps_for_admin(connection: web::Data<PgPool>, req: HttpRequest) -> impl Responder {
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
         return HttpResponse::Unauthorized().finish();
@@ -54,7 +68,14 @@ async fn get_apps_for_admin(connection: web::Data<PgPool>, req: HttpRequest) -> 
 struct DeleteAppData {
     pub id: i32,
 }
+impl Display for DeleteAppData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "DeleteAppData {{id: {}}}", &self.id)
+    }
+}
 
+#[tracing::instrument(name = "Get Apps for admin", skip_all,
+fields(app_id=%&*app_id))]
 async fn delete_app(
     connection: web::Data<PgPool>,
     app_id: web::Json<DeleteAppData>,
