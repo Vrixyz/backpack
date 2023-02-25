@@ -4,7 +4,7 @@ use backpack_server::{
     telemetry::{get_subscriber, init_subscriber},
 };
 use dotenv::dotenv;
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::postgres::PgPoolOptions;
 use std::net::TcpListener;
 
 #[tokio::main]

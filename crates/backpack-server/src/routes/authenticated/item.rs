@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use actix_web::web::ReqData;
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use serde::Deserialize;
@@ -25,6 +27,17 @@ pub struct UserItemModify {
     pub amount: i32,
 }
 
+impl Display for UserItemModify {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.amount)
+    }
+}
+
+#[tracing::instrument(
+    name = "Get item",
+    skip_all,
+    fields(item_id=%&*item_id)
+)]
 async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> impl Responder {
     if let Some(item_full) = ItemFull::get(ItemId(*item_id), &connection).await {
         HttpResponse::Ok().json(item_full)
@@ -33,6 +46,11 @@ async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> imp
     }
 }
 
+#[tracing::instrument(
+    name = "Get user items",
+    skip_all,
+    fields(user_id=%&*user_id)
+)]
 /// For a given user, returns all its existing items.
 async fn get_user_items(connection: web::Data<PgPool>, user_id: web::Path<i32>) -> impl Responder {
     let user_id = UserId(*user_id);
@@ -43,6 +61,11 @@ async fn get_user_items(connection: web::Data<PgPool>, user_id: web::Path<i32>) 
     }
 }
 
+#[tracing::instrument(
+    name = "Get user item",
+    skip_all,
+    fields(user_id=%user_id_item_id.0, item_id=%user_id_item_id.1)
+)]
 async fn get_user_item(
     connection: web::Data<PgPool>,
     user_id_item_id: web::Path<(i32, i32)>,
@@ -61,6 +84,12 @@ async fn get_user_item(
 /// It does not check yet:
 /// - :construction: If the item is allowed to be modified by the app the user is authenticated on
 /// - :construction: If item is allowed to be modified by user
+///
+#[tracing::instrument(
+    name = "Modify item",
+    skip_all,
+    fields(biscuit=%&*biscuit, user_item_modify=%&*user_item_modify)
+)]
 async fn modify_item(
     connection: web::Data<PgPool>,
     user_id_item_id: web::Path<(i32, i32)>,
@@ -111,6 +140,11 @@ async fn modify_item(
     }
 }
 
+#[tracing::instrument(
+    name = "Get app items",
+    skip_all,
+    fields(app_id=%&*app_id)
+)]
 async fn get_app_items(connection: web::Data<PgPool>, app_id: web::Path<i32>) -> impl Responder {
     let app_id = AppId(*app_id);
     if let Ok(res) = ItemWithName::get_for_app(&connection, app_id).await {

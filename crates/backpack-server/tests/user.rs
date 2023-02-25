@@ -22,35 +22,3 @@ async fn not_authenticated() {
 struct UuidInput {
     uuid: Uuid,
 }
-
-#[tokio::test]
-async fn get_test_token() {
-    let app = helper::spawn_app().await;
-    let client = reqwest::Client::builder()
-        .pool_max_idle_per_host(0)
-        .build()
-        .unwrap();
-
-    let response = client
-        .get(&format!("{}/api/v1/oauth/fake/success", app.address))
-        .header("keep-alive", "")
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert!(response.status().is_success());
-
-    sqlx::query!("SELECT id FROM users",)
-        .fetch_one(&app.db_pool)
-        .await
-        .expect("Failed to fetch saved subscription.");
-
-    let response = client
-        .get(&format!("{}/api/v1/oauth/fake/success", app.address))
-        .header("keep-alive", "")
-        .send()
-        .await
-        .expect("Failed to execute request.");
-
-    assert!(response.status().is_success());
-}

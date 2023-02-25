@@ -54,8 +54,8 @@ fn handle_login_tasks(
     }
 }
 #[derive(Component)]
-pub struct SignupTask(Task<Result<(()), reqwest::Error>>);
-pub struct SignupTaskResultEvent(pub Result<(()), reqwest::Error>);
+pub struct SignupTask(Task<Result<(), reqwest::Error>>);
+pub struct SignupTaskResultEvent(pub Result<(), reqwest::Error>);
 
 pub fn bevy_signup(
     commands: &mut Commands,

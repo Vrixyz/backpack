@@ -27,15 +27,25 @@ pub fn config(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
 pub struct CreateEmailPasswordData {
     pub email: String,
 }
+impl std::fmt::Display for CreateEmailPasswordData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.email)
+    }
+}
 
+#[tracing::instrument(
+    name = "oauth signup",
+    skip_all,
+    fields(req_data=%&*req_data)
+)]
 async fn oauth_create_email_password(
-    req_data: web::Json<CreateEmailPasswordData>,
     connection: web::Data<PgPool>,
+    req_data: web::Json<CreateEmailPasswordData>,
 ) -> impl Responder {
     use rand::Rng;
     if exist(connection.as_ref(), &req_data.email).await {
         // User should use login with email password.
-        return HttpResponse::ExpectationFailed();
+        return HttpResponse::ExpectationFailed().finish();
     }
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\
@@ -50,7 +60,7 @@ async fn oauth_create_email_password(
         })
         .collect();
     let Ok(password_hashed) = hash(&password, DEFAULT_COST) else {
-        return HttpResponse::InternalServerError();
+        return HttpResponse::InternalServerError().finish();
     };
 
     let user = UserId::create(&connection, &random_name()).await.unwrap();
@@ -62,8 +72,7 @@ async fn oauth_create_email_password(
         .to(req_data.email.parse().unwrap())
         .subject("Welcome to Backpack")
         .body(format!(
-            "Hi,\nWelcome to Backpack, your password is {}.",
-            &password
+            "Hi,\nWelcome to Backpack, your password is {password}.",
         ))
         .unwrap();
     dbg!(&email);
@@ -81,7 +90,7 @@ async fn oauth_create_email_password(
     // Send the email
     match mailer.send(&email) {
         Ok(_) => println!("Email sent successfully!"),
-        Err(e) => panic!("Could not send email: {:?}", e),
+        Err(e) => panic!("Could not send email: {e:?}"),
     }
 
     // We should not create biscuit here, because we need to verify the email first.
@@ -97,7 +106,7 @@ async fn oauth_create_email_password(
     // gets an authentication token and can use services until its expiration.
     // then later we can flag the user as verified ? :shrug:
 
-    HttpResponse::Created()
+    HttpResponse::Created().finish()
 }
 
 #[derive(Debug, Deserialize, Clone)]

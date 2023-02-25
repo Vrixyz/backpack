@@ -47,6 +47,11 @@ async fn create_item(
     }
 }
 
+#[tracing::instrument(
+    name = "delete item",
+    skip_all,
+    fields(item_id=%&*_item_id)
+)]
 async fn delete_item(_connection: web::Data<PgPool>, _item_id: web::Path<i32>) -> impl Responder {
     // TODO: #9 check no user have this item, Please refer to openapi spec for more details.
     HttpResponse::NotImplemented().finish()

@@ -1,9 +1,6 @@
 use std::net::TcpListener;
 
-use backpack_server::{
-    configuration::{get_configuration, DatabaseSettings},
-    get_connection_pool,
-};
+use backpack_server::configuration::{get_configuration, DatabaseSettings};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -25,7 +22,7 @@ pub async fn spawn_app() -> TestApp {
     let _ = tokio::spawn(server);
 
     TestApp {
-        address: format!("http://127.0.0.1:{}", port),
+        address: format!("http://127.0.0.1:{port}"),
         db_pool: connection_pool,
     }
 }

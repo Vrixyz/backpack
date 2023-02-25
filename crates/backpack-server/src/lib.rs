@@ -59,7 +59,6 @@ pub fn run(
             //.service(domains::config::config(config.clone()))
             .service(models::oauth_github::oauth_github())
             .service(routes::oauth::routes())
-            .service(routes::oauth_fake::oauth_fake())
 
         //
         //

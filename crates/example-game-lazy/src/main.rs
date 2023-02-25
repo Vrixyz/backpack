@@ -7,10 +7,7 @@ use bevy_egui::{
     egui::{self, Color32, RichText},
     EguiContext, EguiPlugin,
 };
-use data::{
-    AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData,
-    UserId, UserItemModify,
-};
+use data::{AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData};
 use dotenv::dotenv;
 
 mod backpack_client;
@@ -19,7 +16,7 @@ pub mod utils;
 
 use backpack_client::*;
 use backpack_client_bevy::*;
-use game::{Game, GameDef};
+use game::Game;
 use password::password_ui;
 
 fn main() {

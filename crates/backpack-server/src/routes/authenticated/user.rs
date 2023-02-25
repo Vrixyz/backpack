@@ -13,7 +13,12 @@ struct Identity<'a> {
     name: String,
 }
 
-async fn get_user(user_id: web::Path<i32>, connection: web::Data<PgPool>) -> impl Responder {
+#[tracing::instrument(
+    name = "Get user",
+    skip_all,
+    fields(user_id=%&*user_id)
+)]
+async fn get_user(connection: web::Data<PgPool>, user_id: web::Path<i32>) -> impl Responder {
     let user_id = UserId(*user_id);
     HttpResponse::Ok().json(Identity {
         user_id: &user_id,

@@ -1,5 +1,3 @@
-use std::ops::Bound;
-
 use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, Align2},
@@ -8,7 +6,7 @@ use bevy_egui::{
 
 use crate::{
     backpack_client_bevy::{
-        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent, LoginTask,
+        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent,
         ModifyItemTaskResultEvent,
     },
     AuthData, BackpackCom, BackpackItems,
