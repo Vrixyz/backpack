@@ -1,5 +1,5 @@
 [package]
-name = "example-game-lazy"
+name = "example_game_lazy"
 version = "0.1.0"
 edition = "2021"
 

@@ -1,5 +1,8 @@
+use backpack_client::shared::CreateEmailPasswordData;
 use serde::Serialize;
 use uuid::Uuid;
+
+use crate::helper::{spawn_app, TestUser};
 
 mod helper;
 /*
@@ -21,4 +24,15 @@ async fn not_authenticated() {
 #[derive(Serialize)]
 struct UuidInput {
     uuid: Uuid,
+}
+
+#[tokio::test]
+async fn an_error_flash_message_is_set_on_failure() {
+    // Arrange
+    let mut app = spawn_app().await;
+
+    // Act
+    TestUser::generate(&mut app.api_client)
+        .await
+        .expect("error when generating test user");
 }

@@ -6,7 +6,7 @@ use bevy_egui::{
 
 use crate::{
     backpack_client_bevy::{
-        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent,
+        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent, LoginTask,
         ModifyItemTaskResultEvent,
     },
     AuthData, BackpackCom, BackpackItems,

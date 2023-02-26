@@ -50,7 +50,13 @@ paths:
         required: true
       responses:
         "201":
-          description: Successful creation of the user
+          description: Successful creation of the user.
+          content:
+            text/plain:
+              schema:
+                description: "The generated password ; it's also sent by email."
+                type: string
+                example: "your generated password, to be used on login"
         "500":
           description: Internal server error
   /unauthenticated/email_password/login:

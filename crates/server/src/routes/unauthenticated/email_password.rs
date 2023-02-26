@@ -1,7 +1,8 @@
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use biscuit_auth::KeyPair;
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
-use serde::Deserialize;
+use secrecy::{ExposeSecret, Secret};
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
 use crate::{
@@ -32,7 +33,19 @@ impl std::fmt::Display for CreateEmailPasswordData {
         write!(f, "{}", self.email)
     }
 }
+fn expose_secret_string<S>(data: &Secret<String>, ser: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    ser.serialize_str(data.expose_secret())
+}
 
+#[derive(Debug, Serialize, Clone)]
+pub struct CreatedUserEmailPasswordData {
+    pub id: UserId,
+    #[serde(serialize_with = "expose_secret_string")]
+    pub password: Secret<String>,
+}
 #[tracing::instrument(
     name = "oauth signup",
     skip_all,
@@ -106,7 +119,10 @@ async fn oauth_create_email_password(
     // gets an authentication token and can use services until its expiration.
     // then later we can flag the user as verified ? :shrug:
 
-    HttpResponse::Created().finish()
+    HttpResponse::Created().json(CreatedUserEmailPasswordData {
+        id: user,
+        password: Secret::new(password),
+    })
 }
 
 #[derive(Debug, Deserialize, Clone)]
