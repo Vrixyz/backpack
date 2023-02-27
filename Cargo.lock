@@ -559,7 +559,7 @@ dependencies = [
  "base64 0.21.0",
  "bcrypt",
  "biscuit-auth",
- "dotenv",
+ "dotenvy",
  "lettre",
  "log",
  "once_cell",

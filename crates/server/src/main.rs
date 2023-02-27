@@ -3,7 +3,7 @@ use backpack_server::{
     run,
     telemetry::{get_subscriber, init_subscriber},
 };
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use sqlx::postgres::PgPoolOptions;
 use std::net::TcpListener;
 

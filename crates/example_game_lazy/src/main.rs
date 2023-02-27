@@ -8,7 +8,7 @@ use bevy_egui::{
     EguiContext, EguiPlugin,
 };
 use data::{AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 mod backpack_client;
 mod backpack_client_bevy;

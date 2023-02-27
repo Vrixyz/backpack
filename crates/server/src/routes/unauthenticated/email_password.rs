@@ -81,8 +81,8 @@ async fn oauth_create_email_password(
     assert!(create(&connection, &req_data.email, &password_hashed, user).await);
 
     let email = Message::builder()
-        .from(dotenv::var("BACKPACK_EMAIL").unwrap().parse().unwrap())
-        .reply_to(dotenv::var("BACKPACK_EMAIL").unwrap().parse().unwrap())
+        .from(dotenvy::var("BACKPACK_EMAIL").unwrap().parse().unwrap())
+        .reply_to(dotenvy::var("BACKPACK_EMAIL").unwrap().parse().unwrap())
         .to(req_data.email.parse().unwrap())
         .subject("Welcome to Backpack")
         .body(format!(
@@ -90,8 +90,8 @@ async fn oauth_create_email_password(
         ))
         .unwrap();
     let creds = Credentials::new(
-        dotenv::var("BACKPACK_EMAIL").unwrap(),
-        dotenv::var("BACKPACK_EMAIL_PASSWORD").unwrap(),
+        dotenvy::var("BACKPACK_EMAIL").unwrap(),
+        dotenvy::var("BACKPACK_EMAIL_PASSWORD").unwrap(),
     );
 
     // Open a remote connection to gmail

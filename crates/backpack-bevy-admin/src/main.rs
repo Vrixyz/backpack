@@ -11,7 +11,7 @@ fn install_and_open() -> Result<(), ()> {
 }
 
 fn main() {
-    dotenv::dotenv().ok();
+    dotenvy::dotenv().ok();
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
@@ -39,7 +39,7 @@ fn ui_auth(mut egui_context: ResMut<EguiContext>, auth_data: Res<AuthData>) {
         if ui.button("Authenticate with Github").clicked() {
             drop(open::that(format!(
                 "https://github.com/login/oauth/authorize?client_id={}",
-                dotenv::var("BACKPACK_GITHUB_CLIENT_ID").unwrap()
+                dotenvy::var("BACKPACK_GITHUB_CLIENT_ID").unwrap()
             )));
         }
     });
