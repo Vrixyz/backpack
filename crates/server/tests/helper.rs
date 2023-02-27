@@ -1,9 +1,11 @@
 use std::net::TcpListener;
 
-use backpack_client::BackpackClient;
+use backpack_client::{
+    shared::{AppId, BiscuitInfo, Role, UserId},
+    BackpackClient,
+};
 use backpack_server::{
     configuration::{get_configuration, DatabaseSettings},
-    models::user::UserId,
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
@@ -81,29 +83,50 @@ pub struct TestUser {
     pub email: String,
     pub password: String,
 }
+pub struct UserAuthentication {
+    pub biscuit_raw: Vec<u8>,
+    pub infos: BiscuitInfo,
+}
 
 impl TestUser {
     pub async fn generate(client: &mut BackpackClient) -> Result<Self, reqwest::Error> {
         let email = Uuid::new_v4().to_string() + "@example.com";
-        // TODO: send signup and retrieve password and id.
-        let password = client
+        let created_data = client
             .signup(&backpack_client::shared::CreateEmailPasswordData {
                 email: email.clone(),
             })
             .await?;
-        todo!("Get password and user id from json.");
-        /* Json is: (see CreatedUserEmailPasswordData, return that from within client.signup)
-        {
-            "id": 2,
-            "password": "XFbUnzBs~WP)y8u*"
-          }
-        */
-        let user_id = UserId(0);
 
         Ok(Self {
-            user_id,
+            user_id: created_data.id,
             email,
-            password,
+            password: created_data.password,
+        })
+    }
+    pub async fn login(
+        &self,
+        client: &mut BackpackClient,
+        as_app_user: Option<AppId>,
+    ) -> Result<UserAuthentication, reqwest::Error> {
+        let biscuit = client
+            .login(&backpack_client::shared::LoginEmailPasswordData {
+                email: self.email.clone(),
+                password_plain: self.password.clone(),
+                as_app_user,
+            })
+            .await?;
+
+        assert!(
+            biscuit.1.role
+                == match as_app_user {
+                    Some(app_id) => Role::User(app_id),
+                    None => Role::Admin,
+                }
+        );
+
+        Ok(UserAuthentication {
+            biscuit_raw: biscuit.0,
+            infos: biscuit.1,
         })
     }
     // TODO: login, etc.

@@ -28,7 +28,7 @@ pub struct User {
     pub name: String,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AppId(pub i32);
 
 impl std::ops::Deref for AppId {
@@ -45,7 +45,7 @@ pub struct App {
     pub name: String,
 }
 
-#[derive(Clone, Deserialize, Copy, Debug)]
+#[derive(Clone, PartialEq, Eq, Deserialize, Copy, Debug)]
 pub enum Role {
     /// Connected as an admin, still, the user should be admin for the apps to be able to modify admin data.
     Admin,
@@ -77,6 +77,11 @@ pub struct CreateEmailPasswordData {
     pub email: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct CreatedUserEmailPasswordData {
+    pub id: UserId,
+    pub password: String,
+}
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LoginEmailPasswordData {
     pub email: String,

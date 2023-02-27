@@ -1,7 +1,7 @@
 pub use shared;
 use shared::{
-    BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
-    UserItemModify,
+    BiscuitInfo, CreateEmailPasswordData, CreatedUserEmailPasswordData, ItemAmount, ItemId,
+    LoginEmailPasswordData, UserId, UserItemModify,
 };
 
 use reqwest::Client;
@@ -28,7 +28,17 @@ impl BackpackClient {
     pub fn get_client_mut(&mut self) -> &'_ mut Client {
         &mut self.client
     }
-    pub async fn signup(&self, data: &CreateEmailPasswordData) -> Result<String, reqwest::Error> {
+
+    /* Json is: (see CreatedUserEmailPasswordData, return that from within client.signup)
+    {
+        "id": 2,
+        "password": "XFbUnzBs~WP)y8u*"
+      }
+    */
+    pub async fn signup(
+        &self,
+        data: &CreateEmailPasswordData,
+    ) -> Result<CreatedUserEmailPasswordData, reqwest::Error> {
         self.client
             .post(dbg!(
                 self.url.clone() + "/unauthenticated/email_password/create"
@@ -37,7 +47,7 @@ impl BackpackClient {
             .send()
             .await?
             .error_for_status()?
-            .text()
+            .json::<CreatedUserEmailPasswordData>()
             .await
     }
     pub async fn login(
@@ -47,7 +57,7 @@ impl BackpackClient {
         let biscuit_raw = self
             .client
             .post(self.url.clone() + "/unauthenticated/email_password/login")
-            .json(data)
+            .json(dbg!(data))
             .send()
             .await?
             .text()

@@ -1,4 +1,4 @@
-use backpack_client::shared::CreateEmailPasswordData;
+use backpack_client::shared::{AppId, CreateEmailPasswordData};
 use serde::Serialize;
 use uuid::Uuid;
 
@@ -27,12 +27,34 @@ struct UuidInput {
 }
 
 #[tokio::test]
-async fn an_error_flash_message_is_set_on_failure() {
+async fn signup_and_login_as_admin() {
     // Arrange
     let mut app = spawn_app().await;
 
     // Act
-    TestUser::generate(&mut app.api_client)
+    let user = TestUser::generate(&mut app.api_client)
         .await
         .expect("error when generating test user");
+    let auth_info = user
+        .login(&mut app.api_client, None)
+        .await
+        .expect("login failed");
+}
+
+#[tokio::test]
+async fn signup_and_login_as_user() {
+    // Arrange
+    let mut app = spawn_app().await;
+    // TODO: create a backpack App
+    let app_id = AppId(0);
+
+    // Act
+    let user = TestUser::generate(&mut app.api_client)
+        .await
+        .expect("error when generating test user");
+
+    let auth_info = user
+        .login(&mut app.api_client, Some(app_id))
+        .await
+        .expect("login failed");
 }

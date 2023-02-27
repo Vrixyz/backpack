@@ -33,6 +33,7 @@ impl std::fmt::Display for CreateEmailPasswordData {
         write!(f, "{}", self.email)
     }
 }
+
 fn expose_secret_string<S>(data: &Secret<String>, ser: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
@@ -88,7 +89,6 @@ async fn oauth_create_email_password(
             "Hi,\nWelcome to Backpack, your password is {password}.",
         ))
         .unwrap();
-    dbg!(&email);
     let creds = Credentials::new(
         dotenv::var("BACKPACK_EMAIL").unwrap(),
         dotenv::var("BACKPACK_EMAIL_PASSWORD").unwrap(),
@@ -102,7 +102,7 @@ async fn oauth_create_email_password(
 
     // Send the email
     match mailer.send(&email) {
-        Ok(_) => println!("Email sent successfully!"),
+        Ok(_) => {}
         Err(e) => panic!("Could not send email: {e:?}"),
     }
 
@@ -129,7 +129,7 @@ async fn oauth_create_email_password(
 pub struct LoginEmailPasswordData {
     pub email: String,
     pub password_plain: String,
-    pub as_user_from_app: Option<AppId>,
+    pub as_app_user: Option<AppId>,
 }
 
 async fn oauth_login_email_password(
@@ -143,13 +143,13 @@ async fn oauth_login_email_password(
             return HttpResponse::Unauthorized().finish();
         };
     let Ok(true) =
-        verify(dbg!(&req_data.password_plain), &password_hash_existing)
+        verify(&req_data.password_plain, &password_hash_existing)
         else {
         return HttpResponse::Unauthorized().finish();
     };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
 
-    let biscuit = match req_data.as_user_from_app {
+    let biscuit = match dbg!(req_data.as_app_user) {
         Some(app_id) => user_id.create_biscuit(&root, Role::User(app_id)),
         None => user_id.create_biscuit(&root, Role::Admin),
     };
