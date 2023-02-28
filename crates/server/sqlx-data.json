@@ -1,0 +1,551 @@
+{
+  "db": "PostgreSQL",
+  "12fe991802e093fca261e92f1904b939e6b7b7e822a9b1995102e0f12404de62": {
+    "describe": {
+      "columns": [
+        {
+          "name": "app_id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n        SELECT app_id, name\n        FROM apps_admins\n        JOIN apps\n        ON apps.id = app_id\n        WHERE user_id = $1\n            "
+  },
+  "2144a74280e1ccb6cb3b3576144e5c5ee4d5d8268c3828b38d1e040199279ac8": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Text",
+          "Bool",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO users_email_password (email, password_hash, is_verified, user_id) VALUES ($1, $2, $3, $4)\n            RETURNING id\n        "
+  },
+  "23007e8c6568212230649ff65f7e0ec613d27a067ede597d3cebf37a7802c9b1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            SELECT id, name FROM apps WHERE id = $1\n            "
+  },
+  "2b5bb2937da51c6ac3b1ff27a87e3a6377a778250f5d76de8d85fb5605521624": {
+    "describe": {
+      "columns": [
+        {
+          "name": "amount",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\nUPDATE users_items SET amount = amount + $1\n  WHERE user_id = $2 AND item_id = $3\n  RETURNING amount\n        "
+  },
+  "533ffa190cb02e238460fd57644a47b9e386b0e297f32bc9e4f7893059aacb5a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "amount",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n        SELECT  item_id as id, amount, items.name as name\n        FROM users_items\n        JOIN items\n        ON items.id = item_id\n        WHERE user_id = $1\n            "
+  },
+  "615256bf28024f3fec9e3496e33ebcfd0f8a340469616688d8e71a5593777e62": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n        SELECT apps.id, apps.name\n        FROM apps\n        JOIN items\n        ON items.app_id = apps.id\n        WHERE items.id = $1\n            "
+  },
+  "67f716b8f7ece30df9c8fb3cd39dd1dd4130a7dccbb1fd92a30e450df5288748": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO items (name, app_id) VALUES ($1, $2)\n        RETURNING id\n        "
+  },
+  "68134af3246b0e2072477d6909bd9eb809bfbaeb4418fb4c5cec0356beaba571": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT id FROM users_email_password WHERE email = $1"
+  },
+  "6c80f607396d5e093fc1b0c1b305e7643efd3456dde2e07b3da38464cd0d47d0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO apps (name) VALUES ($1)\n            RETURNING id\n            "
+  },
+  "88f26472e41c0381a8945804164c12fdc502c55c9bb4f90d64fd38d953e0d5f5": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT id FROM users WHERE id = $1"
+  },
+  "8f29273775a5221a34e57f771b8d5cb8cbd37aa01426903e6484cadb67e3be8b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "amount",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n    INSERT INTO users_items ( user_id, item_id, amount )\n    VALUES ( $1, $2, $3 )\n    RETURNING amount\n            "
+  },
+  "a27361710ae607e3f37c3673d10b0f5d453a8da74e90e6c6a73dad8db43eaf18": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT id FROM users_github WHERE id = $1 AND login = $2"
+  },
+  "a3953481821540319611f93bdddc5a7f570eb1e0cd1164354d09b1700a0fa234": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            SELECT id, name FROM items WHERE app_id = $1\n            "
+  },
+  "ab8505e0b8381a437785c254b085788ac528a6efa6830078ec61bdda9c399857": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO users_github (id, login, user_id) VALUES ($1, $2, $3)\n            RETURNING id\n            "
+  },
+  "acabdeeead0d9a78a86559cdcfd3df458aa7ea23c8beb38014ecb2c8ba05bfdc": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "password_hash",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT id, password_hash, user_id FROM users_email_password WHERE email = $1"
+  },
+  "b798bb7430c8d1cfc8bf8412a9f845c0f31774513bbbd6bdd5876b07e76ec292": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            SELECT id, name FROM users WHERE id = $1\n            "
+  },
+  "c099d96aae7c039140bb722216c75fdae56416e6f3b67c8ab9da1056900188a1": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n                DELETE FROM items\n                WHERE id = $1;\n            "
+  },
+  "ca6ac87d0eb3a95d088b55d8956772fda2fc9c30a8b619ceff02cffe7c8a2961": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "app_id",
+          "ordinal": 2,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            SELECT id, name, app_id FROM items WHERE id = $1\n            "
+  },
+  "e5c2eaaf761c489bd2c69b25f99a48524a8e2cd1ceb4334893d0104cce7d1724": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "amount",
+          "ordinal": 1,
+          "type_info": "Int4"
+        },
+        {
+          "name": "name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n        SELECT  item_id as id, amount, items.name as name\n        FROM users_items\n        JOIN items\n        ON items.id = item_id\n        WHERE user_id = $1\n        AND item_id = $2\n            "
+  },
+  "ee662e613130bde028d208cec7da598a84e15ca31a83af1eaae950ac0480b266": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n    INSERT INTO apps_admins ( user_id, app_id )\n    VALUES ( $1, $2)\n            "
+  },
+  "f08759a8bfd67260457d585e24dcbdcecad3fc29f2d8da122cdefd3054b93caa": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO users (name) VALUES ($1)\n            RETURNING id\n            "
+  },
+  "f1d14ea7b059feb33baec7449b04b6d31ea737410ead400a8704d52fbc276aa0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "SELECT id FROM apps WHERE id = $1"
+  },
+  "f5a383cec84609e88be165014edcd3ed872a8937dee46edc0269f7a7885a512e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int4",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT user_id FROM users_github WHERE id = $1 AND login = $2"
+  },
+  "f668824bab3a4de1fe3c4052320dc8a9b9030a624662548cd174cbf529f6fc3e": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n                DELETE FROM apps\n                WHERE id = $1;\n            "
+  }
+}

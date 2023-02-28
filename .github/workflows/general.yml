@@ -62,6 +62,6 @@ jobs:
           ./scripts/reset_db.sh
       - name: Check sqlx-data.json is up-to-date
         run: |
-          cargo sqlx prepare --check -- --bin zero2prod
+          cargo sqlx prepare --check -- --bin backpack_server
       - name: Run tests
         run: cargo test
