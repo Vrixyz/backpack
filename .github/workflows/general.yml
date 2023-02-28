@@ -35,13 +35,14 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: postgres
-          DATABASE_URL: "postgres://postgres:password@localhost:5432/backpack"
-          GITHUB_ADMIN_CLIENT_ID: "unused"
-          GITHUB_ADMIN_CLIENT_SECRET: "unused"
-          BACKPACK_EMAIL: ${{ secrets.BACKPACK_EMAIL }}
-          BACKPACK_EMAIL_PASSWORD: ${{ secrets.BACKPACK_EMAIL_PASSWORD }}
         ports:
           - 5432:5432
+    env:
+      DATABASE_URL: "postgres://postgres:password@localhost:5432/backpack"
+      GITHUB_ADMIN_CLIENT_ID: "unused"
+      GITHUB_ADMIN_CLIENT_SECRET: "unused"
+      BACKPACK_EMAIL: ${{ secrets.BACKPACK_EMAIL }}
+      BACKPACK_EMAIL_PASSWORD: ${{ secrets.BACKPACK_EMAIL_PASSWORD }}
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@stable
