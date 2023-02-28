@@ -18,7 +18,18 @@ DB_PASSWORD="${POSTGRES_PASSWORD:=password}"
 DB_NAME="${POSTGRES_DB:=backpack}"
 # Check if a custom port has been set, otherwise default to '5432'
 DB_PORT="${POSTGRES_PORT:=5432}"
+# Check if a custom host has been set, otherwise default to 'localhost'
+DB_HOST="${POSTGRES_HOST:=localhost}"
 # Launch postgres
+
+
+# Keep pinging Postgres until it's ready to accept commands
+until PGPASSWORD="${DB_PASSWORD}" psql -h "${DB_HOST}" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q'; do
+  >&2 echo "Postgres is still unavailable - sleeping"
+  sleep 1
+done
+
+>&2 echo "Postgres is up and running on port ${DB_PORT} - running migrations now!"
 
 sqlx database drop
 sqlx database create
