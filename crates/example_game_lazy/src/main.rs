@@ -77,7 +77,7 @@ impl Plugin for AuthPlugin {
         app.insert_resource(AuthData { data: None });
         app.add_plugin(BackpackClientPlugin);
         app.add_plugin(Game);
-        app.add_system(ui_auth);
+        app.add_system_set(SystemSet::on_update(game::GameState::Warmup).with_system(ui_auth));
         app.add_system(handle_login_result);
         app.add_system(handle_signup_result);
         app.add_state(PopupSignupSuccess::Hidden);

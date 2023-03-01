@@ -9,6 +9,7 @@ use std::time::Duration;
 
 use bevy::{math::Vec3Swizzles, prelude::*};
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
+use lerp::Lerp;
 use particles::ParticleExplosion;
 use rand::prelude::*;
 
@@ -47,6 +48,10 @@ pub enum GameState {
 pub struct GameDef {
     pub enemy_count: u32,
 }
+#[derive(Resource, Default)]
+pub struct GameDefBorder {
+    pub borders: Vec2,
+}
 
 #[derive(Component)]
 struct Enemy;
@@ -78,6 +83,9 @@ impl Plugin for Game {
         app.insert_resource(GameAssets {
             player: Handle::default(),
             enemy: Handle::default(),
+        });
+        app.insert_resource(GameDefBorder {
+            borders: Vec2::new(2000f32, 2000f32),
         });
         app.insert_resource(LoadingPlayState::Unknown);
         app.add_plugin(mouse::MousePlugin);
@@ -174,6 +182,7 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
 fn create_player(
     mut commands: Commands,
     mut game_def: ResMut<GameDef>,
+    game_def_borders: Res<GameDefBorder>,
     assets: Res<GameAssets>,
     mut lines: ResMut<DebugLines>,
 ) {
@@ -191,10 +200,10 @@ fn create_player(
         CollisionState::NoCollision,
     ));
     let borders = [
-        Vec2::new(1000f32, 1000f32).extend(0f32),
-        Vec2::new(1000f32, -1000f32).extend(0f32),
-        Vec2::new(-1000f32, -1000f32).extend(0f32),
-        Vec2::new(-1000f32, 1000f32).extend(0f32),
+        (game_def_borders.borders * Vec2::new(1f32, 1f32)).extend(0f32),
+        (game_def_borders.borders * Vec2::new(1f32, -1f32)).extend(0f32),
+        (game_def_borders.borders * Vec2::new(-1f32, -1f32)).extend(0f32),
+        (game_def_borders.borders * Vec2::new(-1f32, 1f32)).extend(0f32),
     ];
 
     for i in 0..borders.len() {
@@ -206,6 +215,7 @@ fn update_enemy_count(
     mut commands: Commands,
     assets: Res<GameAssets>,
     def: Res<GameDef>,
+    borders: Res<GameDefBorder>,
     q_enemies: Query<Entity, With<Enemy>>,
 ) {
     if !def.is_changed() {
@@ -219,19 +229,19 @@ fn update_enemy_count(
                 SpriteBundle {
                     texture: assets.enemy.clone(),
                     transform: Transform::from_translation(Vec3::new(
-                        rng.gen_range(-1000f32..1000f32),
-                        rng.gen_range(-1000f32..1000f32),
+                        rng.gen_range(-borders.borders.x..borders.borders.x),
+                        rng.gen_range(-borders.borders.y..borders.borders.y),
                         0f32,
                     )),
                     ..default()
                 },
                 Enemy,
                 WantedMovement {
-                    direction: random_point_circle(1000f32, false),
+                    direction: random_point_circle(750f32, false),
                 },
                 ScoreNear::NotNear,
                 ScoreNearDef {
-                    time_to_score: 2.0,
+                    time_to_score: 2.5,
                     score: 1,
                 },
             ));
@@ -255,11 +265,15 @@ fn random_point_circle(range: f32, random_range_value: bool) -> Vec2 {
     Vec2 { x, y }
 }
 
-fn update_movement(time: Res<Time>, mut q_movers: Query<(&mut Transform, &WantedMovement)>) {
+fn update_movement(
+    time: Res<Time>,
+    borders: Res<GameDefBorder>,
+    mut q_movers: Query<(&mut Transform, &WantedMovement)>,
+) {
     for (mut t, movement) in q_movers.iter_mut() {
         t.translation += (movement.direction * time.delta_seconds()).extend(0f32);
-        t.translation.y = t.translation.y.clamp(-1000f32, 1000f32);
-        t.translation.x = t.translation.x.clamp(-1000f32, 1000f32);
+        t.translation.y = t.translation.y.clamp(-borders.borders.x, borders.borders.x);
+        t.translation.x = t.translation.x.clamp(-borders.borders.y, borders.borders.y);
     }
 }
 fn update_wanted_movement_player(
@@ -293,12 +307,15 @@ fn update_wanted_movement_player(
     }
 }
 
-fn bounce_enemies(mut q_movers: Query<(&Transform, &mut WantedMovement)>) {
+fn bounce_enemies(
+    mut borders: Res<GameDefBorder>,
+    mut q_movers: Query<(&Transform, &mut WantedMovement)>,
+) {
     for (t, mut movement) in q_movers.iter_mut() {
-        if t.translation.y == 1000f32 || t.translation.y == -1000f32 {
+        if t.translation.y == borders.borders.y || t.translation.y == -borders.borders.y {
             movement.direction.y *= -1f32;
         }
-        if t.translation.x == 1000f32 || t.translation.x == -1000f32 {
+        if t.translation.x == borders.borders.x || t.translation.x == -borders.borders.x {
             movement.direction.x *= -1f32;
         }
     }
@@ -337,7 +354,8 @@ fn loading_play_use_currency(
     }
     let Some(auth) = &auth_data.data else {
         *loading_state =  LoadingPlayState::Failed;
-        dbg!(game_state.set(GameState::Warmup));
+        //dbg!(game_state.set(GameState::Warmup));
+        dbg!(game_state.set(GameState::Playing));
         return;
     };
     bevy_modify_item(
@@ -443,10 +461,13 @@ fn juice_score(
 pub(super) fn more_enemies(
     time: Res<Time>,
     mut game_def: ResMut<GameDef>,
+    // FIXME: this should not be local, because we want to reset it on game start.
     mut timer: Local<Timer>,
 ) {
     if timer.duration() == Duration::default() {
-        timer.set_duration(Duration::from_secs(10));
+        timer.set_duration(Duration::from_secs(
+            1f32.lerp_bounded(10f32, (game_def.enemy_count as f32) / 6f32) as u64,
+        ));
         return;
     }
     timer.tick(time.delta());

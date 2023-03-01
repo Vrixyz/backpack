@@ -86,9 +86,10 @@ pub(super) fn collision_scoring(
                 continue;
             }
             let distance_to_player = p_t.1.distance(e_t.translation);
-            let enemy_size = 48f32 + 250f32;
+            let additional_distance_to_score = 350f32;
+            let enemy_size = 48f32;
             let player_size = 128f32;
-            if distance_to_player <= enemy_size + player_size {
+            if distance_to_player <= enemy_size + player_size + additional_distance_to_score {
                 if *score == ScoreNear::NotNear {
                     *score = ScoreNear::Scoring(Scoring {
                         entity_first_colliding: p_t.0,

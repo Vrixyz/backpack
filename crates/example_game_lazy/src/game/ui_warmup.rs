@@ -12,9 +12,9 @@ use crate::{
     AuthData, BackpackCom, BackpackItems,
 };
 
-use super::{mouse::MousePos, CollisionState, GameDef, GameState};
+use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
 
-pub(super) fn ui_tuto_start(mut egui_context: ResMut<EguiContext>) {
+pub(super) fn ui_tuto_start(auth_data: Res<AuthData>, mut egui_context: ResMut<EguiContext>) {
     egui::Area::new("my_area")
         .fixed_pos(egui::pos2(0.0, 0.0))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -23,17 +23,24 @@ pub(super) fn ui_tuto_start(mut egui_context: ResMut<EguiContext>) {
                 egui::Color32::BLUE,
                 "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
             );
+            if auth_data.data.is_none() {
+                ui.colored_label(
+                    egui::Color32::RED,
+                    "\n\nYou are not connected,\nYou won't gain any items.",
+                );
+            }
         });
 }
 
 pub(super) fn handle_tap_to_start(
+    borders: Res<GameDefBorder>,
     mut game_state: ResMut<State<GameState>>,
     mut mouse_input: ResMut<Input<MouseButton>>,
     mouse_pos: Res<MousePos>,
     q_collisions: Query<&CollisionState>,
 ) {
     if mouse_input.just_pressed(MouseButton::Left) {
-        if !Rect::from_center_half_size(Vec2::ZERO, Vec2::splat(1000f32)).contains(mouse_pos.0) {
+        if !Rect::from_center_half_size(Vec2::ZERO, borders.borders).contains(mouse_pos.0) {
             return;
         }
         for collision in q_collisions.iter() {
