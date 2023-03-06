@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::camera::RenderTarget};
+use bevy::{prelude::*, render::camera::RenderTarget, window::PrimaryWindow};
 
 /// Used to help identify our main camera
 #[derive(Component)]
@@ -18,20 +18,21 @@ impl Plugin for MousePlugin {
 
 pub fn my_cursor_system(
     // need to get window dimensions
-    wnds: Res<Windows>,
+    primary_query: Query<&Window, With<PrimaryWindow>>,
     // query to get camera transform
     q_camera: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     mut mouse_res: ResMut<MousePos>,
 ) {
+    let Ok(window) = primary_query.get_single() else {
+        return;
+    };
     // get the camera info and transform
     // assuming there is exactly one main camera entity, so query::single() is OK
     let (camera, camera_transform) = q_camera.single();
 
     // get the window that the camera is displaying to (or the primary window)
-    let wnd = if let RenderTarget::Window(id) = camera.target {
-        wnds.get(id).unwrap()
-    } else {
-        wnds.get_primary().unwrap()
+    let Ok(wnd) = primary_query.get_single() else {
+        return;
     };
 
     // check if the cursor is inside the window and get its position

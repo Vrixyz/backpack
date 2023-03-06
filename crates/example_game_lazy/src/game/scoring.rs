@@ -10,13 +10,10 @@ pub struct ScorePlugin;
 impl Plugin for ScorePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Score>();
-        app.add_system_set(SystemSet::on_enter(GameState::Playing).with_system(init_scoring));
-        app.add_system_set(
-            SystemSet::on_update(GameState::Playing)
-                .with_system(collision_scoring)
-                .with_system(update_scoring)
-                .with_system(ui_scoring)
-                .with_system(ui_score),
+        app.add_system(init_scoring.in_schedule(OnEnter(GameState::Playing)));
+        app.add_systems(
+            (collision_scoring, update_scoring, ui_scoring, ui_score)
+                .in_set(OnUpdate(GameState::Playing)),
         );
     }
 }

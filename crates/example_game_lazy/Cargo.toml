@@ -6,11 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.9"
+bevy = "0.10"
 reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-bevy_egui = "0.19"
+bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui.git", branch = "bevy_main" }
 futures-lite = "1.11.3"
 crossbeam-channel = "0.5.0"
 tokio = "1.25.0"
@@ -19,5 +19,5 @@ dotenvy = "0.15"
 lerp = "0.4.0"
 rand = "0.8.5"
 bevy_prototype_debug_lines = "0.9"
-bevy_jornet = "0.3"
+bevy_jornet = { git = "https://github.com/Vrixyz/jornet.git", branch = "bevy-0.10" }
 particles = { path = "../particles" }

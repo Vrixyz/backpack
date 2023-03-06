@@ -7,7 +7,7 @@ mod ui_warmup;
 
 use std::time::Duration;
 
-use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy::{ecs::schedule::ScheduleLabel, math::Vec3Swizzles, prelude::*};
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use lerp::Lerp;
 use particles::ParticleExplosion;
@@ -36,12 +36,18 @@ struct GameAssets {
     pub enemy: Handle<Image>,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, States, ScheduleLabel)]
 pub enum GameState {
     Warmup,
     LoadingPlay,
     Playing,
     EndScreen,
+}
+
+impl Default for GameState {
+    fn default() -> Self {
+        GameState::Warmup
+    }
 }
 
 #[derive(Resource, Default)]
@@ -89,14 +95,15 @@ impl Plugin for Game {
         });
         app.insert_resource(LoadingPlayState::Unknown);
         app.add_plugin(mouse::MousePlugin);
-        app.add_plugin(DebugLinesPlugin::default());
+        // TODO: bevy 0.10
+        // app.add_plugin(DebugLinesPlugin::default());
         app.add_plugin(collisions::CollisionsPlugin);
         app.add_plugin(scoreboard::ScoreboardPlugin);
         app.add_plugin(scoring::ScorePlugin);
         app.add_plugin(particles::ParticlesPlugin);
         app.init_resource::<GameDef>();
         app.add_startup_system(load_assets);
-        app.add_state(GameState::Warmup);
+        app.add_state::<GameState>();
         app.add_system_set(
             SystemSet::on_update(GameState::Warmup)
                 .with_system(
@@ -184,7 +191,7 @@ fn create_player(
     mut game_def: ResMut<GameDef>,
     game_def_borders: Res<GameDefBorder>,
     assets: Res<GameAssets>,
-    mut lines: ResMut<DebugLines>,
+    //mut lines: ResMut<DebugLines>,
 ) {
     game_def.enemy_count = 0;
     commands.spawn((
@@ -207,7 +214,7 @@ fn create_player(
     ];
 
     for i in 0..borders.len() {
-        lines.line(borders[i], borders[(i + 1) % borders.len()], f32::INFINITY);
+        //lines.line(borders[i], borders[(i + 1) % borders.len()], f32::INFINITY);
     }
 }
 
@@ -346,7 +353,7 @@ fn loading_play_use_currency(
     items: Res<BackpackItems>,
     mut game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
-    mut game_state: ResMut<State<GameState>>,
+    mut game_state: ResMut<NextState<GameState>>,
     mut loading_state: ResMut<LoadingPlayState>,
 ) {
     if *loading_state != LoadingPlayState::Init {
@@ -376,7 +383,7 @@ fn init_loading_play(mut loading_state: ResMut<LoadingPlayState>) {
 fn handle_modify_result(
     mut events: EventReader<ModifyItemTaskResultEvent>,
     mut items: ResMut<BackpackItems>,
-    mut game_state: ResMut<State<GameState>>,
+    mut game_state: ResMut<NextState<GameState>>,
 ) {
     for ev in events.iter() {
         let Ok(ev) = ev.0 else {
@@ -397,7 +404,7 @@ fn handle_modify_result(
 
 fn update_collisions_player_playing(
     mut collision_event: EventReader<StayCollisionEvent>,
-    mut game_state: ResMut<State<GameState>>,
+    mut game_state: ResMut<NextState<GameState>>,
     mut leaderboard: ResMut<bevy_jornet::Leaderboard>,
     score: Res<Score>,
 ) {

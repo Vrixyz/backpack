@@ -14,27 +14,34 @@ use crate::{
 
 use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
 
-pub(super) fn ui_tuto_start(auth_data: Res<AuthData>, mut egui_context: ResMut<EguiContext>) {
+pub(super) fn ui_tuto_start(
+    auth_data: Res<AuthData>,
+    mut egui_context: ResMut<EguiContext>,
+    windows: Query<Entity, With<Window>>,
+) {
     egui::Area::new("my_area")
         .fixed_pos(egui::pos2(0.0, 0.0))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .show(egui_context.ctx_mut(), |ui| {
-            ui.colored_label(
-                egui::Color32::BLUE,
-                "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
-            );
-            if auth_data.data.is_none() {
+        .show(
+            egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
+            |ui| {
                 ui.colored_label(
-                    egui::Color32::RED,
-                    "\n\nYou are not connected,\nYou won't gain any items.",
+                    egui::Color32::BLUE,
+                    "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
                 );
-            }
-        });
+                if auth_data.data.is_none() {
+                    ui.colored_label(
+                        egui::Color32::RED,
+                        "\n\nYou are not connected,\nYou won't gain any items.",
+                    );
+                }
+            },
+        );
 }
 
 pub(super) fn handle_tap_to_start(
     borders: Res<GameDefBorder>,
-    mut game_state: ResMut<State<GameState>>,
+    mut game_state: ResMut<NextState<GameState>>,
     mut mouse_input: ResMut<Input<MouseButton>>,
     mouse_pos: Res<MousePos>,
     q_collisions: Query<&CollisionState>,
@@ -62,13 +69,14 @@ pub(super) fn ui_warmup(
     mut game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
     get_items_tasks: Query<Entity, With<GetItemsTask>>,
+    windows: Query<Entity, With<Window>>,
 ) {
     if auth_data.data.is_none() {
         return;
     }
-    egui::Window::new("Warmup")
-        .auto_sized()
-        .show(egui_context.ctx_mut(), |ui| {
+    egui::Window::new("Warmup").auto_sized().show(
+        egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
+        |ui| {
             if let Some(auth) = &auth_data.data {
                 if get_items_tasks.is_empty() {
                     let get_items_button = ui.button("Get items");
@@ -128,7 +136,8 @@ pub(super) fn ui_warmup(
                     });
                 }
             }
-        });
+        },
+    );
 }
 
 pub(super) fn handle_get_items_result(
