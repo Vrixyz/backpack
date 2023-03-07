@@ -96,9 +96,8 @@ impl Plugin for AuthPlugin {
 fn ui_signup_successful(
     egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     mut popup_signup_state: ResMut<NextState<PopupSignupSuccess>>,
-    windows: Query<Entity, With<Window>>,
 ) {
-    egui::Window::new("Popup Signup Success").show(&mut egui_ctx.single(), |ui| {
+    egui::Window::new("Popup Signup Success").show(egui_ctx.single(), |ui| {
         ui.label("Successful signed up!");
         ui.label("We sent you an email, check your spam folder too.");
         if ui.button("I received the mail").clicked() {

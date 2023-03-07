@@ -342,7 +342,7 @@ fn update_wanted_movement_player(
 }
 
 fn bounce_enemies(
-    mut borders: Res<GameDefBorder>,
+    borders: Res<GameDefBorder>,
     mut q_movers: Query<(&Transform, &mut WantedMovement)>,
 ) {
     for (t, mut movement) in q_movers.iter_mut() {
@@ -377,8 +377,7 @@ fn clear_collision_warmup(mut query: Query<(&mut Sprite, &mut CollisionState), W
 fn loading_play_use_currency(
     mut commands: Commands,
     auth_data: Res<AuthData>,
-    items: Res<BackpackItems>,
-    mut game_def: ResMut<GameDef>,
+    game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
     mut game_state: ResMut<NextState<GameState>>,
     mut loading_state: ResMut<LoadingPlayState>,
@@ -436,10 +435,10 @@ fn init_timer(game_def: Res<GameDef>, mut timer: ResMut<EnemySpawnTimer>) {
 fn update_collisions_player_playing(
     mut collision_event: EventReader<StayCollisionEvent>,
     mut game_state: ResMut<NextState<GameState>>,
-    mut leaderboard: ResMut<bevy_jornet::Leaderboard>,
+    leaderboard: ResMut<bevy_jornet::Leaderboard>,
     score: Res<Score>,
 ) {
-    for ev in collision_event.iter() {
+    for _ in collision_event.iter() {
         leaderboard.send_score(score.score as f32);
         game_state.set(GameState::EndScreen);
     }
@@ -500,7 +499,6 @@ fn more_enemies(
     mut commands: Commands,
     assets: Res<GameAssets>,
     time: Res<Time>,
-    mut game_def: ResMut<GameDef>,
     total_enemies: Query<Entity, Or<(&PlannedSpawn, &Enemy)>>,
     mut timer: ResMut<EnemySpawnTimer>,
 ) {

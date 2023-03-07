@@ -41,19 +41,18 @@ pub struct ScoreNearDef {
     pub score: i32,
 }
 
-fn init_scoring(time: Res<Time>, mut score: ResMut<Score>) {
+fn init_scoring(mut score: ResMut<Score>) {
     score.score = 0;
 }
 
 fn update_scoring(
     time: Res<Time>,
     mut score: ResMut<Score>,
-    mut query: Query<(Entity, &mut ScoreNear, &ScoreNearDef)>,
+    mut query: Query<(&mut ScoreNear, &ScoreNearDef)>,
 ) {
-    for (e, mut score_near, def) in query.iter_mut() {
+    for (mut score_near, def) in query.iter_mut() {
         match &*score_near {
             ScoreNear::Scoring(scoring) => {
-                scoring.start_time + def.time_to_score < time.elapsed_seconds();
                 if scoring.start_time + def.time_to_score < time.elapsed_seconds() {
                     score.score += def.score;
                     *score_near = ScoreNear::Gained;
@@ -78,7 +77,7 @@ pub(super) fn collision_scoring(
         .map(|(e, t)| (e, t.translation))
         .collect();
     for p_t in player_pos {
-        for (e_entity, e_t, mut score) in transforms.p1().iter_mut() {
+        for (_entity, e_t, mut score) in transforms.p1().iter_mut() {
             if matches!(*score, ScoreNear::Gained) {
                 continue;
             }

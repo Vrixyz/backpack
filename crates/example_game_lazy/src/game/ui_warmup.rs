@@ -16,7 +16,7 @@ use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
 
 pub(super) fn ui_tuto_start(
     auth_data: Res<AuthData>,
-    mut egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
 ) {
     egui::Area::new("my_area")
         .fixed_pos(egui::pos2(0.0, 0.0))
@@ -59,7 +59,7 @@ pub(super) fn handle_tap_to_start(
 
 pub(super) fn ui_warmup(
     mut commands: Commands,
-    mut egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     auth_data: Res<AuthData>,
     items: Res<BackpackItems>,
     mut game_def: ResMut<GameDef>,
