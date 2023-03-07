@@ -27,17 +27,16 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
-        .add_plugin(AuthPlugin {
+        .insert_resource(AuthInput {
             email: std::env::var("BACKPACK_GAME_EXAMPLE_USERNAME").unwrap_or("".to_string()),
             password: std::env::var("BACKPACK_GAME_EXAMPLE_PASSWORD").unwrap_or("".to_string()),
+            sign_in: std::env::var("BACKPACK_GAME_EXAMPLE_PASSWORD").is_ok(),
         })
+        .add_plugin(AuthPlugin)
         .run();
 }
 
-struct AuthPlugin {
-    pub email: String,
-    pub password: String,
-}
+struct AuthPlugin;
 
 #[derive(Resource, Debug)]
 struct AuthData {
@@ -77,11 +76,7 @@ impl Plugin for AuthPlugin {
         app.add_system(ui_auth);
         app.add_system(handle_login_result);
         app.add_system(handle_signup_result);
-        app.insert_resource(AuthInput {
-            email: self.email.clone(),
-            password: self.password.clone(),
-            sign_in: true,
-        });
+        app.init_resource::<AuthInput>();
         app.insert_resource(BackpackCom::new("http://127.0.0.1:8080/api/v1".into()));
         app.init_resource::<BackpackItems>();
     }

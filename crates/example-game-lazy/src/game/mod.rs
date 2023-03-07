@@ -33,6 +33,7 @@ pub struct Game;
 struct GameAssets {
     pub player: Handle<Image>,
     pub enemy: Handle<Image>,
+    pub warning: Handle<Image>,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -46,6 +47,11 @@ pub enum GameState {
 #[derive(Resource, Default)]
 pub struct GameDef {
     pub enemy_count: u32,
+}
+#[derive(Component, Default)]
+pub struct PlannedSpawn {
+    pub position: Vec2,
+    pub time_to_spawn: f32,
 }
 
 #[derive(Component)]
@@ -78,6 +84,7 @@ impl Plugin for Game {
         app.insert_resource(GameAssets {
             player: Handle::default(),
             enemy: Handle::default(),
+            warning: Handle::default(),
         });
         app.insert_resource(LoadingPlayState::Unknown);
         app.add_plugin(mouse::MousePlugin);
@@ -98,6 +105,7 @@ impl Plugin for Game {
                 )
                 .with_system(collision_warmup.after(collisions::collision_player_enemies))
                 .with_system(clear_collision_warmup.before(collision_warmup))
+                .with_system(update_enemy_count)
                 .with_system(ui_warmup::ui_warmup)
                 .with_system(ui_warmup::ui_tuto_start)
                 .with_system(ui_warmup::handle_tap_to_start.after(collision_warmup)),
@@ -130,7 +138,8 @@ impl Plugin for Game {
         app.add_system_set(
             SystemSet::on_update(GameState::Playing)
                 .with_system(ui_playing::ui_playing)
-                .with_system(more_enemies),
+                .with_system(more_enemies)
+                .with_system(spawn_planned),
         );
         app.add_system_set(
             SystemSet::on_enter(GameState::Warmup)
@@ -140,13 +149,13 @@ impl Plugin for Game {
         app.add_system_set(
             SystemSet::on_enter(GameState::Warmup)
                 .with_system(utils::despawn::<Enemy>)
+                .with_system(utils::despawn::<PlannedSpawn>)
                 .with_system(create_player),
         );
         app.add_system(ui_warmup::handle_get_items_result);
         app.add_system(ui_warmup::handle_modify_item_result);
         app.add_system(update_movement.before(collisions::collision_player_enemies))
-            .add_system(bounce_enemies.after(update_movement))
-            .add_system(update_enemy_count);
+            .add_system(bounce_enemies.after(update_movement));
 
         app.add_system_set(
             SystemSet::on_update(GameState::EndScreen)
@@ -160,6 +169,7 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(GameAssets {
         player: asset_server.load("bevy.png"),
         enemy: asset_server.load("bevy_pixel_light.png"),
+        warning: asset_server.load("bevy_pixel_dark.png"),
     });
     let camera = Camera2dBundle {
         projection: OrthographicProjection {
@@ -215,32 +225,36 @@ fn update_enemy_count(
     if diff > 0 {
         let mut rng = rand::thread_rng();
         for _ in 0..diff {
-            commands.spawn((
-                SpriteBundle {
-                    texture: assets.enemy.clone(),
-                    transform: Transform::from_translation(Vec3::new(
-                        rng.gen_range(-1000f32..1000f32),
-                        rng.gen_range(-1000f32..1000f32),
-                        0f32,
-                    )),
-                    ..default()
-                },
-                Enemy,
-                WantedMovement {
-                    direction: random_point_circle(1000f32, false),
-                },
-                ScoreNear::NotNear,
-                ScoreNearDef {
-                    time_to_score: 2.0,
-                    score: 1,
-                },
-            ));
+            let position = Vec2::new(
+                rng.gen_range(-1000f32..1000f32),
+                rng.gen_range(-1000f32..1000f32),
+            );
+            spawn_enemy(&mut commands, &assets, position);
         }
     } else {
         for e in q_enemies.iter().take(-diff as usize) {
             commands.entity(e).despawn();
         }
     }
+}
+
+fn spawn_enemy(commands: &mut Commands, assets: &Res<GameAssets>, position: Vec2) {
+    commands.spawn((
+        SpriteBundle {
+            texture: assets.enemy.clone(),
+            transform: Transform::from_translation(position.extend(0f32)),
+            ..default()
+        },
+        Enemy,
+        WantedMovement {
+            direction: random_point_circle(1000f32, false),
+        },
+        ScoreNear::NotNear,
+        ScoreNearDef {
+            time_to_score: 2.0,
+            score: 1,
+        },
+    ));
 }
 
 fn random_point_circle(range: f32, random_range_value: bool) -> Vec2 {
@@ -440,9 +454,10 @@ fn juice_score(
     }
 }
 
-pub(super) fn more_enemies(
+fn more_enemies(
+    mut commands: Commands,
+    assets: Res<GameAssets>,
     time: Res<Time>,
-    mut game_def: ResMut<GameDef>,
     mut timer: Local<Timer>,
 ) {
     if timer.duration() == Duration::default() {
@@ -451,9 +466,38 @@ pub(super) fn more_enemies(
     }
     timer.tick(time.delta());
     if timer.just_finished() {
-        game_def.enemy_count += 1;
+        let mut rng = rand::thread_rng();
+        let position = Vec2::new(
+            rng.gen_range(-1000f32..1000f32),
+            rng.gen_range(-1000f32..1000f32),
+        );
+        commands.spawn((
+            PlannedSpawn {
+                position,
+                time_to_spawn: time.elapsed_seconds() + 1f32,
+            },
+            SpriteBundle {
+                texture: assets.warning.clone(),
+                transform: Transform::from_translation(position.extend(0f32)),
+                ..default()
+            },
+        ));
         let new_duration = timer.duration() + Duration::from_secs(1);
         timer.set_duration(new_duration);
         timer.reset();
+    }
+}
+
+fn spawn_planned(
+    mut commands: Commands,
+    assets: Res<GameAssets>,
+    time: Res<Time>,
+    planned_enemies: Query<(Entity, &PlannedSpawn)>,
+) {
+    for (e, spawn) in planned_enemies.iter() {
+        if spawn.time_to_spawn < time.elapsed_seconds() {
+            commands.entity(e).despawn();
+            spawn_enemy(&mut commands, &assets, spawn.position)
+        }
     }
 }
