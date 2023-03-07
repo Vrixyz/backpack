@@ -1,0 +1,23 @@
+[package]
+name = "example_game_lazy"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = "0.9"
+reqwest = { version = "0.11", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+bevy_egui = "0.19"
+futures-lite = "1.11.3"
+crossbeam-channel = "0.5.0"
+tokio = "1.25.0"
+async-compat = "0.2.1"
+dotenvy = "0.15"
+lerp = "0.4.0"
+rand = "0.8.5"
+bevy_prototype_debug_lines = "0.9"
+bevy_jornet = "0.3"
+particles = { path = "../particles" }

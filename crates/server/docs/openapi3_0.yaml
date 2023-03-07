@@ -1,0 +1,547 @@
+openapi: 3.0.3
+info:
+  title: Backpack API
+  description: |-
+    🚧 Work In Progress API specification for [Backpack](https://github.com/Vrixyz/backpack)
+  contact:
+    email: contact@thierryberger.com
+  license:
+    name: MIT
+    url: https://github.com/Vrixyz/backpack/blob/main/LICENCE-MIT.txt
+  version: 1.0.0
+externalDocs:
+  description: github
+  url: https://github.com/Vrixyz/backpack
+servers:
+  - url: http://127.0.0.1:8080/api/v1
+  - url: https://localhost/api/v1
+tags:
+  - name: Unauthenticated
+    description: Everything you can do without being authenticated. Mainly to get a Biscuit authentication token.
+  # - name: user
+  #   description: A user owns items, he can authenticate as admin to create and modify apps and items he manages.
+  - name: app
+    description: Operations about apps, authenticated as admin
+  - name: item
+    description: Operations about items, authenticated as admin
+  - name: user as user
+    description: Operations about users, authenticated as user or admin
+  - name: item as user
+    description: Operations about items, authenticated as user or admin
+paths:
+  # authentication
+  /unauthenticated/email_password/create:
+    post:
+      tags:
+        - Unauthenticated
+      summary: Create a new user
+      description: If no existing users have provided email, the user is created and a password is sent by mail.
+      operationId: createUserEmail
+      requestBody:
+        description: The email of the created user.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "new.user@example.com"
+        required: true
+      responses:
+        "201":
+          description: Successful creation of the user.
+          content:
+            text/plain:
+              schema:
+                description: "The generated password ; it's also sent by email."
+                type: string
+                example: "your generated password, to be used on login"
+        "500":
+          description: Internal server error
+  /unauthenticated/email_password/login:
+    post:
+      tags:
+        - Unauthenticated
+      summary: Login with an user/email
+      description: Login with an account created via `/create_email_password`.
+      operationId: loginUserEmailPassword
+      requestBody:
+        description: The email and password of the existing user.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "new.user@example.com"
+                password_plain:
+                  type: string
+                  format: password
+                  description: "Password copypasted from email on creation"
+                  example: "5~#_ER]rz/..."
+                as_app_user:
+                  type: integer
+                  description: "id of the app to authenticate on"
+                  example: "42"
+              required:
+                - email
+                - password_plain
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
+        "403":
+          description: User not existing or wrong credentials.
+  /unauthenticated/health_check:
+    get:
+      tags:
+        - Unauthenticated
+      summary: Returns 200
+      description: Useful to verify the server is up.
+      operationId: healthcheck
+      responses:
+        "200":
+          description: OK
+  # app
+  /admin/app:
+    post:
+      tags:
+        - app
+      summary: Create a new app
+      description: Create a new app with given name.
+      operationId: createApp
+      requestBody:
+        description: Create an app
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: the id of the created app.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+    delete:
+      tags:
+        - app
+      summary: Delete an existing app
+      description: Delete existing app with provided id.
+      operationId: deleteApp
+      requestBody:
+        description: "Deletes an existing app. It should fail if it owns items.\
+          Items should be removed or transferred before."
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  description: the id of the app to be deleted
+                  type: integer
+        required: true
+      responses:
+        "200":
+          description: Successful deletion of app.
+        "401":
+          description: Unauthorized. (User is not admin for this app?)
+      security:
+        - biscuit_token:
+            - admin
+    get:
+      tags:
+        - app
+      summary: Get apps.
+      description: Get all apps the user is admin of.
+      operationId: getApp
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: all apps the user is admin of.
+                type: array
+                items:
+                  $ref: "#/components/schemas/App"
+      security:
+        - biscuit_token:
+            - admin
+  # item
+  /admin/item/app/{appId}:
+    parameters:
+      - in: path
+        name: appId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - item
+      summary: Create a new item
+      description: Create a new item with given name, with given app as owner.
+      operationId: createItem
+      requestBody:
+        description: Create an item
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created item.
+          content:
+            application/json:
+              schema:
+                description: the id of the created item.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+  /admin/item:
+    delete:
+      tags:
+        - item
+      summary: 🚧 Delete an existing item
+      description: 'Delete existing item with provided id.<br><br>
+        🚧 hard because we should check if no users have this items.<br>
+        But It''s a pain to remove with such a constraint,
+        so we should probably be able to:
+        <ol>
+        <li>"quarantine" it.</li>
+        <li>Then forbid its use/addition.</li>
+        <li>Then operate a migration (refund, whatever...)</li>
+        <li>Then remove all its users_items, and lastly remove the item.</li>
+        </ol>'
+      operationId: deleteItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  description: the id of the item to be deleted
+                  type: integer
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+        "401":
+          description: Unauthorized. (User is not admin of the owner app?)
+      security:
+        - biscuit_token:
+            - admin
+
+  # authenticated
+
+  /authenticated/whoami:
+    get:
+      tags:
+        - user as user
+      summary: Get authentication info (biscuit info)
+      operationId: whoami
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: biscuit info
+                $ref: "#/components/schemas/BiscuitInfo"
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/user/{userId}:
+    get:
+      tags:
+        - user as user
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: integer
+          required: true
+      summary: Get user info (name)
+      operationId: get_user
+      responses:
+        "200":
+          description: User info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "super name"
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/item/{itemId}/user/{userId}/modify:
+    parameters:
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - item as user
+      summary: modify given item by amount
+      description: "🚧 Logged as user or admin.<br>
+        - User fails if its app has no rights to modify (or has not this app in its biscuit)<br>
+        - User fails if they have no right onto that user_item combination. Could be useful to give/take<br>
+        - Admin fails if he's not managing this app"
+      operationId: modifyItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  description: the amount to add (or remove if negative).<br>🚧 Specific rights should be checked for negative/positive values.
+                  type: integer
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+        "401":
+          description: Unauthorized. (User is not admin of the owner app?)
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/item/user/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        description: userId is in path to allow asking for other users' items.
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: Get user's items
+      description: "Logged as user or admin."
+      operationId: getUserItems
+      responses:
+        "201":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items details
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemAmount"
+        "401":
+          description: Unauthorized.
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/item/{itemId}/user/{userId}:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: userId
+        description: userId is in path to allow asking for other users' items.
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: Get a specific item amount
+      description: "Logged as user or admin."
+      operationId: getUserItem
+      responses:
+        "201":
+          description: amount of the item.
+          content:
+            application/json:
+              schema:
+                type: integer
+        "401":
+          description: Unauthorized.
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/item/{itemId}:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - item as user
+      summary: 👻 Get item details (is it useful?)
+      description: Get item details, with owner app, useful before having the more complicated route getting all app's items
+      operationId: getItem
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items interactable through a given app.
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemDef"
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/item/app/{appId}:
+    parameters:
+      - in: path
+        name: appId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - app as user
+      summary: Get app's items.
+      description: Get all items definitions which can be interacted through a given app.
+      operationId: getItems
+      responses:
+        "200":
+          description: Successful operation returns the id of created app.
+          content:
+            application/json:
+              schema:
+                description: items interactable through a given app.
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemDef"
+      security:
+        - biscuit_token:
+            - admin
+  /authenticated/app/item/{itemId}:
+    parameters:
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    get:
+      tags:
+        - app as user
+      summary: Get all apps authorized for this item
+      operationId: getAppsItem
+      responses:
+        "201":
+          description: Successful operation returns the id of created item.
+          content:
+            application/json:
+              schema:
+                description: the id of the created item.
+                type: integer
+      security:
+        - biscuit_token:
+            - admin
+components:
+  schemas:
+    BiscuitInfo:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        role:
+          oneOf:
+            - $ref: RoleAdmin
+            - $ref: RoleUser
+    RoleAdmin:
+      type: string
+      enum: [Admin]
+    RoleUser:
+      type: integer
+    App:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 100000
+        name:
+          type: string
+          example: "Game name"
+    ItemWithName:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 100000
+        name:
+          type: string
+          example: "Item name"
+    ItemDef:
+      type: object
+      properties:
+        item:
+          $ref: "#/components/schemas/ItemWithName"
+        app_id:
+          type: integer
+          example: 19
+    ItemAmount:
+      type: object
+      properties:
+        item:
+          $ref: "#/components/schemas/ItemWithName"
+        amount:
+          type: integer
+          example: 42
+  securitySchemes:
+    github_auth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://github.com/login/oauth/access_token
+          tokenUrl: todo
+          scopes:
+            admin: modify managed apps and items definitions
+            user: used for modifying user items in low security apps, or authentication forwarded to trusted game server.
+    biscuit_token:
+      type: http
+      scheme: bearer
+      bearerFormat: Biscuit

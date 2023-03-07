@@ -10,9 +10,9 @@ bevy = "0.9"
 reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-bevy_egui = "0.18"
+bevy_egui = "0.19"
 open = "3"
-dotenv = "0.15"
+dotenvy = "0.15"
 # system_uri = {git = "https://github.com/Vrixyz/system_uri.git", default-features = false}
 
 

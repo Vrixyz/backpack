@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  # NB: this differs from the book's project!
+  # These settings allow us to run this specific CI pipeline for PRs against
+  # this specific branch (a.k.a. book chapter).
+  pull_request:
+  push:
+    branches-ignore:
+      - "dependabot/**"
+
+env:
+  CARGO_TERM_COLOR: always
+  SQLX_VERSION: 0.6.2
+  SQLX_FEATURES: "rustls,postgres"
+
+jobs:
+  fmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Enforce formatting
+        run: cargo fmt --check
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: "postgres://postgres:password@localhost:5432/backpack"
+      GITHUB_ADMIN_CLIENT_ID: "unused"
+      GITHUB_ADMIN_CLIENT_SECRET: "unused"
+      BACKPACK_EMAIL: ${{ secrets.BACKPACK_EMAIL }}
+      BACKPACK_EMAIL_PASSWORD: ${{ secrets.BACKPACK_EMAIL_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: sqlx-${{ env.SQLX_VERSION }}
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli
+          --version=${{ env.SQLX_VERSION }}
+          --features ${{ env.SQLX_FEATURES }}
+          --no-default-features
+          --locked
+      - name: Migrate database
+        run: |
+          sudo apt-get install libpq-dev -y
+          cd crates/server
+          ./scripts/reset_db.sh
+      - name: Check sqlx-data.json is up-to-date
+        run: |
+          cd crates/server
+          cargo sqlx prepare --check -- --bin backpack_server
+      - name: Run tests
+        run: |
+          cd crates/server
+          cargo test
