@@ -7,8 +7,7 @@ mod ui_warmup;
 
 use std::time::Duration;
 
-use bevy::{ecs::schedule::ScheduleLabel, math::Vec3Swizzles, prelude::*};
-use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
+use bevy::{math::Vec3Swizzles, prelude::*};
 use lerp::Lerp;
 use particles::ParticleExplosion;
 use rand::prelude::*;
@@ -36,7 +35,7 @@ struct GameAssets {
     pub enemy: Handle<Image>,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Hash, States, ScheduleLabel)]
+#[derive(Clone, Eq, PartialEq, Debug, Hash, States)]
 pub enum GameState {
     Warmup,
     LoadingPlay,
@@ -94,6 +93,8 @@ impl Plugin for Game {
             borders: Vec2::new(2000f32, 2000f32),
         });
         app.insert_resource(LoadingPlayState::Unknown);
+
+        app.add_state::<GameState>();
         app.add_plugin(mouse::MousePlugin);
         // TODO: bevy 0.10
         // app.add_plugin(DebugLinesPlugin::default());
@@ -103,59 +104,48 @@ impl Plugin for Game {
         app.add_plugin(particles::ParticlesPlugin);
         app.init_resource::<GameDef>();
         app.add_startup_system(load_assets);
-        app.add_state::<GameState>();
-        app.add_system_set(
-            SystemSet::on_update(GameState::Warmup)
-                .with_system(
-                    update_wanted_movement_player
-                        .before(update_movement)
-                        .after(mouse::my_cursor_system),
-                )
-                .with_system(collision_warmup.after(collisions::collision_player_enemies))
-                .with_system(clear_collision_warmup.before(collision_warmup))
-                .with_system(ui_warmup::ui_warmup)
-                .with_system(ui_warmup::ui_tuto_start)
-                .with_system(ui_warmup::handle_tap_to_start.after(collision_warmup)),
-        );
-        app.add_system_set(
-            SystemSet::on_enter(GameState::LoadingPlay).with_system(init_loading_play),
-        );
-        app.add_system_set(
-            SystemSet::on_update(GameState::LoadingPlay)
-                .with_system(loading_play_use_currency.before(handle_modify_result)),
-        );
-        app.add_system_set(
-            SystemSet::on_update(GameState::LoadingPlay).with_system(handle_modify_result),
-        );
-        app.add_system_set(
-            SystemSet::on_update(GameState::Playing).with_system(
+        app.add_systems(
+            (
                 update_wanted_movement_player
                     .before(update_movement)
                     .after(mouse::my_cursor_system),
-            ),
+                collision_warmup.after(collisions::collision_player_enemies),
+                clear_collision_warmup.before(collision_warmup),
+                ui_warmup::ui_warmup,
+                ui_warmup::ui_tuto_start,
+                ui_warmup::handle_tap_to_start.after(collision_warmup),
+            )
+                .in_set(OnUpdate(GameState::Warmup)),
         );
-        app.add_system_set(
-            SystemSet::on_update(GameState::Playing)
-                .with_system(
-                    update_collisions_player_playing.after(collisions::collision_player_enemies),
-                )
-                .with_system(juice_collisions)
-                .with_system(juice_score),
+        app.add_system(init_loading_play.in_schedule(OnEnter(GameState::LoadingPlay)));
+        app.add_system(
+            loading_play_use_currency
+                .in_set(OnUpdate(GameState::LoadingPlay))
+                .before(handle_modify_result),
         );
-        app.add_system_set(
-            SystemSet::on_update(GameState::Playing)
-                .with_system(ui_playing::ui_playing)
-                .with_system(more_enemies),
+        app.add_system(handle_modify_result.in_set(OnUpdate(GameState::LoadingPlay)));
+        app.add_system(
+            update_wanted_movement_player
+                .before(update_movement)
+                .after(mouse::my_cursor_system)
+                .in_set(OnUpdate(GameState::Playing)),
         );
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Warmup)
-                .with_system(utils::despawn::<PlayerUnit>)
-                .before(create_player),
+        app.add_systems(
+            (
+                update_collisions_player_playing.after(collisions::collision_player_enemies),
+                juice_collisions,
+                juice_score,
+            )
+                .in_set(OnUpdate(GameState::Playing)),
         );
-        app.add_system_set(
-            SystemSet::on_enter(GameState::Warmup)
-                .with_system(utils::despawn::<Enemy>)
-                .with_system(create_player),
+        app.add_systems(
+            (ui_playing::ui_playing, more_enemies).in_set(OnUpdate(GameState::Playing)),
+        );
+        app.add_system(utils::despawn::<Enemy>.in_schedule(OnEnter(GameState::Warmup)));
+        app.add_systems(
+            (utils::despawn::<PlayerUnit>, create_player)
+                .chain()
+                .in_schedule(OnEnter(GameState::Warmup)),
         );
         app.add_system(ui_warmup::handle_get_items_result);
         app.add_system(ui_warmup::handle_modify_item_result);
@@ -163,10 +153,12 @@ impl Plugin for Game {
             .add_system(bounce_enemies.after(update_movement))
             .add_system(update_enemy_count);
 
-        app.add_system_set(
-            SystemSet::on_update(GameState::EndScreen)
-                .with_system(ui_endscreen::ui_endscreen)
-                .with_system(ui_endscreen::ui_end_title_and_score),
+        app.add_systems(
+            (
+                ui_endscreen::ui_endscreen,
+                ui_endscreen::ui_end_title_and_score,
+            )
+                .in_set(OnUpdate(GameState::EndScreen)),
         );
     }
 }

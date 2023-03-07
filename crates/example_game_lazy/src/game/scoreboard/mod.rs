@@ -8,7 +8,7 @@ use super::GameState;
 
 pub struct ScoreboardPlugin;
 
-#[derive(Clone, ScheduleLabel, Hash, PartialEq, Eq, Debug, States)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug, States)]
 pub enum LeaderboardScreen {
     Hidden,
     Show,
@@ -28,7 +28,9 @@ impl Plugin for ScoreboardPlugin {
             &std::env::var("JORNET_SECRET").expect("No jornet secret provided."),
         ));
         app.add_startup_system(leaderboard_setup);
-        app.add_systems((ui_leaderboard, refresh_leaderboard).in_schedule(LeaderboardScreen::Show));
+        app.add_systems(
+            (ui_leaderboard, refresh_leaderboard).in_set(OnUpdate(LeaderboardScreen::Show)),
+        );
         app.add_system(show_leaderboard.in_schedule(OnEnter(GameState::EndScreen)));
         app.add_system(hide_leaderboard.in_schedule(OnExit(GameState::EndScreen)));
     }
