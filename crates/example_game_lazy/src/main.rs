@@ -2,7 +2,7 @@ mod data;
 mod game;
 mod password;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{
     egui::{self, Color32, RichText},
     EguiContext, EguiPlugin,
@@ -24,17 +24,16 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
-        .add_plugin(AuthPlugin {
+        .insert_resource(AuthInput {
             email: std::env::var("BACKPACK_GAME_EXAMPLE_USERNAME").unwrap_or("".to_string()),
             password: std::env::var("BACKPACK_GAME_EXAMPLE_PASSWORD").unwrap_or("".to_string()),
+            sign_in: std::env::var("BACKPACK_GAME_EXAMPLE_PASSWORD").is_ok(),
         })
+        .add_plugin(AuthPlugin)
         .run();
 }
 
-struct AuthPlugin {
-    pub email: String,
-    pub password: String,
-}
+struct AuthPlugin;
 
 #[derive(Resource, Debug)]
 struct AuthData {
@@ -88,99 +87,88 @@ impl Plugin for AuthPlugin {
         app.add_system(handle_signup_result);
         app.add_state::<PopupSignupSuccess>();
         app.add_system(ui_signup_successful.in_set(OnUpdate(PopupSignupSuccess::Shown)));
-        app.insert_resource(AuthInput {
-            email: self.email.clone(),
-            password: self.password.clone(),
-            sign_in: true,
-        });
+        app.init_resource::<AuthInput>();
         app.insert_resource(BackpackCom::new("http://127.0.0.1:8080/api/v1".into()));
         app.init_resource::<BackpackItems>();
     }
 }
 
 fn ui_signup_successful(
-    mut egui_context: ResMut<EguiContext>,
+    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     mut popup_signup_state: ResMut<NextState<PopupSignupSuccess>>,
     windows: Query<Entity, With<Window>>,
 ) {
-    egui::Window::new("Popup Signup Success").show(
-        egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
-        |ui| {
-            ui.label("Successful signed up!");
-            ui.label("We sent you an email, check your spam folder too.");
-            if ui.button("I received the mail").clicked() {
-                popup_signup_state.set(PopupSignupSuccess::Hidden);
-            }
-        },
-    );
+    egui::Window::new("Popup Signup Success").show(&mut egui_ctx.single(), |ui| {
+        ui.label("Successful signed up!");
+        ui.label("We sent you an email, check your spam folder too.");
+        if ui.button("I received the mail").clicked() {
+            popup_signup_state.set(PopupSignupSuccess::Hidden);
+        }
+    });
 }
 
 fn ui_auth(
     mut commands: Commands,
-    mut egui_context: ResMut<EguiContext>,
+    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     mut auth_input: ResMut<AuthInput>,
     mut auth_data: ResMut<AuthData>,
     backpack: Res<BackpackCom>,
     login_task: Query<Entity, With<LoginTask>>,
     signup_task: Query<Entity, With<SignupTask>>,
-    windows: Query<Entity, With<Window>>,
 ) {
-    egui::Window::new("Auth").show(
-        egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
-        |ui| {
-            //ui.label(format!("current role: {:?}", auth_data));
-            if auth_data.data.is_some() {
-                if ui.button("Disconnect").clicked() {
-                    auth_data.data = None;
-                }
-                return;
+    egui::Window::new("Auth").show(egui_ctx.single(), |ui| {
+        //ui.label(format!("current role: {:?}", auth_data));
+        if auth_data.data.is_some() {
+            if ui.button("Disconnect").clicked() {
+                auth_data.data = None;
             }
-            ui.horizontal(|ui| {
-                ui.label("Your email: ");
-                ui.text_edit_singleline(&mut auth_input.email);
-            });
-            ui.horizontal(|ui| {
-                if login_task.is_empty() && signup_task.is_empty() {
-                    ui.checkbox(&mut auth_input.sign_in, "Already signed up?");
-                } else {
-                    let mut not_interactable = auth_input.sign_in;
-                    ui.checkbox(
-                        &mut not_interactable,
-                        RichText::new("Already signed up?").color(Color32::GRAY),
-                    );
-                }
-            });
-            if auth_input.sign_in {
-                ui.horizontal(|ui| {
-                    ui.label("Password: ");
-                    password_ui(ui, &mut auth_input.password);
-                });
-                if login_task.is_empty() {
-                    if ui.button("Sign in").clicked() {
-                        bevy_login(
-                            &mut commands,
-                            &backpack.client,
-                            &LoginEmailPasswordData {
-                                email: auth_input.email.clone(),
-                                password_plain: auth_input.password.clone(),
-                                as_app_user: Some(AppId(1)),
-                            },
-                        );
-                    }
-                } else {
-                    ui.label("Logging in...");
-                }
-            } else if ui.button("Sign up").clicked() {
-                bevy_signup(
-                    &mut commands,
-                    &backpack.client,
-                    &CreateEmailPasswordData {
-                        email: auth_input.email.clone(),
-                    },
+            return;
+        }
+        ui.horizontal(|ui| {
+            ui.label("Your email: ");
+            ui.text_edit_singleline(&mut auth_input.email);
+        });
+        ui.horizontal(|ui| {
+            if login_task.is_empty() && signup_task.is_empty() {
+                ui.checkbox(&mut auth_input.sign_in, "Already signed up?");
+            } else {
+                let mut not_interactable = auth_input.sign_in;
+                ui.checkbox(
+                    &mut not_interactable,
+                    RichText::new("Already signed up?").color(Color32::GRAY),
                 );
             }
-        },
-    );
+        });
+        if auth_input.sign_in {
+            ui.horizontal(|ui| {
+                ui.label("Password: ");
+                ui.add(password::password(&mut auth_input.password));
+            });
+            if login_task.is_empty() {
+                if ui.button("Sign in").clicked() {
+                    bevy_login(
+                        &mut commands,
+                        &backpack.client,
+                        &LoginEmailPasswordData {
+                            email: auth_input.email.clone(),
+                            password_plain: auth_input.password.clone(),
+                            as_app_user: Some(AppId(1)),
+                        },
+                    );
+                }
+            } else {
+                ui.label("Logging in...");
+            }
+        } else if ui.button("Sign up").clicked() {
+            bevy_signup(
+                &mut commands,
+                &backpack.client,
+                &CreateEmailPasswordData {
+                    email: auth_input.email.clone(),
+                },
+            );
+        }
+    });
 }
 
 fn handle_login_result(

@@ -1,6 +1,6 @@
 mod data;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContext, EguiPlugin};
 use data::BiscuitInfo;
 
@@ -33,21 +33,14 @@ impl Plugin for AuthPlugin {
     }
 }
 
-fn ui_auth(
-    mut egui_context: ResMut<EguiContext>,
-    auth_data: Res<AuthData>,
-    windows: Query<Entity, With<Window>>,
-) {
-    egui::Window::new("Auth").show(
-        egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
-        |ui| {
-            ui.label(format!("current role: {auth_data:?}"));
-            if ui.button("Authenticate with Github").clicked() {
-                drop(open::that(format!(
-                    "https://github.com/login/oauth/authorize?client_id={}",
-                    dotenvy::var("BACKPACK_GITHUB_CLIENT_ID").unwrap()
-                )));
-            }
-        },
-    );
+fn ui_auth(egui_ctx: Query<&EguiContext, With<PrimaryWindow>>, auth_data: Res<AuthData>) {
+    egui::Window::new("Auth").show(egui_ctx.single(), |ui| {
+        ui.label(format!("current role: {auth_data:?}"));
+        if ui.button("Authenticate with Github").clicked() {
+            drop(open::that(format!(
+                "https://github.com/login/oauth/authorize?client_id={}",
+                dotenvy::var("BACKPACK_GITHUB_CLIENT_ID").unwrap()
+            )));
+        }
+    });
 }

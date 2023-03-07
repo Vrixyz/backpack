@@ -13,7 +13,7 @@ use particles::ParticleExplosion;
 use rand::prelude::*;
 
 use crate::{
-    backpack_client_bevy::{bevy_modify_item, GetItemsTaskResultEvent, ModifyItemTaskResultEvent},
+    backpack_client_bevy::{bevy_modify_item, ModifyItemTaskResultEvent},
     data::ItemId,
     utils::{
         self,
@@ -33,6 +33,7 @@ pub struct Game;
 struct GameAssets {
     pub player: Handle<Image>,
     pub enemy: Handle<Image>,
+    pub warning: Handle<Image>,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash, States)]
@@ -53,6 +54,13 @@ impl Default for GameState {
 pub struct GameDef {
     pub enemy_count: u32,
 }
+
+#[derive(Component, Default)]
+pub struct PlannedSpawn {
+    pub position: Vec2,
+    pub time_to_spawn: f32,
+}
+
 #[derive(Resource, Default)]
 pub struct GameDefBorder {
     pub borders: Vec2,
@@ -88,6 +96,7 @@ impl Plugin for Game {
         app.insert_resource(GameAssets {
             player: Handle::default(),
             enemy: Handle::default(),
+            warning: Handle::default(),
         });
         app.insert_resource(GameDefBorder {
             borders: Vec2::new(2000f32, 2000f32),
@@ -111,6 +120,7 @@ impl Plugin for Game {
                     .after(mouse::my_cursor_system),
                 collision_warmup.after(collisions::collision_player_enemies),
                 clear_collision_warmup.before(collision_warmup),
+                update_enemy_count,
                 ui_warmup::ui_warmup,
                 ui_warmup::ui_tuto_start,
                 ui_warmup::handle_tap_to_start.after(collision_warmup),
@@ -124,10 +134,13 @@ impl Plugin for Game {
                 .before(handle_modify_result),
         );
         app.add_system(handle_modify_result.in_set(OnUpdate(GameState::LoadingPlay)));
-        app.add_system(
-            update_wanted_movement_player
-                .before(update_movement)
-                .after(mouse::my_cursor_system)
+        app.add_systems(
+            (
+                update_wanted_movement_player
+                    .before(update_movement)
+                    .after(mouse::my_cursor_system),
+                spawn_planned,
+            )
                 .in_set(OnUpdate(GameState::Playing)),
         );
         app.add_systems(
@@ -141,7 +154,10 @@ impl Plugin for Game {
         app.add_systems(
             (ui_playing::ui_playing, more_enemies).in_set(OnUpdate(GameState::Playing)),
         );
-        app.add_system(utils::despawn::<Enemy>.in_schedule(OnEnter(GameState::Warmup)));
+        app.add_systems(
+            (utils::despawn::<Enemy>, utils::despawn::<PlannedSpawn>)
+                .in_schedule(OnEnter(GameState::Warmup)),
+        );
         app.add_systems(
             (utils::despawn::<PlayerUnit>, create_player)
                 .chain()
@@ -150,8 +166,7 @@ impl Plugin for Game {
         app.add_system(ui_warmup::handle_get_items_result);
         app.add_system(ui_warmup::handle_modify_item_result);
         app.add_system(update_movement.before(collisions::collision_player_enemies))
-            .add_system(bounce_enemies.after(update_movement))
-            .add_system(update_enemy_count);
+            .add_system(bounce_enemies.after(update_movement));
 
         app.add_systems(
             (
@@ -167,6 +182,7 @@ fn load_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(GameAssets {
         player: asset_server.load("bevy.png"),
         enemy: asset_server.load("bevy_pixel_light.png"),
+        warning: asset_server.load("bevy_pixel_dark.png"),
     });
     let camera = Camera2dBundle {
         projection: OrthographicProjection {
@@ -224,32 +240,36 @@ fn update_enemy_count(
     if diff > 0 {
         let mut rng = rand::thread_rng();
         for _ in 0..diff {
-            commands.spawn((
-                SpriteBundle {
-                    texture: assets.enemy.clone(),
-                    transform: Transform::from_translation(Vec3::new(
-                        rng.gen_range(-borders.borders.x..borders.borders.x),
-                        rng.gen_range(-borders.borders.y..borders.borders.y),
-                        0f32,
-                    )),
-                    ..default()
-                },
-                Enemy,
-                WantedMovement {
-                    direction: random_point_circle(750f32, false),
-                },
-                ScoreNear::NotNear,
-                ScoreNearDef {
-                    time_to_score: 2.5,
-                    score: 1,
-                },
-            ));
+            let position = Vec2::new(
+                rng.gen_range(-borders.borders.x..borders.borders.x),
+                rng.gen_range(-borders.borders.y..borders.borders.y),
+            );
+            spawn_enemy(&mut commands, &assets, position);
         }
     } else {
         for e in q_enemies.iter().take(-diff as usize) {
             commands.entity(e).despawn();
         }
     }
+}
+
+fn spawn_enemy(commands: &mut Commands, assets: &Res<GameAssets>, position: Vec2) {
+    commands.spawn((
+        SpriteBundle {
+            texture: assets.enemy.clone(),
+            transform: Transform::from_translation(position.extend(0f32)),
+            ..default()
+        },
+        Enemy,
+        WantedMovement {
+            direction: random_point_circle(750f32, false),
+        },
+        ScoreNear::NotNear,
+        ScoreNearDef {
+            time_to_score: 2.5,
+            score: 1,
+        },
+    ));
 }
 
 fn random_point_circle(range: f32, random_range_value: bool) -> Vec2 {
@@ -457,7 +477,9 @@ fn juice_score(
     }
 }
 
-pub(super) fn more_enemies(
+fn more_enemies(
+    mut commands: Commands,
+    assets: Res<GameAssets>,
     time: Res<Time>,
     mut game_def: ResMut<GameDef>,
     // FIXME: this should not be local, because we want to reset it on game start.
@@ -471,9 +493,38 @@ pub(super) fn more_enemies(
     }
     timer.tick(time.delta());
     if timer.just_finished() {
-        game_def.enemy_count += 1;
+        let mut rng = rand::thread_rng();
+        let position = Vec2::new(
+            rng.gen_range(-1000f32..1000f32),
+            rng.gen_range(-1000f32..1000f32),
+        );
+        commands.spawn((
+            PlannedSpawn {
+                position,
+                time_to_spawn: time.elapsed_seconds() + 1f32,
+            },
+            SpriteBundle {
+                texture: assets.warning.clone(),
+                transform: Transform::from_translation(position.extend(0f32)),
+                ..default()
+            },
+        ));
         let new_duration = timer.duration() + Duration::from_secs(1);
         timer.set_duration(new_duration);
         timer.reset();
+    }
+}
+
+fn spawn_planned(
+    mut commands: Commands,
+    assets: Res<GameAssets>,
+    time: Res<Time>,
+    planned_enemies: Query<(Entity, &PlannedSpawn)>,
+) {
+    for (e, spawn) in planned_enemies.iter() {
+        if spawn.time_to_spawn < time.elapsed_seconds() {
+            commands.entity(e).despawn();
+            spawn_enemy(&mut commands, &assets, spawn.position)
+        }
     }
 }

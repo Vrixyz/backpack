@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{
     egui::{self, Align2},
     EguiContext,
@@ -16,27 +16,23 @@ use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
 
 pub(super) fn ui_tuto_start(
     auth_data: Res<AuthData>,
-    mut egui_context: ResMut<EguiContext>,
-    windows: Query<Entity, With<Window>>,
+    mut egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
 ) {
     egui::Area::new("my_area")
         .fixed_pos(egui::pos2(0.0, 0.0))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .show(
-            egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
-            |ui| {
+        .show(egui_ctx.single(), |ui| {
+            ui.colored_label(
+                egui::Color32::BLUE,
+                "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
+            );
+            if auth_data.data.is_none() {
                 ui.colored_label(
-                    egui::Color32::BLUE,
-                    "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
+                    egui::Color32::RED,
+                    "\n\nYou are not connected,\nYou won't gain any items.",
                 );
-                if auth_data.data.is_none() {
-                    ui.colored_label(
-                        egui::Color32::RED,
-                        "\n\nYou are not connected,\nYou won't gain any items.",
-                    );
-                }
-            },
-        );
+            }
+        });
 }
 
 pub(super) fn handle_tap_to_start(
@@ -63,20 +59,19 @@ pub(super) fn handle_tap_to_start(
 
 pub(super) fn ui_warmup(
     mut commands: Commands,
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     auth_data: Res<AuthData>,
     items: Res<BackpackItems>,
     mut game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
     get_items_tasks: Query<Entity, With<GetItemsTask>>,
-    windows: Query<Entity, With<Window>>,
 ) {
     if auth_data.data.is_none() {
         return;
     }
-    egui::Window::new("Warmup").auto_sized().show(
-        egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
-        |ui| {
+    egui::Window::new("Warmup")
+        .auto_sized()
+        .show(egui_ctx.single(), |ui| {
             if let Some(auth) = &auth_data.data {
                 if get_items_tasks.is_empty() {
                     let get_items_button = ui.button("Get items");
@@ -136,8 +131,7 @@ pub(super) fn ui_warmup(
                     });
                 }
             }
-        },
-    );
+        });
 }
 
 pub(super) fn handle_get_items_result(

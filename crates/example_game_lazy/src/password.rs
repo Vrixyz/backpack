@@ -22,10 +22,7 @@ pub fn password_ui(ui: &mut egui::Ui, password: &mut String) -> egui::Response {
 
     // Get state for this widget.
     // You should get state by value, not by reference to avoid borrowing of [`Memory`].
-
-    // from main egui:
-    //let mut show_plaintext = ui.data_mut(|d| d.get_temp::<bool>(state_id).unwrap_or(false));
-    let mut show_plaintext = ui.data().get_temp::<bool>(state_id).unwrap_or(false);
+    let mut show_plaintext = ui.data_mut(|d| d.get_temp::<bool>(state_id).unwrap_or(false));
 
     // Process ui, change a local copy of the state
     // We want TextEdit to fill entire space, and have button after that, so in that case we can
@@ -48,11 +45,24 @@ pub fn password_ui(ui: &mut egui::Ui, password: &mut String) -> egui::Response {
     });
 
     // Store the (possibly changed) state:
-    // from main egui:
-    //ui.data_mut(|d| d.insert_temp(state_id, show_plaintext));
-    ui.data().insert_temp(state_id, show_plaintext);
+    ui.data_mut(|d| d.insert_temp(state_id, show_plaintext));
 
     // All done! Return the interaction response so the user can check what happened
     // (hovered, clicked, …) and maybe show a tooltip:
     result.response
+}
+
+// A wrapper that allows the more idiomatic usage pattern: `ui.add(…)`
+/// Password entry field with ability to toggle character hiding.
+///
+/// ## Example:
+/// ``` ignore
+/// ui.add(password(&mut my_password));
+/// ```
+pub fn password(password: &mut String) -> impl egui::Widget + '_ {
+    move |ui: &mut egui::Ui| password_ui(ui, password)
+}
+
+pub fn url_to_file_source_code() -> String {
+    format!("https://github.com/emilk/egui/blob/master/{}", file!())
 }

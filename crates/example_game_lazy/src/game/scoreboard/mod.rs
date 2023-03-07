@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::{ecs::schedule::ScheduleLabel, prelude::*};
+use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContext};
 use bevy_jornet::{JornetPlugin, Leaderboard};
 
@@ -70,29 +70,26 @@ fn hide_leaderboard(mut leaderboard_screen: ResMut<NextState<LeaderboardScreen>>
 
 fn ui_leaderboard(
     windows: Query<Entity, With<Window>>,
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     leaderboard: Res<Leaderboard>,
 ) {
-    egui::Window::new("leaderboard").show(
-        egui_context.ctx_for_window_mut(windows.iter().next().unwrap()),
-        |ui| {
-            let scores = leaderboard.get_leaderboard();
-            let local_player = leaderboard.get_player().map(|player| &player.name);
-            egui::ScrollArea::vertical().show(ui, |ui| {
-                for score in scores {
-                    match local_player {
-                        Some(name) if name == &score.player => {
-                            ui.colored_label(
-                                egui::Color32::LIGHT_BLUE,
-                                format!("{}: {}", score.player, score.score),
-                            );
-                        }
-                        _ => {
-                            ui.label(format!("{}: {}", score.player, score.score));
-                        }
+    egui::Window::new("leaderboard").show(egui_ctx.single(), |ui| {
+        let scores = leaderboard.get_leaderboard();
+        let local_player = leaderboard.get_player().map(|player| &player.name);
+        egui::ScrollArea::vertical().show(ui, |ui| {
+            for score in scores {
+                match local_player {
+                    Some(name) if name == &score.player => {
+                        ui.colored_label(
+                            egui::Color32::LIGHT_BLUE,
+                            format!("{}: {}", score.player, score.score),
+                        );
+                    }
+                    _ => {
+                        ui.label(format!("{}: {}", score.player, score.score));
                     }
                 }
-            });
-        },
-    );
+            }
+        });
+    });
 }
