@@ -8,6 +8,7 @@ mod ui_warmup;
 use std::time::Duration;
 
 use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use lerp::Lerp;
 use particles::ParticleExplosion;
 use rand::prelude::*;
@@ -105,8 +106,7 @@ impl Plugin for Game {
 
         app.add_state::<GameState>();
         app.add_plugin(mouse::MousePlugin);
-        // TODO: bevy 0.10
-        // app.add_plugin(DebugLinesPlugin::default());
+        app.add_plugin(DebugLinesPlugin::default());
         app.add_plugin(collisions::CollisionsPlugin);
         app.add_plugin(scoreboard::ScoreboardPlugin);
         app.add_plugin(scoring::ScorePlugin);
@@ -199,7 +199,7 @@ fn create_player(
     mut game_def: ResMut<GameDef>,
     game_def_borders: Res<GameDefBorder>,
     assets: Res<GameAssets>,
-    //mut lines: ResMut<DebugLines>,
+    mut lines: ResMut<DebugLines>,
 ) {
     game_def.enemy_count = 0;
     commands.spawn((
@@ -222,7 +222,7 @@ fn create_player(
     ];
 
     for i in 0..borders.len() {
-        //lines.line(borders[i], borders[(i + 1) % borders.len()], f32::INFINITY);
+        lines.line(borders[i], borders[(i + 1) % borders.len()], f32::INFINITY);
     }
 }
 
