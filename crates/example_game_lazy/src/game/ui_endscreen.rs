@@ -7,7 +7,7 @@ use bevy_egui::{
 use super::{scoring::Score, GameState};
 
 pub(super) fn ui_endscreen(
-    mut egui_ctx: Query<&mut EguiContext, With<PrimaryWindow>>,
+    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     mut game_state: ResMut<NextState<GameState>>,
 ) {
     egui::Area::new("Game Endscreen")
@@ -20,10 +20,10 @@ pub(super) fn ui_endscreen(
         });
 }
 pub(super) fn ui_end_title_and_score(
-    mut egui_ctx: Query<&mut EguiContext, With<PrimaryWindow>>,
-    mut score: ResMut<Score>,
+    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    score: ResMut<Score>,
 ) {
-    egui::Area::new(format!("end juice"))
+    egui::Area::new("end juice")
         .fixed_pos(egui::pos2(0f32, 0f32))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
         .show(egui_ctx.single(), |ui| {

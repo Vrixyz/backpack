@@ -9,7 +9,6 @@ use crate::{
     backpack_client::BackpackClient,
     data::{
         BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
-        UserItemModify,
     },
 };
 

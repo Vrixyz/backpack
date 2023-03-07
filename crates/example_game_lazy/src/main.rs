@@ -17,7 +17,6 @@ pub mod utils;
 use backpack_client::*;
 use backpack_client_bevy::*;
 use game::Game;
-use password::password_ui;
 
 fn main() {
     dotenv().ok();

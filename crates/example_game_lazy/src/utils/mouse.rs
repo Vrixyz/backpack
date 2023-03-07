@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::camera::RenderTarget, window::PrimaryWindow};
+use bevy::{prelude::*, window::PrimaryWindow};
 
 /// Used to help identify our main camera
 #[derive(Component)]
@@ -23,9 +23,6 @@ pub fn my_cursor_system(
     q_camera: Query<(&Camera, &GlobalTransform), With<GameCamera>>,
     mut mouse_res: ResMut<MousePos>,
 ) {
-    let Ok(window) = primary_query.get_single() else {
-        return;
-    };
     // get the camera info and transform
     // assuming there is exactly one main camera entity, so query::single() is OK
     let (camera, camera_transform) = q_camera.single();
@@ -38,7 +35,7 @@ pub fn my_cursor_system(
     // check if the cursor is inside the window and get its position
     if let Some(screen_pos) = wnd.cursor_position() {
         // get the size of the window
-        let window_size = Vec2::new(wnd.width() as f32, wnd.height() as f32);
+        let window_size = Vec2::new(wnd.width(), wnd.height());
 
         // convert screen position [0..resolution] to ndc [-1..1] (gpu coordinates)
         let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;

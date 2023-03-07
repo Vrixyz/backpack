@@ -26,9 +26,8 @@ pub(super) fn ui_playing(
 }
 pub(super) fn ui_scoring(
     egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
-    mut camera: Query<(&GlobalTransform, &Camera), With<GameCamera>>,
-    mut q_scores: Query<(&ScoreNear, &Transform, &ScoreNearDef)>,
-    mut game_state: ResMut<State<GameState>>,
+    camera: Query<(&GlobalTransform, &Camera), With<GameCamera>>,
+    q_scores: Query<(&ScoreNear, &Transform, &ScoreNearDef)>,
 ) {
     let camera = camera.single();
     for (i, (score, transform, def)) in q_scores.iter().enumerate() {
@@ -55,11 +54,8 @@ pub(super) fn ui_scoring(
     }
 }
 
-pub(super) fn ui_score(
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
-    mut score: ResMut<Score>,
-) {
-    egui::Area::new(format!("score for player"))
+pub(super) fn ui_score(egui_ctx: Query<&EguiContext, With<PrimaryWindow>>, score: ResMut<Score>) {
+    egui::Area::new("score for player")
         .fixed_pos(egui::pos2(0f32, 0f32))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
         .show(egui_ctx.single(), |ui| {

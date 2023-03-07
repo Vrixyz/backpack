@@ -69,8 +69,7 @@ fn hide_leaderboard(mut leaderboard_screen: ResMut<NextState<LeaderboardScreen>>
 }
 
 fn ui_leaderboard(
-    windows: Query<Entity, With<Window>>,
-    mut egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
     leaderboard: Res<Leaderboard>,
 ) {
     egui::Window::new("leaderboard").show(egui_ctx.single(), |ui| {
