@@ -56,6 +56,20 @@ pub struct GameDef {
     pub enemy_count: u32,
 }
 
+#[derive(Resource, Default)]
+pub struct EnemySpawnTimer {
+    pub timer: Timer,
+}
+
+impl EnemySpawnTimer {
+    pub fn reset_for_enemy_amount(&mut self, amount: u32) {
+        self.timer = Timer::new(
+            Duration::from_secs(1f32.lerp_bounded(10f32, (amount as f32) / 6f32) as u64),
+            TimerMode::Repeating,
+        );
+    }
+}
+
 #[derive(Component, Default)]
 pub struct PlannedSpawn {
     pub position: Vec2,
@@ -103,7 +117,7 @@ impl Plugin for Game {
             borders: Vec2::new(2000f32, 2000f32),
         });
         app.insert_resource(LoadingPlayState::Unknown);
-
+        app.insert_resource(EnemySpawnTimer { ..default() });
         app.add_state::<GameState>();
         app.add_plugin(mouse::MousePlugin);
         app.add_plugin(DebugLinesPlugin::default());
@@ -143,6 +157,7 @@ impl Plugin for Game {
             )
                 .in_set(OnUpdate(GameState::Playing)),
         );
+        app.add_system(init_timer.in_schedule(OnEnter(GameState::Playing)));
         app.add_systems(
             (
                 update_collisions_player_playing.after(collisions::collision_player_enemies),
@@ -414,6 +429,10 @@ fn handle_modify_result(
     }
 }
 
+fn init_timer(game_def: Res<GameDef>, mut timer: ResMut<EnemySpawnTimer>) {
+    timer.reset_for_enemy_amount(game_def.enemy_count);
+}
+
 fn update_collisions_player_playing(
     mut collision_event: EventReader<StayCollisionEvent>,
     mut game_state: ResMut<NextState<GameState>>,
@@ -482,17 +501,11 @@ fn more_enemies(
     assets: Res<GameAssets>,
     time: Res<Time>,
     mut game_def: ResMut<GameDef>,
-    // FIXME: this should not be local, because we want to reset it on game start.
-    mut timer: Local<Timer>,
+    total_enemies: Query<Entity, Or<(&PlannedSpawn, &Enemy)>>,
+    mut timer: ResMut<EnemySpawnTimer>,
 ) {
-    if timer.duration() == Duration::default() {
-        timer.set_duration(Duration::from_secs(
-            1f32.lerp_bounded(10f32, (game_def.enemy_count as f32) / 6f32) as u64,
-        ));
-        return;
-    }
-    timer.tick(time.delta());
-    if timer.just_finished() {
+    timer.timer.tick(time.delta());
+    if timer.timer.just_finished() {
         let mut rng = rand::thread_rng();
         let position = Vec2::new(
             rng.gen_range(-1000f32..1000f32),
@@ -509,9 +522,7 @@ fn more_enemies(
                 ..default()
             },
         ));
-        let new_duration = timer.duration() + Duration::from_secs(1);
-        timer.set_duration(new_duration);
-        timer.reset();
+        timer.reset_for_enemy_amount(total_enemies.iter().count() as u32);
     }
 }
 
