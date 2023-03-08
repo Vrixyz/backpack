@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{cmp::Ordering, time::Duration};
 
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContext};
@@ -73,7 +73,13 @@ fn ui_leaderboard(
     leaderboard: Res<Leaderboard>,
 ) {
     egui::Window::new("leaderboard").show(egui_ctx.single(), |ui| {
-        let scores = leaderboard.get_leaderboard();
+        let mut scores: Vec<_> = leaderboard
+            .get_leaderboard()
+            .into_iter()
+            .filter(|p| p.score > 0f32)
+            .collect();
+
+        scores.sort_by(|s1, s2| s2.score.partial_cmp(&s1.score).unwrap_or(Ordering::Equal));
         let local_player = leaderboard.get_player().map(|player| &player.name);
         egui::ScrollArea::vertical().show(ui, |ui| {
             for score in scores {

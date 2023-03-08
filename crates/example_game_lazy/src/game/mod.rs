@@ -7,7 +7,10 @@ mod ui_warmup;
 
 use std::time::Duration;
 
-use bevy::{math::Vec3Swizzles, prelude::*};
+use bevy::{
+    math::{Affine3A, Vec2Swizzles, Vec3Swizzles},
+    prelude::*,
+};
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use lerp::Lerp;
 use particles::ParticleExplosion;
@@ -308,6 +311,13 @@ fn update_movement(
         t.translation += (movement.direction * time.delta_seconds()).extend(0f32);
         t.translation.y = t.translation.y.clamp(-borders.borders.x, borders.borders.x);
         t.translation.x = t.translation.x.clamp(-borders.borders.y, borders.borders.y);
+        if movement.direction.length_squared() > 0f32 {
+            t.rotation = Quat::from_affine3(&Affine3A::look_to_rh(
+                Vec3::ZERO,
+                Vec3::Z,
+                movement.direction.extend(0f32),
+            )) * Quat::from_rotation_z(0.25f32 * std::f32::consts::TAU);
+        }
     }
 }
 fn update_wanted_movement_player(
