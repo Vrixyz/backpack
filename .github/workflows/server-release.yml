@@ -1,0 +1,42 @@
+name: Server Release
+
+on:
+  push:
+    tags:
+      - backpack_server-v**
+
+jobs:
+  Release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: setup git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email noreply@github.com
+          git checkout -b release-clever
+      - name: remove unused
+        run: |
+          mkdir tmp_ci_to_save
+          mv crates/server crates/shared crates/client tmp_ci_to_save/
+          rm -rf crates
+          mv tmp_ci_to_save crates
+          cargo update
+          git commit --message "CI: Keep only backpack server and dependencies."
+      - name: push branch
+        run: |
+          git push --force origin release-clever
+      - uses: 47ng/actions-clever-cloud@v1.3.1
+        with:
+          appID: ${{ secrets.CLEVER_APP_ID }}
+          force: true
+          setEnv: |
+            CC_RUST_BIN: backpack_server
+        env:
+          CLEVER_TOKEN: ${{ secrets.CLEVER_TOKEN }}
+          CLEVER_SECRET: ${{ secrets.CLEVER_SECRET }}

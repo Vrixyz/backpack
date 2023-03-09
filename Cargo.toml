@@ -1,8 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "crates/*",
-]
+members = ["crates/*"]
 
 [profile.wasm-release]
 inherits = "release"
