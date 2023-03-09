@@ -1,9 +1,9 @@
-use async_compat::{Compat, CompatExt};
+use std::sync::{Arc, RwLock};
+
 use bevy::{
     prelude::*,
-    tasks::{AsyncComputeTaskPool, Task},
+    tasks::{IoTaskPool},
 };
-use futures_lite::future;
 
 use crate::{
     backpack_client::BackpackClient,
@@ -27,33 +27,58 @@ impl Plugin for BackpackClientPlugin {
     }
 }
 
-#[derive(Component)]
-pub struct LoginTask(Task<Result<(Vec<u8>, BiscuitInfo), reqwest::Error>>);
+pub struct ClientTask<T> {
+    pub result: Arc<RwLock<Option<Result<T, reqwest::Error>>>>,
+}
+
+impl<T> Default for ClientTask<T> {
+    fn default() -> Self {
+        Self {
+            result: Default::default(),
+        }
+    }
+}
+
+#[derive(Component, Default)]
+pub struct LoginTask(ClientTask<(Vec<u8>, BiscuitInfo)>);
 pub struct LoginTaskResultEvent(pub Result<(Vec<u8>, BiscuitInfo), reqwest::Error>);
 
 pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: &LoginEmailPasswordData) {
-    let thread_pool = AsyncComputeTaskPool::get();
+    let thread_pool = IoTaskPool::get();
     // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
     let client = client.clone();
     let data = data.clone();
-    let task = thread_pool.spawn(async move { client.login(&data.clone()).compat().await });
-    commands.spawn(LoginTask(task));
+    let task = LoginTask::default();
+    let fill_result_rwlock = task.0.result.clone();
+    thread_pool
+        .spawn(async move {
+            let res = client.login(&data.clone()).await;
+            *fill_result_rwlock.write().unwrap() = Some(res);
+        })
+        .detach();
+    commands.spawn(task);
 }
 fn handle_login_tasks(
     mut commands: Commands,
-    mut tasks: Query<(Entity, &mut LoginTask)>,
+    mut tasks: Query<(Entity, &LoginTask)>,
     mut result_event: EventWriter<LoginTaskResultEvent>,
 ) {
-    for (entity, mut task) in &mut tasks {
-        if let Some(res) = future::block_on(Compat::new(future::poll_once(&mut task.0))) {
-            result_event.send(LoginTaskResultEvent(res));
+    for (entity, task) in &mut tasks {
+        let Ok(mut guard) = task.0.result.try_write() else {
+            continue;
+        };
+        if guard.as_ref().is_none() {
+            continue;
+        }
+        if let Some(received) = guard.take().take() {
+            result_event.send(LoginTaskResultEvent(received));
             // Task is complete, so remove task component from entity
             commands.entity(entity).remove::<LoginTask>();
         }
     }
 }
-#[derive(Component)]
-pub struct SignupTask(Task<Result<(), reqwest::Error>>);
+#[derive(Component, Default)]
+pub struct SignupTask(ClientTask<()>);
 pub struct SignupTaskResultEvent(pub Result<(), reqwest::Error>);
 
 pub fn bevy_signup(
@@ -61,29 +86,41 @@ pub fn bevy_signup(
     client: &BackpackClient,
     data: &CreateEmailPasswordData,
 ) {
-    let thread_pool = AsyncComputeTaskPool::get();
-    // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
+    let thread_pool = IoTaskPool::get();
     let client = client.clone();
     let data = data.clone();
-    let task = thread_pool.spawn(async move { client.signup(&data.clone()).compat().await });
-    commands.spawn(SignupTask(task));
+    let task = SignupTask::default();
+    let fill_result_rwlock = task.0.result.clone();
+    thread_pool
+        .spawn(async move {
+            let res = client.signup(&data.clone()).await;
+            *fill_result_rwlock.write().unwrap() = Some(res);
+        })
+        .detach();
+    commands.spawn(task);
 }
 fn handle_signup_tasks(
     mut commands: Commands,
     mut tasks: Query<(Entity, &mut SignupTask)>,
     mut result_event: EventWriter<SignupTaskResultEvent>,
 ) {
-    for (entity, mut task) in &mut tasks {
-        if let Some(res) = future::block_on(Compat::new(future::poll_once(&mut task.0))) {
-            result_event.send(SignupTaskResultEvent(res));
+    for (entity, task) in &mut tasks {
+        let Ok(mut guard) = task.0.result.try_write() else {
+            continue;
+        };
+        if guard.as_ref().is_none() {
+            continue;
+        }
+        if let Some(received) = guard.take().take() {
+            result_event.send(SignupTaskResultEvent(received));
             // Task is complete, so remove task component from entity
             commands.entity(entity).remove::<SignupTask>();
         }
     }
 }
 
-#[derive(Component)]
-pub struct GetItemsTask(Task<Result<Vec<ItemAmount>, reqwest::Error>>);
+#[derive(Component, Default)]
+pub struct GetItemsTask(ClientTask<Vec<ItemAmount>>);
 pub struct GetItemsTaskResultEvent(pub Result<Vec<ItemAmount>, reqwest::Error>);
 
 pub fn bevy_get_items(
@@ -92,29 +129,41 @@ pub fn bevy_get_items(
     biscuit_raw: &[u8],
     user_id: &UserId,
 ) {
-    let thread_pool = AsyncComputeTaskPool::get();
-    // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
+    let thread_pool = IoTaskPool::get();
     let client = client.clone();
     let data = (biscuit_raw.to_vec(), *user_id);
-    let task = thread_pool.spawn(async move { client.get_items(&data.0, &data.1).compat().await });
-    commands.spawn(GetItemsTask(task));
+    let task = GetItemsTask::default();
+    let fill_result_rwlock = task.0.result.clone();
+    thread_pool
+        .spawn(async move {
+            let res = client.get_items(&data.0, &data.1).await;
+            *fill_result_rwlock.write().unwrap() = Some(res);
+        })
+        .detach();
+    commands.spawn(task);
 }
 fn handle_get_items_tasks(
     mut commands: Commands,
     mut tasks: Query<(Entity, &mut GetItemsTask)>,
     mut result_event: EventWriter<GetItemsTaskResultEvent>,
 ) {
-    for (entity, mut task) in &mut tasks {
-        if let Some(res) = future::block_on(Compat::new(future::poll_once(&mut task.0))) {
-            result_event.send(GetItemsTaskResultEvent(res));
+    for (entity, task) in &mut tasks {
+        let Ok(mut guard) = task.0.result.try_write() else {
+            continue;
+        };
+        if guard.as_ref().is_none() {
+            continue;
+        }
+        if let Some(received) = guard.take().take() {
+            result_event.send(GetItemsTaskResultEvent(received));
             // Task is complete, so remove task component from entity
             commands.entity(entity).remove::<GetItemsTask>();
         }
     }
 }
 
-#[derive(Component)]
-pub struct ModifyItemTask(Task<Result<(ItemId, UserId, i32), reqwest::Error>>);
+#[derive(Component, Default)]
+pub struct ModifyItemTask(ClientTask<(ItemId, UserId, i32)>);
 pub struct ModifyItemTaskResultEvent(pub Result<(ItemId, UserId, i32), reqwest::Error>);
 
 pub fn bevy_modify_item(
@@ -125,27 +174,36 @@ pub fn bevy_modify_item(
     amount: i32,
     user_id: &UserId,
 ) {
-    let thread_pool = AsyncComputeTaskPool::get();
-    // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
+    let thread_pool = IoTaskPool::get();
     let client = client.clone();
     let data = (biscuit_raw.to_vec(), *item_id, *user_id);
-    let task = thread_pool.spawn(async move {
-        client
-            .modify_item(&data.0, data.1, amount, data.2)
-            .compat()
-            .await
-            .map(|amount| (data.1, data.2, amount))
-    });
-    commands.spawn(ModifyItemTask(task));
+    let task = ModifyItemTask::default();
+    let fill_result_rwlock = task.0.result.clone();
+    thread_pool
+        .spawn(async move {
+            let res = client
+                .modify_item(&data.0, data.1, amount, data.2)
+                .await
+                .map(|r| (data.1, data.2, r));
+            *fill_result_rwlock.write().unwrap() = Some(res);
+        })
+        .detach();
+    commands.spawn(task);
 }
 fn handle_modify_item_tasks(
     mut commands: Commands,
     mut tasks: Query<(Entity, &mut ModifyItemTask)>,
     mut result_event: EventWriter<ModifyItemTaskResultEvent>,
 ) {
-    for (entity, mut task) in &mut tasks {
-        if let Some(res) = future::block_on(Compat::new(future::poll_once(&mut task.0))) {
-            result_event.send(ModifyItemTaskResultEvent(res));
+    for (entity, task) in &mut tasks {
+        let Ok(mut guard) = task.0.result.try_write() else {
+            continue;
+        };
+        if guard.as_ref().is_none() {
+            continue;
+        }
+        if let Some(received) = guard.take().take() {
+            result_event.send(ModifyItemTaskResultEvent(received));
             // Task is complete, so remove task component from entity
             commands.entity(entity).remove::<ModifyItemTask>();
         }

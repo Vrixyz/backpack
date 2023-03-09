@@ -29,12 +29,6 @@ impl BackpackClient {
         &mut self.client
     }
 
-    /* Json is: (see CreatedUserEmailPasswordData, return that from within client.signup)
-    {
-        "id": 2,
-        "password": "XFbUnzBs~WP)y8u*"
-      }
-    */
     pub async fn signup(
         &self,
         data: &CreateEmailPasswordData,

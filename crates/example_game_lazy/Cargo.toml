@@ -11,10 +11,6 @@ reqwest = { version = "0.11", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui.git", branch = "bevy_main" }
-futures-lite = "1.11.3"
-crossbeam-channel = "0.5.0"
-tokio = "1.25.0"
-async-compat = "0.2.1"
 dotenvy = "0.15"
 lerp = "0.4.0"
 rand = "0.8.5"
