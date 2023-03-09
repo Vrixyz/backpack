@@ -1,9 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use bevy::{
-    prelude::*,
-    tasks::{IoTaskPool},
-};
+use bevy::{prelude::*, tasks::IoTaskPool};
 
 use crate::{
     backpack_client::BackpackClient,
