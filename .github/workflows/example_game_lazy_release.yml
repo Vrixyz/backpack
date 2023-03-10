@@ -1,7 +1,7 @@
 on:
   push:
     tags:
-      - "example_game_lazy-*"
+      - "example_game_lazy-v*"
 
 env:
   # update with the name of the main binary
