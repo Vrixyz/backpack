@@ -2247,12 +2247,16 @@ dependencies = [
  "bevy_jornet",
  "bevy_prototype_debug_lines",
  "dotenvy",
+ "js-sys",
  "lerp",
  "particles",
  "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]

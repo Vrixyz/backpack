@@ -17,3 +17,16 @@ rand = "0.8.5"
 bevy_prototype_debug_lines = { git = "https://github.com/Elabajaba/bevy_debug_lines.git", branch = "bevy_010" }
 bevy_jornet = { git = "https://github.com/Vrixyz/jornet.git", branch = "bevy-0.10" }
 particles = { path = "../particles" }
+
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+web-sys = { version = "0.3", features = [
+    "Request",
+    "Window",
+    "Response",
+    "Headers",
+    "RequestInit",
+] }
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
