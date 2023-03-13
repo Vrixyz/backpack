@@ -33,7 +33,6 @@ jobs:
         working-directory: ./crates/${{ env.binary }}
         run: |
           cp -r wasm ../../
-          cargo tree -e features --target wasm32-unknown-unknown
           wasm-bindgen --no-typescript --out-name bevy_game --out-dir ../../wasm --target web ../../target/wasm32-unknown-unknown/wasm-release/${{ env.binary }}.wasm
           cp -r assets ../../wasm/
       - name: Package as a zip
@@ -43,7 +42,7 @@ jobs:
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v3
         with:
-          path: ./${{ env.binary }}.zip
+          path: ${{ env.binary }}.zip
           name: wasm
       - name: Upload binaries to release
         if: ${{ env.add_binaries_to_github_release == 'true' }}
@@ -51,7 +50,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ env.binary }}.zip
-          asset_name: ${{ env.binary }}-wasm-${{ steps.get_version.outputs.tag }}.zip
+          asset_name: wasm-${{ steps.get_version.outputs.tag }}.zip
           tag: ${{ github.ref }}
           overwrite: true
 
