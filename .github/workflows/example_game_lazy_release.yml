@@ -39,11 +39,11 @@ jobs:
       - name: Package as a zip
         working-directory: ./wasm
         run: |
-          zip --recurse-paths ${{ env.binary }}.zip .
+          zip --recurse-paths ../${{ env.binary }}.zip .
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v3
         with:
-          path: ${{ env.binary }}.zip
+          path: ./${{ env.binary }}.zip
           name: wasm
       - name: Upload binaries to release
         if: ${{ env.add_binaries_to_github_release == 'true' }}
