@@ -32,6 +32,9 @@ jobs:
       - name: display features
         run: |
           cargo tree -e features --target wasm32-unknown-unknown
+      - name: display pwd
+        run: |
+          pwd
       - name: Build
         run: |
           cargo build --release --target wasm32-unknown-unknown
