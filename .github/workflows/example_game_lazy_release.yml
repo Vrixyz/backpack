@@ -34,8 +34,8 @@ jobs:
         run: |
           cp -r wasm ../../
           cargo tree -e features --target wasm32-unknown-unknown
-          wasm-bindgen --no-typescript --out-name ../../${{ env.binary }} --out-dir ../../wasm --target web ../../target/wasm32-unknown-unknown/wasm-release/${{ env.binary }}.wasm
-          cp -r assets ../../wasm/public/
+          wasm-bindgen --no-typescript --out-name bevy_game --out-dir ../../wasm --target web ../../target/wasm32-unknown-unknown/wasm-release/${{ env.binary }}.wasm
+          cp -r assets ../../wasm/
       - name: Package as a zip
         working-directory: ./wasm
         run: |
