@@ -29,6 +29,9 @@ jobs:
       - name: move to correct folder
         run: |
           cd crates/${{ env.binary }}
+      - name: display features
+        run: |
+          cargo tree -e features --target wasm32-unknown-unknown
       - name: Build
         run: |
           cargo build --release --target wasm32-unknown-unknown
