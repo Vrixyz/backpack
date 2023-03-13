@@ -26,26 +26,20 @@ jobs:
       - name: install wasm-bindgen-cli
         run: |
           cargo install wasm-bindgen-cli
-      - name: move to correct folder
-        run: |
-          cd crates/${{ env.binary }}
-      - name: display features
-        run: |
-          cargo tree -e features --target wasm32-unknown-unknown
-      - name: display pwd
-        run: |
-          pwd
       - name: Build
         run: |
-          cargo build --release --target wasm32-unknown-unknown
+          cargo build --bin ${{ env.binary }} --profile wasm-release --target wasm32-unknown-unknown
       - name: Prepare package
+        working-directory: ./crates/${{ env.binary }}
         run: |
-          wasm-bindgen --no-typescript --out-name bevy_game --out-dir wasm --target web target/wasm32-unknown-unknown/release/${{ env.binary }}.wasm
-          cp -r assets wasm/
+          cp -r wasm ../../
+          cargo tree -e features --target wasm32-unknown-unknown
+          wasm-bindgen --no-typescript --out-name ../../${{ env.binary }} --out-dir ../../wasm --target web ../../target/wasm32-unknown-unknown/wasm-release/${{ env.binary }}.wasm
+          cp -r assets ../../wasm/public/
       - name: Package as a zip
         working-directory: ./wasm
         run: |
-          zip --recurse-paths ../${{ env.binary }}.zip .
+          zip --recurse-paths ${{ env.binary }}.zip .
       - name: Upload binaries to artifacts
         uses: actions/upload-artifact@v3
         with:
