@@ -27,7 +27,11 @@ jobs:
         run: |
           cargo install wasm-bindgen-cli
       - name: Build
+        env:
+          JORNET_ID: ${{ secrets.JORNET_ID }}
+          JORNET_SECRET: ${{ secrets.JORNET_SECRET }}
         run: |
+          env > .env
           cargo build --bin ${{ env.binary }} --profile wasm-release --target wasm32-unknown-unknown
       - name: Prepare package
         working-directory: ./crates/${{ env.binary }}

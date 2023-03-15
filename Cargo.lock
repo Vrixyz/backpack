@@ -513,6 +513,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-compat"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b48b4ff0c2026db683dea961cd8ea874737f56cffca86fa84415eaddc51c00d"
+dependencies = [
+ "futures-core",
+ "futures-io",
+ "once_cell",
+ "pin-project-lite",
+ "tokio",
+]
+
+[[package]]
 name = "async-executor"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -568,7 +581,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_egui",
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "open",
  "reqwest",
  "serde",
@@ -594,7 +607,7 @@ dependencies = [
  "base64 0.21.0",
  "bcrypt",
  "biscuit-auth",
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "lettre",
  "log",
  "once_cell",
@@ -981,8 +994,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_jornet"
-version = "0.3.1"
-source = "git+https://github.com/Vrixyz/jornet.git?branch=bevy-0.10#db34bde8748f3dc8ee4066edf9aa093d83e8f89b"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b20b2b190f4ff49870fe4b0209e558b902376366fd882598057bebe288600df8"
 dependencies = [
  "bevy",
  "hex",
@@ -1068,8 +1082,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_prototype_debug_lines"
-version = "0.9.0"
-source = "git+https://github.com/Elabajaba/bevy_debug_lines.git?branch=bevy_010#f1b5932496c685ecce1b664f72c9b9baf69de0c0"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8407986cbcabb473b8dc6bd92a5b0879eee065cecc72857f34391951f1dcfd2"
 dependencies = [
  "bevy",
 ]
@@ -2035,6 +2050,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03d8c417d7a8cb362e0c37e5d815f5eb7c37f79ff93707329d5a194e42e54ca0"
 
 [[package]]
+name = "dotenvy"
+version = "0.15.6"
+source = "git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen#9c3455c43071d782f9d7e50f4a2ec4e7686aae30"
+
+[[package]]
+name = "dotenvy_macro"
+version = "0.15.1"
+source = "git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen#9c3455c43071d782f9d7e50f4a2ec4e7686aae30"
+dependencies = [
+ "dotenvy 0.15.6 (git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen)",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "downcast-rs"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2242,11 +2273,13 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 name = "example_game_lazy"
 version = "0.1.0"
 dependencies = [
+ "async-compat",
  "bevy",
  "bevy_egui",
  "bevy_jornet",
  "bevy_prototype_debug_lines",
- "dotenvy",
+ "dotenvy 0.15.6 (git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen)",
+ "dotenvy_macro",
  "js-sys",
  "lerp",
  "particles",
@@ -4694,7 +4727,7 @@ dependencies = [
  "crc",
  "crossbeam-queue",
  "dirs",
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "either",
  "event-listener",
  "futures-channel",
@@ -4735,7 +4768,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b850fa514dc11f2ee85be9d055c512aa866746adfacd1cb42d867d68e6a5b0d9"
 dependencies = [
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "either",
  "heck",
  "hex",

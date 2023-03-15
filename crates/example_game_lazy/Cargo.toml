@@ -12,14 +12,18 @@ reqwest = { version = "0.11", default-features = false, features = [
     "rustls-tls",
     "cookies",
 ] }
+async-compat = "0.2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+# bevy_egui = "0.20"
 bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui.git", branch = "bevy_main" }
-dotenvy = "0.15"
+dotenvy = { git = "https://github.com/Vrixyz/dotenvy.git", package = "dotenvy", branch = "try_dotenv_codegen" }
+# main while waiting for proc-macro ; Vrixyz to have try_dotenv!
+dotenvy_macro = { git = "https://github.com/Vrixyz/dotenvy.git", package = "dotenvy_macro", branch = "try_dotenv_codegen" }
 lerp = "0.4.0"
 rand = "0.8.5"
-bevy_prototype_debug_lines = { git = "https://github.com/Elabajaba/bevy_debug_lines.git", branch = "bevy_010" }
-bevy_jornet = { git = "https://github.com/Vrixyz/jornet.git", branch = "bevy-0.10" }
+bevy_prototype_debug_lines = "0.10"
+bevy_jornet = "0.4"
 particles = { path = "../particles" }
 
 

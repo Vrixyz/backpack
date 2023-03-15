@@ -1,5 +1,6 @@
 use std::sync::{Arc, RwLock};
 
+use async_compat::CompatExt;
 use bevy::{prelude::*, tasks::IoTaskPool};
 
 use crate::{
@@ -49,7 +50,7 @@ pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: &Login
     let fill_result_rwlock = task.0.result.clone();
     thread_pool
         .spawn(async move {
-            let res = client.login(&data.clone()).await;
+            let res = client.login(&data.clone()).compat().await;
             *fill_result_rwlock.write().unwrap() = Some(res);
         })
         .detach();
@@ -90,12 +91,13 @@ pub fn bevy_signup(
     let fill_result_rwlock = task.0.result.clone();
     thread_pool
         .spawn(async move {
-            let res = client.signup(&data.clone()).await;
+            let res = client.signup(&data.clone()).compat().await;
             *fill_result_rwlock.write().unwrap() = Some(res);
         })
         .detach();
     commands.spawn(task);
 }
+
 fn handle_signup_tasks(
     mut commands: Commands,
     mut tasks: Query<(Entity, &mut SignupTask)>,
@@ -133,7 +135,7 @@ pub fn bevy_get_items(
     let fill_result_rwlock = task.0.result.clone();
     thread_pool
         .spawn(async move {
-            let res = client.get_items(&data.0, &data.1).await;
+            let res = client.get_items(&data.0, &data.1).compat().await;
             *fill_result_rwlock.write().unwrap() = Some(res);
         })
         .detach();
@@ -180,6 +182,7 @@ pub fn bevy_modify_item(
         .spawn(async move {
             let res = client
                 .modify_item(&data.0, data.1, amount, data.2)
+                .compat()
                 .await
                 .map(|r| (data.1, data.2, r));
             *fill_result_rwlock.write().unwrap() = Some(res);

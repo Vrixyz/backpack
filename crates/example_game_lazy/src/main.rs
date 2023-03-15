@@ -8,7 +8,6 @@ use bevy_egui::{
     EguiContext, EguiPlugin,
 };
 use data::{AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData};
-use dotenvy::dotenv;
 
 mod backpack_client;
 mod backpack_client_bevy;
@@ -16,17 +15,27 @@ pub mod utils;
 
 use backpack_client::*;
 use backpack_client_bevy::*;
+use dotenvy::dotenv;
+use dotenvy_macro::try_dotenv;
 use game::Game;
 
 fn main() {
-    dotenv().ok();
+    drop(dotenv());
+    let email = try_dotenv!(
+        "BACKPACK_GAME_EXAMPLE_USERNAME",
+        env::vars["BACKPACK_GAME_EXAMPLE_USERNAME"].unwrap_or("".to_string())
+    );
+    let password = try_dotenv!(
+        "BACKPACK_GAME_EXAMPLE_PASSWORD",
+        env::vars["BACKPACK_GAME_EXAMPLE_PASSWORD"].unwrap_or("".to_string())
+    );
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
         .insert_resource(AuthInput {
-            email: std::env::var("BACKPACK_GAME_EXAMPLE_USERNAME").unwrap_or("".to_string()),
-            password: std::env::var("BACKPACK_GAME_EXAMPLE_PASSWORD").unwrap_or("".to_string()),
-            sign_in: std::env::var("BACKPACK_GAME_EXAMPLE_PASSWORD").is_ok(),
+            email: email.to_string(),
+            password: password.to_string(),
+            sign_in: password.is_empty(),
         })
         .add_plugin(AuthPlugin)
         .run();

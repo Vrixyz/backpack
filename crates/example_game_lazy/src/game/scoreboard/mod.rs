@@ -3,6 +3,7 @@ use std::{cmp::Ordering, time::Duration};
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{egui, EguiContext};
 use bevy_jornet::{JornetPlugin, Leaderboard};
+use dotenvy_macro::dotenv;
 
 use super::GameState;
 
@@ -24,8 +25,8 @@ impl Plugin for ScoreboardPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<LeaderboardScreen>();
         app.add_plugin(JornetPlugin::with_leaderboard(
-            &std::env::var("JORNET_ID").expect("No jornet id provided."),
-            &std::env::var("JORNET_SECRET").expect("No jornet secret provided."),
+            dotenv!("JORNET_ID"),
+            dotenv!("JORNET_SECRET"),
         ));
         app.add_startup_system(leaderboard_setup);
         app.add_systems(
