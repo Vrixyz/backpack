@@ -1,4 +1,3 @@
-mod data;
 mod game;
 mod password;
 
@@ -7,9 +6,8 @@ use bevy_egui::{
     egui::{self, Color32, RichText},
     EguiContext, EguiPlugin,
 };
-use data::{AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData};
+use shared::{AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData};
 
-mod backpack_client;
 mod backpack_client_bevy;
 pub mod utils;
 

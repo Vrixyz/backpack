@@ -143,9 +143,9 @@ pub(super) fn handle_get_items_result(
             dbg!(items);
             resource_items.items = items.clone();
             if !resource_items.items.iter().any(|item| item.item.id.0 == 1) {
-                resource_items.items.push(crate::data::ItemAmount {
-                    item: crate::data::ItemWithName {
-                        id: crate::data::ItemId(1),
+                resource_items.items.push(shared::ItemAmount {
+                    item: shared::ItemWithName {
+                        id: shared::ItemId(1),
                         name: "currency".to_string(),
                     },
                     amount: 0,

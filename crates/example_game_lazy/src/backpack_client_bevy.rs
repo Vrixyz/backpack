@@ -1,13 +1,10 @@
 use std::sync::{Arc, RwLock};
 
 use async_compat::CompatExt;
+use backpack_client::BackpackClient;
 use bevy::{prelude::*, tasks::IoTaskPool};
-
-use crate::{
-    backpack_client::BackpackClient,
-    data::{
-        BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
-    },
+use shared::{
+    BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
 };
 
 pub struct BackpackClientPlugin;
@@ -76,8 +73,8 @@ fn handle_login_tasks(
     }
 }
 #[derive(Component, Default)]
-pub struct SignupTask(ClientTask<()>);
-pub struct SignupTaskResultEvent(pub Result<(), reqwest::Error>);
+pub struct SignupTask(ClientTask<shared::CreatedUserEmailPasswordData>);
+pub struct SignupTaskResultEvent(pub Result<shared::CreatedUserEmailPasswordData, reqwest::Error>);
 
 pub fn bevy_signup(
     commands: &mut Commands,

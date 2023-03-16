@@ -25,7 +25,8 @@ rand = "0.8.5"
 bevy_prototype_debug_lines = "0.10"
 bevy_jornet = "0.4"
 particles = { path = "../particles" }
-
+backpack_client = { path = "../client" }
+shared = { path = "../shared" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }

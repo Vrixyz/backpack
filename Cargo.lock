@@ -2274,6 +2274,7 @@ name = "example_game_lazy"
 version = "0.1.0"
 dependencies = [
  "async-compat",
+ "backpack_client",
  "bevy",
  "bevy_egui",
  "bevy_jornet",
@@ -2287,6 +2288,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "shared",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

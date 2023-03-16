@@ -8,7 +8,7 @@ mod ui_warmup;
 use std::time::Duration;
 
 use bevy::{
-    math::{Affine3A, Vec2Swizzles, Vec3Swizzles},
+    math::{Affine3A, Vec3Swizzles},
     prelude::*,
 };
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
@@ -16,9 +16,9 @@ use lerp::Lerp;
 use particles::ParticleExplosion;
 use rand::prelude::*;
 
+use shared::ItemId;
 use crate::{
     backpack_client_bevy::{bevy_modify_item, ModifyItemTaskResultEvent},
-    data::ItemId,
     utils::{
         self,
         mouse::{self, GameCamera, MousePos},
