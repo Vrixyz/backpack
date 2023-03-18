@@ -44,15 +44,10 @@ pub async fn spawn_app() -> TestApp {
         .expect("Failed to bind address");
     let _ = tokio::spawn(server);
 
-    let api_client = reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .cookie_store(true)
-        .build()
-        .unwrap();
     let url = format!("http://127.0.0.1:{port}");
     TestApp {
         db_pool: connection_pool,
-        api_client: BackpackClient::new_with_client(url + "/api/v1", api_client),
+        api_client: BackpackClient::new(url + "/api/v1"),
     }
 }
 

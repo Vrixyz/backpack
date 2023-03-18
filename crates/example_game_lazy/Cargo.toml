@@ -7,12 +7,6 @@ edition = "2021"
 
 [dependencies]
 bevy = "0.10"
-reqwest = { version = "0.11", default-features = false, features = [
-    "json",
-    "rustls-tls",
-    "cookies",
-] }
-async-compat = "0.2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 # bevy_egui = "0.20"

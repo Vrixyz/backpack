@@ -1,8 +1,7 @@
 use std::sync::{Arc, RwLock};
 
-use async_compat::CompatExt;
-use backpack_client::BackpackClient;
-use bevy::{prelude::*, tasks::IoTaskPool};
+use backpack_client::{BackpackClient, RequestError};
+use bevy::prelude::*;
 use shared::{
     BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
 };
@@ -23,7 +22,7 @@ impl Plugin for BackpackClientPlugin {
 }
 
 pub struct ClientTask<T> {
-    pub result: Arc<RwLock<Option<Result<T, reqwest::Error>>>>,
+    pub result: Arc<RwLock<Option<Result<T, RequestError>>>>,
 }
 
 impl<T> Default for ClientTask<T> {
@@ -36,21 +35,17 @@ impl<T> Default for ClientTask<T> {
 
 #[derive(Component, Default)]
 pub struct LoginTask(ClientTask<(Vec<u8>, BiscuitInfo)>);
-pub struct LoginTaskResultEvent(pub Result<(Vec<u8>, BiscuitInfo), reqwest::Error>);
+pub struct LoginTaskResultEvent(pub Result<(Vec<u8>, BiscuitInfo), RequestError>);
 
 pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: &LoginEmailPasswordData) {
-    let thread_pool = IoTaskPool::get();
-    // FIXME: Cloning the client is problematic if we ever want to use cookies. But we're cloning here to be able to send into the task.
-    let client = client.clone();
-    let data = data.clone();
     let task = LoginTask::default();
     let fill_result_rwlock = task.0.result.clone();
-    thread_pool
-        .spawn(async move {
-            let res = client.login(&data.clone()).compat().await;
+    client.login(
+        &data,
+        Box::new(move |res| {
             *fill_result_rwlock.write().unwrap() = Some(res);
-        })
-        .detach();
+        }),
+    );
     commands.spawn(task);
 }
 fn handle_login_tasks(
@@ -74,24 +69,21 @@ fn handle_login_tasks(
 }
 #[derive(Component, Default)]
 pub struct SignupTask(ClientTask<shared::CreatedUserEmailPasswordData>);
-pub struct SignupTaskResultEvent(pub Result<shared::CreatedUserEmailPasswordData, reqwest::Error>);
+pub struct SignupTaskResultEvent(pub Result<shared::CreatedUserEmailPasswordData, RequestError>);
 
 pub fn bevy_signup(
     commands: &mut Commands,
     client: &BackpackClient,
     data: &CreateEmailPasswordData,
 ) {
-    let thread_pool = IoTaskPool::get();
-    let client = client.clone();
-    let data = data.clone();
     let task = SignupTask::default();
     let fill_result_rwlock = task.0.result.clone();
-    thread_pool
-        .spawn(async move {
-            let res = client.signup(&data.clone()).compat().await;
+    client.signup(
+        &data,
+        Box::new(move |res| {
             *fill_result_rwlock.write().unwrap() = Some(res);
-        })
-        .detach();
+        }),
+    );
     commands.spawn(task);
 }
 
@@ -117,7 +109,7 @@ fn handle_signup_tasks(
 
 #[derive(Component, Default)]
 pub struct GetItemsTask(ClientTask<Vec<ItemAmount>>);
-pub struct GetItemsTaskResultEvent(pub Result<Vec<ItemAmount>, reqwest::Error>);
+pub struct GetItemsTaskResultEvent(pub Result<Vec<ItemAmount>, RequestError>);
 
 pub fn bevy_get_items(
     commands: &mut Commands,
@@ -125,17 +117,17 @@ pub fn bevy_get_items(
     biscuit_raw: &[u8],
     user_id: &UserId,
 ) {
-    let thread_pool = IoTaskPool::get();
-    let client = client.clone();
     let data = (biscuit_raw.to_vec(), *user_id);
     let task = GetItemsTask::default();
     let fill_result_rwlock = task.0.result.clone();
-    thread_pool
-        .spawn(async move {
-            let res = client.get_items(&data.0, &data.1).compat().await;
+
+    client.get_items(
+        &data.0,
+        &data.1,
+        Box::new(move |res| {
             *fill_result_rwlock.write().unwrap() = Some(res);
-        })
-        .detach();
+        }),
+    );
     commands.spawn(task);
 }
 fn handle_get_items_tasks(
@@ -160,7 +152,7 @@ fn handle_get_items_tasks(
 
 #[derive(Component, Default)]
 pub struct ModifyItemTask(ClientTask<(ItemId, UserId, i32)>);
-pub struct ModifyItemTaskResultEvent(pub Result<(ItemId, UserId, i32), reqwest::Error>);
+pub struct ModifyItemTaskResultEvent(pub Result<(ItemId, UserId, i32), RequestError>);
 
 pub fn bevy_modify_item(
     commands: &mut Commands,
@@ -170,21 +162,20 @@ pub fn bevy_modify_item(
     amount: i32,
     user_id: &UserId,
 ) {
-    let thread_pool = IoTaskPool::get();
-    let client = client.clone();
     let data = (biscuit_raw.to_vec(), *item_id, *user_id);
     let task = ModifyItemTask::default();
     let fill_result_rwlock = task.0.result.clone();
-    thread_pool
-        .spawn(async move {
-            let res = client
-                .modify_item(&data.0, data.1, amount, data.2)
-                .compat()
-                .await
-                .map(|r| (data.1, data.2, r));
-            *fill_result_rwlock.write().unwrap() = Some(res);
-        })
-        .detach();
+
+    client.modify_item(
+        &data.0,
+        data.1,
+        amount,
+        data.2,
+        Box::new(move |res| {
+            *fill_result_rwlock.write().unwrap() =
+                Some(res.map(|new_amount| (data.1, data.2, new_amount)));
+        }),
+    );
     commands.spawn(task);
 }
 fn handle_modify_item_tasks(
