@@ -51,6 +51,28 @@ impl BackpackClient {
             }
         });
     }
+    async fn make_request_async<T: DeserializeOwned + 'static>(
+        request: Request,
+    ) -> Result<T, RequestError> {
+        future::ok(ehttp::fetch_blocking(
+            request,
+            move |response| match response {
+                Err(error) => on_done(Err(RequestError::HttpError(error))),
+                Ok(response) => {
+                    if (400..=599).contains(&response.status) {
+                        on_done(Err(RequestError::StatusError {
+                            status: response.status,
+                            bytes: response.bytes,
+                        }));
+                        return;
+                    }
+                    let received: Result<T, _> =
+                        serde_json::from_slice(&response.bytes).map_err(|err| err.into());
+                    on_done(received);
+                }
+            },
+        ))
+    }
 
     fn get_auth_bearer_header(biscuit_raw: &[u8]) -> String {
         "Bearer: ".to_string() + std::str::from_utf8(biscuit_raw).unwrap_or_default()
@@ -88,6 +110,7 @@ impl BackpackClient {
                             let biscuit_raw = biscuit_raw.as_bytes();
                             let biscuit_raw_saved = biscuit_raw.to_vec();
                             // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
+                            // self is cloned because it could be destroyed during the network call.
                             cloned_self.whoami(
                                 biscuit_raw,
                                 Box::new(move |biscuit_info| match biscuit_info {

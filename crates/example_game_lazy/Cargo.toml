@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "0.10"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+bevy = "0.10.0"
+serde = { version = "1.0.156", features = ["derive"] }
+serde_json = "1.0.94"
 # bevy_egui = "0.20"
 bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui.git", branch = "bevy_main" }
 dotenvy = { git = "https://github.com/Vrixyz/dotenvy.git", package = "dotenvy", branch = "try_dotenv_codegen" }
@@ -16,20 +16,20 @@ dotenvy = { git = "https://github.com/Vrixyz/dotenvy.git", package = "dotenvy", 
 dotenvy_macro = { git = "https://github.com/Vrixyz/dotenvy.git", package = "dotenvy_macro", branch = "try_dotenv_codegen" }
 lerp = "0.4.0"
 rand = "0.8.5"
-bevy_prototype_debug_lines = "0.10"
-bevy_jornet = "0.4"
+bevy_prototype_debug_lines = "0.10.1"
+bevy_jornet = "0.4.0"
 particles = { path = "../particles" }
 backpack_client = { path = "../client" }
 shared = { path = "../shared" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
-web-sys = { version = "0.3", features = [
+wasm-bindgen = { version = "0.2.84", features = ["serde-serialize"] }
+web-sys = { version = "0.3.61", features = [
     "Request",
     "Window",
     "Response",
     "Headers",
     "RequestInit",
 ] }
-wasm-bindgen-futures = "0.4"
-js-sys = "0.3"
+wasm-bindgen-futures = "0.4.34"
+js-sys = "0.3.61"

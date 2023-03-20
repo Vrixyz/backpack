@@ -29,6 +29,8 @@ async fn oauth_callback(
     connection: web::Data<PgPool>,
     root: web::Data<KeyPair>,
 ) -> impl Responder {
+    HttpResponse::NotImplemented()
+    /*
     let mut params = HashMap::new();
     params.insert("client_id", &config.github_admin_app.client_id);
     params.insert("client_secret", &config.github_admin_app.client_secret);
@@ -71,7 +73,7 @@ async fn oauth_callback(
     let biscuit = user.create_biscuit(&root, Role::Admin);
     HttpResponse::Ok().json(TokenReply {
         token: biscuit.to_base64().unwrap(),
-    })
+    }) */
 }
 pub(crate) fn oauth_github() -> Scope {
     web::scope("oauth/github").route("callback", web::get().to(oauth_callback))
