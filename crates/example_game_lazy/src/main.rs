@@ -12,17 +12,20 @@ use dotenvy::dotenv;
 
 mod backpack_client;
 mod backpack_client_bevy;
+mod ui;
 pub mod utils;
 
 use backpack_client::*;
 use backpack_client_bevy::*;
 use game::Game;
+use ui::BackpackUiPlugin;
 
 fn main() {
     dotenv().ok();
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
+        .add_plugin(BackpackUiPlugin)
         .insert_resource(AuthInput {
             email: std::env::var("BACKPACK_GAME_EXAMPLE_USERNAME").unwrap_or("".to_string()),
             password: std::env::var("BACKPACK_GAME_EXAMPLE_PASSWORD").unwrap_or("".to_string()),

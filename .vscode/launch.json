@@ -63,34 +63,34 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'backpack-server'",
+            "name": "Debug executable 'backpack_server'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=backpack-server",
-                    "--package=backpack-server"
+                    "--bin=backpack_server",
+                    "--package=backpack_server"
                 ],
                 "filter": {
-                    "name": "backpack-server",
+                    "name": "backpack_server",
                     "kind": "bin"
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}/crates/backpack-server"
+            "cwd": "${workspaceFolder}/crates/server"
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'backpack-server'",
+            "name": "Debug unit tests in executable 'backpack_server'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=backpack-server",
-                    "--package=backpack-server"
+                    "--bin=backpack_server",
+                    "--package=backpack_server"
                 ],
                 "filter": {
-                    "name": "backpack-server",
+                    "name": "backpack_server",
                     "kind": "bin"
                 }
             },
