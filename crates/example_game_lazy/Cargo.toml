@@ -11,9 +11,8 @@ serde = { version = "1.0.156", features = ["derive"] }
 serde_json = "1.0.94"
 # bevy_egui = "0.20"
 bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui.git", branch = "bevy_main" }
-dotenvy = { git = "https://github.com/Vrixyz/dotenvy.git", package = "dotenvy", branch = "try_dotenv_codegen" }
-# main while waiting for proc-macro ; Vrixyz to have try_dotenv!
-dotenvy_macro = { git = "https://github.com/Vrixyz/dotenvy.git", package = "dotenvy_macro", branch = "try_dotenv_codegen" }
+dotenvy = "0.15"
+dotenvy_macro = "0.15"
 lerp = "0.4.0"
 rand = "0.8.5"
 bevy_prototype_debug_lines = "0.10.1"
