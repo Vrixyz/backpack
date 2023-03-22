@@ -16,7 +16,6 @@ use lerp::Lerp;
 use particles::ParticleExplosion;
 use rand::prelude::*;
 
-use shared::ItemId;
 use crate::{
     backpack_client_bevy::{bevy_modify_item, ModifyItemTaskResultEvent},
     utils::{
@@ -25,6 +24,7 @@ use crate::{
     },
     AuthData, BackpackCom, BackpackItems,
 };
+use shared::ItemId;
 
 use self::{
     collisions::StayCollisionEvent,
@@ -106,7 +106,8 @@ enum LoadingPlayState {
     Init,
     WaitingResponse,
     Failed,
-    Ok,
+    StartedWithBenefit,
+    StartedWithoutBenefit,
 }
 
 impl Plugin for Game {
@@ -144,10 +145,14 @@ impl Plugin for Game {
             )
                 .in_set(OnUpdate(GameState::Warmup)),
         );
-        app.add_system(init_loading_play.in_schedule(OnEnter(GameState::LoadingPlay)));
+        app.add_system(
+            init_loading_play
+                .in_schedule(OnEnter(GameState::LoadingPlay))
+                .before(loading_play_use_currency),
+        );
         app.add_system(
             loading_play_use_currency
-                .in_set(OnUpdate(GameState::LoadingPlay))
+                .in_schedule(OnEnter(GameState::LoadingPlay))
                 .before(handle_modify_result),
         );
         app.add_system(handle_modify_result.in_set(OnUpdate(GameState::LoadingPlay)));
@@ -396,11 +401,16 @@ fn loading_play_use_currency(
         return;
     }
     let Some(auth) = &auth_data.data else {
-        *loading_state =  LoadingPlayState::Failed;
+        *loading_state = LoadingPlayState::StartedWithoutBenefit;
         //dbg!(game_state.set(GameState::Warmup));
         dbg!(game_state.set(GameState::Playing));
         return;
     };
+    if game_def.enemy_count == 0 {
+        *loading_state = LoadingPlayState::StartedWithoutBenefit;
+        game_state.set(GameState::Playing);
+        return;
+    }
     bevy_modify_item(
         &mut commands,
         &backpack.client,

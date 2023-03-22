@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use backpack_client::{BackpackClient, RequestError};
-use bevy::prelude::*;
+use bevy::{prelude::*, tasks::IoTaskPool};
 use shared::{
     BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
 };
@@ -37,15 +37,17 @@ impl<T> Default for ClientTask<T> {
 pub struct LoginTask(ClientTask<(Vec<u8>, BiscuitInfo)>);
 pub struct LoginTaskResultEvent(pub Result<(Vec<u8>, BiscuitInfo), RequestError>);
 
-pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: &LoginEmailPasswordData) {
+pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: LoginEmailPasswordData) {
+    let thread_pool = IoTaskPool::get();
     let task = LoginTask::default();
     let fill_result_rwlock = task.0.result.clone();
-    client.login(
-        &data,
-        Box::new(move |res| {
-            *fill_result_rwlock.write().unwrap() = Some(res);
-        }),
-    );
+    let client = client.clone();
+    thread_pool
+        .spawn(async move {
+            let response = client.login(&data).await;
+            *fill_result_rwlock.write().unwrap() = Some(response);
+        })
+        .detach();
     commands.spawn(task);
 }
 fn handle_login_tasks(
@@ -76,14 +78,17 @@ pub fn bevy_signup(
     client: &BackpackClient,
     data: &CreateEmailPasswordData,
 ) {
+    let thread_pool = IoTaskPool::get();
+    let client = client.clone();
+    let data = data.clone();
     let task = SignupTask::default();
     let fill_result_rwlock = task.0.result.clone();
-    client.signup(
-        &data,
-        Box::new(move |res| {
-            *fill_result_rwlock.write().unwrap() = Some(res);
-        }),
-    );
+    thread_pool
+        .spawn(async move {
+            let response = client.signup(&data).await;
+            *fill_result_rwlock.write().unwrap() = Some(response);
+        })
+        .detach();
     commands.spawn(task);
 }
 
@@ -117,17 +122,17 @@ pub fn bevy_get_items(
     biscuit_raw: &[u8],
     user_id: &UserId,
 ) {
+    let thread_pool = IoTaskPool::get();
+    let client = client.clone();
     let data = (biscuit_raw.to_vec(), *user_id);
     let task = GetItemsTask::default();
     let fill_result_rwlock = task.0.result.clone();
-
-    client.get_items(
-        &data.0,
-        &data.1,
-        Box::new(move |res| {
+    thread_pool
+        .spawn(async move {
+            let res = client.get_items(&data.0, &data.1).await;
             *fill_result_rwlock.write().unwrap() = Some(res);
-        }),
-    );
+        })
+        .detach();
     commands.spawn(task);
 }
 fn handle_get_items_tasks(
@@ -162,20 +167,20 @@ pub fn bevy_modify_item(
     amount: i32,
     user_id: &UserId,
 ) {
+    let thread_pool = IoTaskPool::get();
+    let client = client.clone();
     let data = (biscuit_raw.to_vec(), *item_id, *user_id);
     let task = ModifyItemTask::default();
     let fill_result_rwlock = task.0.result.clone();
-
-    client.modify_item(
-        &data.0,
-        data.1,
-        amount,
-        data.2,
-        Box::new(move |res| {
-            *fill_result_rwlock.write().unwrap() =
-                Some(res.map(|new_amount| (data.1, data.2, new_amount)));
-        }),
-    );
+    thread_pool
+        .spawn(async move {
+            let res = client
+                .modify_item(&data.0, data.1, amount, data.2)
+                .await
+                .map(|r| (data.1, data.2, r));
+            *fill_result_rwlock.write().unwrap() = Some(res);
+        })
+        .detach();
     commands.spawn(task);
 }
 fn handle_modify_item_tasks(

@@ -10,6 +10,7 @@ use thiserror::Error;
 const AUTHORIZATION: &str = "Authorization";
 
 type Callback<T> = Box<dyn FnOnce(Result<T, RequestError>) + Send>;
+type RequestResult<T> = Result<T, RequestError>;
 
 #[derive(Clone, Debug)]
 pub struct BackpackClient {
@@ -24,6 +25,8 @@ pub enum RequestError {
     HttpError(String),
     #[error("Error 4xx or 5xx")]
     StatusError { status: u16, bytes: Vec<u8> },
+    #[error("other error")]
+    Other(String),
 }
 
 impl BackpackClient {
@@ -33,8 +36,8 @@ impl BackpackClient {
     pub fn get_url(&self) -> &'_ str {
         &self.url
     }
-
-    fn make_request<T: DeserializeOwned + 'static>(request: Request, on_done: Callback<T>) {
+    /*
+    fn make_request_callback<T: DeserializeOwned + 'static>(request: Request, on_done: Callback<T>) {
         ehttp::fetch(request, move |response| match response {
             Err(error) => on_done(Err(RequestError::HttpError(error))),
             Ok(response) => {
@@ -50,104 +53,102 @@ impl BackpackClient {
                 on_done(received);
             }
         });
-    }
-    async fn make_request_async<T: DeserializeOwned + 'static>(
-        request: Request,
-    ) -> Result<T, RequestError> {
-        future::ok(ehttp::fetch_blocking(
-            request,
-            move |response| match response {
-                Err(error) => on_done(Err(RequestError::HttpError(error))),
-                Ok(response) => {
-                    if (400..=599).contains(&response.status) {
-                        on_done(Err(RequestError::StatusError {
-                            status: response.status,
-                            bytes: response.bytes,
-                        }));
-                        return;
-                    }
-                    let received: Result<T, _> =
-                        serde_json::from_slice(&response.bytes).map_err(|err| err.into());
-                    on_done(received);
+    }*/
+    async fn make_request(mut request: Request) -> Result<Vec<u8>, RequestError> {
+        if !request.body.is_empty() {
+            request
+                .headers
+                .insert("Content-Type".into(), "application/json".into());
+        }
+        let response = ehttp::fetch_async(request).await;
+        match response {
+            Err(error) => Err(RequestError::HttpError(error)),
+            Ok(response) => {
+                if (400..=599).contains(&response.status) {
+                    return Err(RequestError::StatusError {
+                        status: response.status,
+                        bytes: response.bytes,
+                    });
                 }
-            },
-        ))
+                Ok(response.bytes)
+            }
+        }
+    }
+
+    fn parse<T: DeserializeOwned + 'static>(bytes: Vec<u8>) -> RequestResult<T> {
+        serde_json::from_slice(&bytes).map_err(|err| err.into())
     }
 
     fn get_auth_bearer_header(biscuit_raw: &[u8]) -> String {
-        "Bearer: ".to_string() + std::str::from_utf8(biscuit_raw).unwrap_or_default()
+        "Bearer ".to_string() + std::str::from_utf8(biscuit_raw).unwrap_or_default()
     }
 
-    pub fn signup(
+    pub async fn signup(
         &self,
         data: &CreateEmailPasswordData,
-        on_done: Callback<CreatedUserEmailPasswordData>,
-    ) {
+    ) -> RequestResult<CreatedUserEmailPasswordData> {
         match serde_json::to_vec(&data) {
-            Err(err) => on_done(Err(err.into())),
+            Err(err) => Err(err.into()),
             Ok(data) => {
                 let request = ehttp::Request::post(
                     self.url.clone() + "/unauthenticated/email_password/create",
                     data,
                 );
-                Self::make_request(request, on_done);
+                Self::parse(Self::make_request(request).await?)
             }
         }
     }
-    pub fn login(&self, data: &LoginEmailPasswordData, on_done: Callback<(Vec<u8>, BiscuitInfo)>) {
+    pub async fn login(
+        &self,
+        data: &LoginEmailPasswordData,
+    ) -> RequestResult<(Vec<u8>, BiscuitInfo)> {
         match serde_json::to_vec(&data) {
-            Err(err) => on_done(Err(err.into())),
+            Err(err) => Err(err.into()),
             Ok(data) => {
                 let request = ehttp::Request::post(
                     self.url.clone() + "/unauthenticated/email_password/login",
                     data,
                 );
-                let cloned_self = self.clone();
-                let callback: Callback<String> = Box::new(move |biscuit_raw| {
-                    match biscuit_raw {
-                        Err(err) => on_done(Err(err)),
-                        Ok(biscuit_raw) => {
-                            let biscuit_raw = biscuit_raw.as_bytes();
-                            let biscuit_raw_saved = biscuit_raw.to_vec();
-                            // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
-                            // self is cloned because it could be destroyed during the network call.
-                            cloned_self.whoami(
-                                biscuit_raw,
-                                Box::new(move |biscuit_info| match biscuit_info {
-                                    Err(_) => todo!(),
-                                    Ok(biscuit_info) => {
-                                        on_done(Ok((biscuit_raw_saved, biscuit_info)))
-                                    }
-                                }),
-                            );
+                let response = Self::make_request(request).await?;
+                let biscuit_raw = std::str::from_utf8(&response)
+                    .map_err(|err| RequestError::Other(err.to_string()));
+                match biscuit_raw {
+                    Err(err) => Err(err),
+                    Ok(biscuit_raw) => {
+                        let biscuit_raw = biscuit_raw.as_bytes();
+                        let biscuit_raw_saved = biscuit_raw.to_vec();
+                        // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
+                        // self is cloned because it could be destroyed during the network call.
+                        let biscuit_info = self.whoami(biscuit_raw).await;
+                        match biscuit_info {
+                            Err(e) => Err(e),
+                            Ok(biscuit_info) => Ok((biscuit_raw_saved, biscuit_info)),
                         }
                     }
-                });
-                Self::make_request::<String>(request, callback);
+                }
             }
         }
     }
 
     /// FIXME: this route should be avoidable by decrypting biscuit information with server public key.
     /// Also, sending auth data could be done via secure http-only cookie.
-    pub fn whoami(&self, biscuit_raw: &[u8], on_done: Callback<BiscuitInfo>) {
+    pub async fn whoami(&self, biscuit_raw: &[u8]) -> RequestResult<BiscuitInfo> {
         let request = Request {
             headers: ehttp::headers(&[(AUTHORIZATION, &Self::get_auth_bearer_header(biscuit_raw))]),
-            ..ehttp::Request::get(self.url.clone() + "/unauthenticated/email_password/create")
+            ..ehttp::Request::get(self.url.clone() + "/authenticated/whoami")
         };
-        Self::make_request(request, on_done);
+        Self::parse(Self::make_request(request).await?)
     }
 
-    pub fn modify_item(
+    pub async fn modify_item(
         &self,
         biscuit_raw: &[u8],
         item_id: ItemId,
         amount: i32,
         user_id: UserId,
-        on_done: Callback<i32>,
-    ) {
+    ) -> RequestResult<i32> {
         match serde_json::to_vec(&UserItemModify { amount }) {
-            Err(err) => on_done(Err(err.into())),
+            Err(err) => Err(err.into()),
             Ok(data) => {
                 let request = Request {
                     headers: ehttp::headers(&[(
@@ -162,17 +163,16 @@ impl BackpackClient {
                         data,
                     )
                 };
-                Self::make_request(request, on_done);
+                Self::parse(Self::make_request(request).await?)
             }
         }
     }
 
-    pub fn get_items(
+    pub async fn get_items(
         &self,
         biscuit_raw: &[u8],
         user_id: &UserId,
-        on_done: Callback<Vec<ItemAmount>>,
-    ) {
+    ) -> RequestResult<Vec<ItemAmount>> {
         let request = Request {
             headers: ehttp::headers(&[(AUTHORIZATION, &Self::get_auth_bearer_header(biscuit_raw))]),
             ..ehttp::Request::get(format!(
@@ -180,16 +180,15 @@ impl BackpackClient {
                 self.url, user_id.0
             ))
         };
-        Self::make_request(request, on_done);
+        Self::parse(Self::make_request(request).await?)
     }
 
-    pub fn get_item(
+    pub async fn get_item(
         &self,
         biscuit_raw: &[u8],
         user_id: &UserId,
         item_id: ItemId,
-        on_done: Callback<ItemAmount>,
-    ) {
+    ) -> RequestResult<ItemAmount> {
         let request = Request {
             headers: ehttp::headers(&[(AUTHORIZATION, &Self::get_auth_bearer_header(biscuit_raw))]),
             ..ehttp::Request::get(format!(
@@ -197,6 +196,6 @@ impl BackpackClient {
                 self.url, user_id.0, *item_id
             ))
         };
-        Self::make_request(request, on_done);
+        Self::parse(Self::make_request(request).await?)
     }
 }

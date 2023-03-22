@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id FROM apps WHERE id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "f1d14ea7b059feb33baec7449b04b6d31ea737410ead400a8704d52fbc276aa0"
+}

@@ -149,7 +149,7 @@ async fn oauth_login_email_password(
     };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
 
-    let biscuit = match dbg!(req_data.as_app_user) {
+    let biscuit = match req_data.as_app_user {
         Some(app_id) => user_id.create_biscuit(&root, Role::User(app_id)),
         None => user_id.create_biscuit(&root, Role::Admin),
     };

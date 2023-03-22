@@ -30,7 +30,7 @@ impl<'a> TryFrom<&'a mut Authorizer<'a>> for Role {
             .query("data($is_admin) <- is_admin($is_admin)")
             .ok();
         match admin {
-            Some(res) if !res.is_empty() && dbg!(&res)[0].0 => Ok(Role::Admin),
+            Some(res) if !res.is_empty() && res[0].0 => Ok(Role::Admin),
             _ => {
                 let app_id: Vec<(String,)> = authorizer
                     .query("data($app_id) <- user_app_id($app_id)")

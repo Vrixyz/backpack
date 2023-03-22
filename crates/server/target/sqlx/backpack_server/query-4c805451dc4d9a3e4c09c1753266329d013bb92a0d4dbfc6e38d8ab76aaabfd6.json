@@ -1,0 +1,27 @@
+{
+  "query": "\n            SELECT id, name FROM items WHERE app_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a3953481821540319611f93bdddc5a7f570eb1e0cd1164354d09b1700a0fa234"
+}

@@ -154,7 +154,7 @@ fn ui_auth(
                     bevy_login(
                         &mut commands,
                         &backpack.client,
-                        &LoginEmailPasswordData {
+                        LoginEmailPasswordData {
                             email: auth_input.email.clone(),
                             password_plain: auth_input.password.clone(),
                             as_app_user: Some(AppId(1)),
@@ -199,7 +199,7 @@ fn handle_signup_result(
             auth_input.sign_in = true;
             popup_signup_state.set(PopupSignupSuccess::Shown);
         } else {
-            dbg!("Login failed.");
+            dbg!("Signup failed.");
         }
     }
 }

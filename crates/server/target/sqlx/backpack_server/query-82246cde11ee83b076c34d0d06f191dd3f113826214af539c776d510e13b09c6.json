@@ -1,5 +1,5 @@
 {
-  "query": "\nUPDATE users_items SET amount = amount + $1\n  WHERE user_id = $2 AND item_id = $3\n  RETURNING amount\n        ",
+  "query": "\n    INSERT INTO users_items ( user_id, item_id, amount )\n    VALUES ( $1, $2, $3 )\n    RETURNING amount\n            ",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       false
     ]
   },
-  "hash": "2b5bb2937da51c6ac3b1ff27a87e3a6377a778250f5d76de8d85fb5605521624"
+  "hash": "8f29273775a5221a34e57f771b8d5cb8cbd37aa01426903e6484cadb67e3be8b"
 }

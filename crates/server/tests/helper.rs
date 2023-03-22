@@ -84,7 +84,7 @@ pub struct UserAuthentication {
 }
 
 impl TestUser {
-    pub async fn generate(client: &mut BackpackClient) -> Result<Self, ReqwestError> {
+    pub async fn generate(client: &mut BackpackClient) -> Result<Self, RequestError> {
         let email = Uuid::new_v4().to_string() + "@example.com";
         let created_data = client
             .signup(&backpack_client::shared::CreateEmailPasswordData {
@@ -102,7 +102,7 @@ impl TestUser {
         &self,
         client: &mut BackpackClient,
         as_app_user: Option<AppId>,
-    ) -> Result<UserAuthentication, ReqwestError> {
+    ) -> Result<UserAuthentication, RequestError> {
         let biscuit = client
             .login(&backpack_client::shared::LoginEmailPasswordData {
                 email: self.email.clone(),

@@ -1,0 +1,27 @@
+{
+  "query": "\n        SELECT apps.id, apps.name\n        FROM apps\n        JOIN items\n        ON items.app_id = apps.id\n        WHERE items.id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "615256bf28024f3fec9e3496e33ebcfd0f8a340469616688d8e71a5593777e62"
+}

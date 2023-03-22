@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ehttp = "*"
+ehttp = { git = "https://github.com/Vrixyz/ehttp", branch = "async" }
 shared = { path = "../shared" }
 serde_json = "1"
 serde = "1"

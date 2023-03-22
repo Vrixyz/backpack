@@ -1,0 +1,13 @@
+{
+  "query": "\n                DELETE FROM apps\n                WHERE id = $1;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f668824bab3a4de1fe3c4052320dc8a9b9030a624662548cd174cbf529f6fc3e"
+}

@@ -1,0 +1,21 @@
+{
+  "query": "SELECT id FROM users_email_password WHERE email = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "68134af3246b0e2072477d6909bd9eb809bfbaeb4418fb4c5cec0356beaba571"
+}

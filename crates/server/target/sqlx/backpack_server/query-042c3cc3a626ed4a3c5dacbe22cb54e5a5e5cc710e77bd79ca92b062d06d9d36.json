@@ -1,0 +1,34 @@
+{
+  "query": "\n        SELECT  item_id as id, amount, items.name as name\n        FROM users_items\n        JOIN items\n        ON items.id = item_id\n        WHERE user_id = $1\n        AND item_id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "amount",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "e5c2eaaf761c489bd2c69b25f99a48524a8e2cd1ceb4334893d0104cce7d1724"
+}

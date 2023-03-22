@@ -1,0 +1,23 @@
+{
+  "query": "\n            INSERT INTO users_github (id, login, user_id) VALUES ($1, $2, $3)\n            RETURNING id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "ab8505e0b8381a437785c254b085788ac528a6efa6830078ec61bdda9c399857"
+}
