@@ -30,6 +30,8 @@ jobs:
         env:
           JORNET_ID: ${{ secrets.JORNET_ID }}
           JORNET_SECRET: ${{ secrets.JORNET_SECRET }}
+          BACKPACK_GAME_EXAMPLE_USERNAME: ""
+          BACKPACK_GAME_EXAMPLE_PASSWORD: ""
         run: |
           env > .env
           cargo build --bin ${{ env.binary }} --profile wasm-release --target wasm32-unknown-unknown

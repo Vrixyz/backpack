@@ -13,20 +13,13 @@ pub mod utils;
 
 use backpack_client::*;
 use backpack_client_bevy::*;
-use dotenvy::dotenv;
-use dotenvy_macro::try_dotenv;
+use dotenvy_macro::dotenv;
 use game::Game;
 
 fn main() {
-    drop(dotenv());
-    let email = try_dotenv!(
-        "BACKPACK_GAME_EXAMPLE_USERNAME",
-        env::vars["BACKPACK_GAME_EXAMPLE_USERNAME"].unwrap_or("".to_string())
-    );
-    let password = try_dotenv!(
-        "BACKPACK_GAME_EXAMPLE_PASSWORD",
-        env::vars["BACKPACK_GAME_EXAMPLE_PASSWORD"].unwrap_or("".to_string())
-    );
+    drop(dotenvy::dotenv());
+    let email = dotenv!("BACKPACK_GAME_EXAMPLE_USERNAME");
+    let password = dotenv!("BACKPACK_GAME_EXAMPLE_PASSWORD");
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
