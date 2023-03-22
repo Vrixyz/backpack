@@ -568,7 +568,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_egui",
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "open",
  "serde",
  "serde_json",
@@ -597,7 +597,7 @@ dependencies = [
  "base64 0.21.0",
  "bcrypt",
  "biscuit-auth",
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "lettre",
  "log",
  "once_cell",
@@ -2039,26 +2039,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03d8c417d7a8cb362e0c37e5d815f5eb7c37f79ff93707329d5a194e42e54ca0"
 
 [[package]]
-name = "dotenvy_codegen_impl"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e05611d49f33180c6989e426b1d63a5ac0651307f0459321b67b38cd9861d050"
-dependencies = [
- "dotenvy",
- "proc-macro-hack",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
+name = "dotenvy"
+version = "0.15.6"
+source = "git+https://github.com/allan2/dotenvy.git#8802f72fd572649b14aa39283e6ba9854689d21e"
 
 [[package]]
 name = "dotenvy_macro"
 version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f559fff643c8f40279ab9bc50dd3734c22efc1f386972995f52892fe414722a7"
+source = "git+https://github.com/allan2/dotenvy.git#8802f72fd572649b14aa39283e6ba9854689d21e"
 dependencies = [
- "dotenvy_codegen_impl",
- "proc-macro-hack",
+ "dotenvy 0.15.6 (git+https://github.com/allan2/dotenvy.git)",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2287,7 +2280,7 @@ dependencies = [
  "bevy_egui",
  "bevy_jornet",
  "bevy_prototype_debug_lines",
- "dotenvy",
+ "dotenvy 0.15.6 (git+https://github.com/allan2/dotenvy.git)",
  "dotenvy_macro",
  "js-sys",
  "lerp",
@@ -4125,12 +4118,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proc-macro-hack"
-version = "0.5.20+deprecated"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc375e1527247fe1a97d8b7156678dfe7c1af2fc075c9a4db3690ecd2a148068"
-
-[[package]]
 name = "proc-macro2"
 version = "1.0.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4814,7 +4801,7 @@ dependencies = [
  "crc",
  "crossbeam-queue",
  "dirs",
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "either",
  "event-listener",
  "futures-channel",
@@ -4855,7 +4842,7 @@ version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b850fa514dc11f2ee85be9d055c512aa866746adfacd1cb42d867d68e6a5b0d9"
 dependencies = [
- "dotenvy",
+ "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "either",
  "heck",
  "hex",
