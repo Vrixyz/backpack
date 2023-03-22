@@ -2041,12 +2041,12 @@ checksum = "03d8c417d7a8cb362e0c37e5d815f5eb7c37f79ff93707329d5a194e42e54ca0"
 [[package]]
 name = "dotenvy"
 version = "0.15.6"
-source = "git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen#9c3455c43071d782f9d7e50f4a2ec4e7686aae30"
+source = "git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen#a3024331fe5613cf25b3900b122f328114677a1d"
 
 [[package]]
 name = "dotenvy_macro"
 version = "0.15.1"
-source = "git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen#9c3455c43071d782f9d7e50f4a2ec4e7686aae30"
+source = "git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen#a3024331fe5613cf25b3900b122f328114677a1d"
 dependencies = [
  "dotenvy 0.15.6 (git+https://github.com/Vrixyz/dotenvy.git?branch=try_dotenv_codegen)",
  "proc-macro2",
@@ -4322,9 +4322,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.7.1"
+version = "1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48aaa5748ba571fb95cd2c85c09f629215d3a6ece942baa100950af03a34f733"
+checksum = "cce168fea28d3e05f158bda4576cf0c844d5045bc2cc3620fa0292ed5bb5814c"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -4342,9 +4342,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.28"
+version = "0.6.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "456c603be3e8d448b072f410900c09faf164fbce2d480456f50eea6e25f9c848"
+checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "renderdoc-sys"
