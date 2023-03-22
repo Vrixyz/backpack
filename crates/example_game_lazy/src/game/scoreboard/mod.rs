@@ -25,8 +25,14 @@ impl Plugin for ScoreboardPlugin {
     fn build(&self, app: &mut App) {
         app.add_state::<LeaderboardScreen>();
         app.add_plugin(JornetPlugin::with_leaderboard(
-            try_dotenv!("JORNET_ID"),
-            try_dotenv!("JORNET_SECRET"),
+            try_dotenv!(
+                "JORNET_ID",
+                env::vars["JORNET_ID"].unwrap_or("".to_string())
+            ),
+            try_dotenv!(
+                "JORNET_SECRET",
+                env::vars["JORNET_SECRET"].unwrap_or("".to_string())
+            ),
         ));
         app.add_startup_system(leaderboard_setup);
         app.add_systems(
