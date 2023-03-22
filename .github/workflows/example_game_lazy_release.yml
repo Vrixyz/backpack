@@ -33,7 +33,7 @@ jobs:
           BACKPACK_GAME_EXAMPLE_USERNAME: ""
           BACKPACK_GAME_EXAMPLE_PASSWORD: ""
         run: |
-          env > .env
+          touch .env
           cargo build --bin ${{ env.binary }} --profile wasm-release --target wasm32-unknown-unknown
       - name: Prepare package
         working-directory: ./crates/${{ env.binary }}
