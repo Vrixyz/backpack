@@ -27,6 +27,7 @@ jobs:
           rm -rf crates
           mv tmp_ci_to_save crates
           cargo update
+          git add .
           git commit --message "CI: Keep only backpack server and dependencies."
       - name: push branch
         run: |
