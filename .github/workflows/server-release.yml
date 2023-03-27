@@ -38,6 +38,7 @@ jobs:
           force: true
           setEnv: |
             CC_RUST_BIN: backpack_server
+            CC_RUSTUP_CHANNEL: nightly
         env:
           CLEVER_TOKEN: ${{ secrets.CLEVER_TOKEN }}
           CLEVER_SECRET: ${{ secrets.CLEVER_SECRET }}
