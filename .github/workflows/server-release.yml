@@ -29,6 +29,12 @@ jobs:
           cargo update
           git add .
           git commit --message "CI: Keep only backpack server and dependencies."
+      - name: copy conf
+        run: |
+          cp crates/server/*.dhall .
+          touch .env
+          git add .
+          git commit --message "copy conf to base path."
       - name: push branch
         run: |
           git push --force origin release-clever
