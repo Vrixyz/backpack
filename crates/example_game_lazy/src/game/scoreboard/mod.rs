@@ -23,11 +23,11 @@ impl Default for LeaderboardScreen {
 
 impl Plugin for ScoreboardPlugin {
     fn build(&self, app: &mut App) {
+        let jornet_id = dotenv!("JORNET_ID");
+        let jornet_secret = dotenv!("JORNET_SECRET");
+
         app.add_state::<LeaderboardScreen>();
-        app.add_plugin(JornetPlugin::with_leaderboard(
-            dotenv!("JORNET_ID"),
-            dotenv!("JORNET_SECRET"),
-        ));
+        app.add_plugin(JornetPlugin::with_leaderboard(jornet_id, jornet_secret));
         app.add_startup_system(leaderboard_setup);
         app.add_systems(
             (ui_leaderboard, refresh_leaderboard).in_set(OnUpdate(LeaderboardScreen::Show)),

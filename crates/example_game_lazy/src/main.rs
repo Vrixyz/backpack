@@ -20,6 +20,7 @@ fn main() {
     drop(dotenvy::dotenv());
     let email = dotenv!("BACKPACK_GAME_EXAMPLE_USERNAME");
     let password = dotenv!("BACKPACK_GAME_EXAMPLE_PASSWORD");
+    let host = dotenv!("BACKPACK_SERVER_BASE_URL");
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
@@ -28,11 +29,15 @@ fn main() {
             password: password.to_string(),
             sign_in: password.is_empty(),
         })
-        .add_plugin(AuthPlugin)
+        .add_plugin(AuthPlugin {
+            host: host.to_string(),
+        })
         .run();
 }
 
-struct AuthPlugin;
+struct AuthPlugin {
+    pub host: String,
+}
 
 #[derive(Resource, Debug)]
 struct AuthData {
@@ -87,7 +92,7 @@ impl Plugin for AuthPlugin {
         app.add_state::<PopupSignupSuccess>();
         app.add_system(ui_signup_successful.in_set(OnUpdate(PopupSignupSuccess::Shown)));
         app.init_resource::<AuthInput>();
-        app.insert_resource(BackpackCom::new("http://127.0.0.1:8080/api/v1".into()));
+        app.insert_resource(BackpackCom::new(self.host.clone() + "/api/v1".into()));
         app.init_resource::<BackpackItems>();
     }
 }

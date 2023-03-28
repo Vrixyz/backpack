@@ -1,17 +1,18 @@
 {
-  "query": "\nUPDATE users_items SET amount = amount + $1\n  WHERE user_id = $2 AND item_id = $3\n  RETURNING amount\n        ",
+  "query": "\n            INSERT INTO users_email_password (email, password_hash, is_verified, user_id) VALUES ($1, $2, $3, $4)\n            RETURNING id\n        ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "amount",
+        "name": "id",
         "type_info": "Int4"
       }
     ],
     "parameters": {
       "Left": [
-        "Int4",
-        "Int4",
+        "Varchar",
+        "Text",
+        "Bool",
         "Int4"
       ]
     },
@@ -19,5 +20,5 @@
       false
     ]
   },
-  "hash": "2b5bb2937da51c6ac3b1ff27a87e3a6377a778250f5d76de8d85fb5605521624"
+  "hash": "2144a74280e1ccb6cb3b3576144e5c5ee4d5d8268c3828b38d1e040199279ac8"
 }
