@@ -567,7 +567,7 @@ name = "backpack-bevy-admin"
 version = "0.1.0"
 dependencies = [
  "bevy",
- "bevy_egui",
+ "bevy_egui 0.19.0",
  "dotenvy 0.15.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "open",
  "serde",
@@ -855,6 +855,17 @@ dependencies = [
 name = "bevy_egui"
 version = "0.19.0"
 source = "git+https://github.com/DGriffin91/bevy_egui.git?branch=bevy_main#8ae0bdd648f2ed81350bab2153097faf4f5fac06"
+dependencies = [
+ "arboard",
+ "bevy",
+ "egui",
+ "thread_local",
+ "webbrowser",
+]
+
+[[package]]
+name = "bevy_egui"
+version = "0.20.2"
 dependencies = [
  "arboard",
  "bevy",
@@ -2277,7 +2288,7 @@ version = "0.1.0"
 dependencies = [
  "backpack_client",
  "bevy",
- "bevy_egui",
+ "bevy_egui 0.20.2",
  "bevy_jornet",
  "bevy_prototype_debug_lines",
  "dotenvy 0.15.6 (git+https://github.com/allan2/dotenvy.git)",
@@ -2289,6 +2300,7 @@ dependencies = [
  "serde",
  "serde_json",
  "shared",
+ "tracing-wasm",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

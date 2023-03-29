@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, time::Duration};
 
 use bevy::{prelude::*, window::PrimaryWindow};
-use bevy_egui::{egui, EguiContext};
+use bevy_egui::{egui, EguiContext, EguiContexts};
 use bevy_jornet::{JornetPlugin, Leaderboard};
 use dotenvy_macro::dotenv;
 
@@ -69,11 +69,8 @@ fn hide_leaderboard(mut leaderboard_screen: ResMut<NextState<LeaderboardScreen>>
     leaderboard_screen.set(LeaderboardScreen::Hidden);
 }
 
-fn ui_leaderboard(
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
-    leaderboard: Res<Leaderboard>,
-) {
-    egui::Window::new("leaderboard").show(egui_ctx.single(), |ui| {
+fn ui_leaderboard(mut ctxs: EguiContexts, leaderboard: Res<Leaderboard>) {
+    egui::Window::new("leaderboard").show(ctxs.ctx_mut(), |ui| {
         let mut scores: Vec<_> = leaderboard
             .get_leaderboard()
             .into_iter()

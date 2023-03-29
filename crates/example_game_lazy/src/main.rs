@@ -1,10 +1,13 @@
 mod game;
 mod password;
 
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{
+    log::{Level, LogPlugin},
+    prelude::*,
+};
 use bevy_egui::{
     egui::{self, Color32, RichText},
-    EguiContext, EguiPlugin,
+    EguiContexts, EguiPlugin,
 };
 use shared::{AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData};
 
@@ -22,7 +25,10 @@ fn main() {
     let password = dotenv!("BACKPACK_GAME_EXAMPLE_PASSWORD");
     let host = dotenv!("BACKPACK_SERVER_BASE_URL");
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(LogPlugin {
+            level: Level::DEBUG,
+            filter: "wgpu=info,bevy_render=info,bevy_ecs=info,wgpu_core=warn".to_string(),
+        }))
         .add_plugin(EguiPlugin)
         .insert_resource(AuthInput {
             email: email.to_string(),
@@ -32,11 +38,18 @@ fn main() {
         .add_plugin(AuthPlugin {
             host: host.to_string(),
         })
+        .add_startup_system(fix_wasm_input)
         .run();
 }
 
 struct AuthPlugin {
     pub host: String,
+}
+
+/// workaround for wasm input
+fn fix_wasm_input(mut windows: Query<&mut Window>) {
+    let mut window = windows.single_mut();
+    window.prevent_default_event_handling = false;
 }
 
 #[derive(Resource, Debug)]
@@ -98,10 +111,10 @@ impl Plugin for AuthPlugin {
 }
 
 fn ui_signup_successful(
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    mut ctxs: EguiContexts,
     mut popup_signup_state: ResMut<NextState<PopupSignupSuccess>>,
 ) {
-    egui::Window::new("Popup Signup Success").show(egui_ctx.single(), |ui| {
+    egui::Window::new("Popup Signup Success").show(ctxs.ctx_mut(), |ui| {
         ui.label("Successful signed up!");
         ui.label("We sent you an email, check your spam folder too.");
         if ui.button("I received the mail").clicked() {
@@ -112,14 +125,14 @@ fn ui_signup_successful(
 
 fn ui_auth(
     mut commands: Commands,
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    mut ctxs: EguiContexts,
     mut auth_input: ResMut<AuthInput>,
     mut auth_data: ResMut<AuthData>,
     backpack: Res<BackpackCom>,
     login_task: Query<Entity, With<LoginTask>>,
     signup_task: Query<Entity, With<SignupTask>>,
 ) {
-    egui::Window::new("Auth").show(egui_ctx.single(), |ui| {
+    egui::Window::new("Auth").show(ctxs.ctx_mut(), |ui| {
         //ui.label(format!("current role: {:?}", auth_data));
         if auth_data.data.is_some() {
             if ui.button("Disconnect").clicked() {

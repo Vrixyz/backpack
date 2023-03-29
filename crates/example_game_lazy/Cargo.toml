@@ -9,8 +9,10 @@ edition = "2021"
 bevy = "0.10.0"
 serde = { version = "1.0.156", features = ["derive"] }
 serde_json = "1.0.94"
-# bevy_egui = "0.20"
-bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui.git", branch = "bevy_main" }
+#bevy_egui = "0.20"
+#bevy_egui = { git = "https://github.com/mvlabat/bevy_egui.git", branch = "main" }
+
+bevy_egui = { path = "../../../bevy_egui" }
 
 # dotenvy main while waiting for proc-macro
 dotenvy = { git = "https://github.com/allan2/dotenvy.git", package = "dotenvy" }
@@ -34,3 +36,7 @@ web-sys = { version = "0.3.61", features = [
 ] }
 wasm-bindgen-futures = "0.4.34"
 js-sys = "0.3.61"
+tracing-wasm = "*"
+
+[patch.crates-io]
+winit = { git = "https://github.com/Maix0/winit.git" }

@@ -1,7 +1,7 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::prelude::*;
 use bevy_egui::{
     egui::{self, Align2, FontId, RichText},
-    EguiContext,
+    EguiContexts,
 };
 
 use crate::utils::mouse::GameCamera;
@@ -11,21 +11,18 @@ use super::{
     GameState,
 };
 
-pub(super) fn ui_playing(
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
-    mut game_state: ResMut<NextState<GameState>>,
-) {
+pub(super) fn ui_playing(mut ctxs: EguiContexts, mut game_state: ResMut<NextState<GameState>>) {
     egui::Area::new("Game UI")
         .fixed_pos(egui::pos2(0.0, -150f32))
         .anchor(Align2::CENTER_TOP, egui::Vec2::ZERO)
-        .show(egui_ctx.single(), |ui| {
+        .show(ctxs.ctx_mut(), |ui| {
             if ui.button("Forfeit").clicked() {
                 game_state.set(GameState::Warmup);
             }
         });
 }
 pub(super) fn ui_scoring(
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    mut ctxs: EguiContexts,
     camera: Query<(&GlobalTransform, &Camera), With<GameCamera>>,
     q_scores: Query<(&ScoreNear, &Transform, &ScoreNearDef)>,
 ) {
@@ -40,7 +37,7 @@ pub(super) fn ui_scoring(
                 Align2::LEFT_BOTTOM,
                 egui::Vec2::new(position.x, -position.y),
             )
-            .show(egui_ctx.single(), |ui| match score {
+            .show(ctxs.ctx_mut(), |ui| match score {
                 ScoreNear::Scoring(_) => {
                     ui.label("scoring");
                 }
@@ -54,11 +51,11 @@ pub(super) fn ui_scoring(
     }
 }
 
-pub(super) fn ui_score(egui_ctx: Query<&EguiContext, With<PrimaryWindow>>, score: ResMut<Score>) {
+pub(super) fn ui_score(mut ctxs: EguiContexts, score: ResMut<Score>) {
     egui::Area::new("score for player")
         .fixed_pos(egui::pos2(0f32, 0f32))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .show(egui_ctx.single(), |ui| {
+        .show(ctxs.ctx_mut(), |ui| {
             ui.label(RichText::new(score.score.to_string()).font(FontId::proportional(40.0)));
         });
 }

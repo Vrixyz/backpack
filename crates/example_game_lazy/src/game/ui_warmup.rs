@@ -1,12 +1,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{
     egui::{self, Align2},
-    EguiContext,
+    EguiContext, EguiContexts,
 };
 
 use crate::{
     backpack_client_bevy::{
-        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent, LoginTask,
+        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent,
         ModifyItemTaskResultEvent,
     },
     AuthData, BackpackCom, BackpackItems,
@@ -14,14 +14,11 @@ use crate::{
 
 use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
 
-pub(super) fn ui_tuto_start(
-    auth_data: Res<AuthData>,
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
-) {
+pub(super) fn ui_tuto_start(auth_data: Res<AuthData>, mut ctxs: EguiContexts) {
     egui::Area::new("my_area")
         .fixed_pos(egui::pos2(0.0, 0.0))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
-        .show(egui_ctx.single(), |ui| {
+        .show(ctxs.ctx_mut(), |ui| {
             ui.colored_label(
                 egui::Color32::BLUE,
                 "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
@@ -59,7 +56,7 @@ pub(super) fn handle_tap_to_start(
 
 pub(super) fn ui_warmup(
     mut commands: Commands,
-    egui_ctx: Query<&EguiContext, With<PrimaryWindow>>,
+    mut ctxs: EguiContexts,
     auth_data: Res<AuthData>,
     items: Res<BackpackItems>,
     mut game_def: ResMut<GameDef>,
@@ -71,7 +68,7 @@ pub(super) fn ui_warmup(
     }
     egui::Window::new("Warmup")
         .auto_sized()
-        .show(egui_ctx.single(), |ui| {
+        .show(ctxs.ctx_mut(), |ui| {
             if let Some(auth) = &auth_data.data {
                 if get_items_tasks.is_empty() {
                     let get_items_button = ui.button("Get items");
