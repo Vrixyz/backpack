@@ -487,6 +487,7 @@ components:
           type: integer
           example: 1
         role:
+          # TODO: #15 (OpenAPI) fix BiscuitInfo Role: swagger editor wants a "schema:" before this line, but vscode highlighter doesn't like it...
           oneOf:
             - $ref: RoleAdmin
             - $ref: RoleUser

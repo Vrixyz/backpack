@@ -11,8 +11,11 @@ if [ ! -f "$PROD_CONF_FILE" ]; then
     exit 1
 fi
 
+set -o allexport
 source .env.prod
+set +o allexport
 
+BACKPACK_BYPASS_VERIFICATION_PSQL=true
 source $SCRIPTPATH/verify_requirements.sh
 
 sqlx mig run
