@@ -21,8 +21,8 @@ Single players can find their value too:
 ## Understand Backpack
 Helpful documentations for the project:
 
-- [sequence diagram](crates/backpack-server/docs/sequence.md): to understand the communication flow
-- [database class diagram](crates/backpack-server/docs/database.md): to understand stored data
+- [sequence diagram](crates/server/docs/sequence.md): to understand the communication flow
+- [database class diagram](crates/server/docs/database.md): to understand stored data
 - [OpenAPI](crates/backpack-server/docs/openapi/openapi3_0.yaml): to start consuming the API
 - *[Tech scribbles](Docs/Backpack.drawio.png): first diagram of the project, a less professional-looking sequence diagram.*
 
