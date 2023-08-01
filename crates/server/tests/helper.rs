@@ -124,5 +124,4 @@ impl TestUser {
             infos: biscuit.1,
         })
     }
-    // TODO: login, etc.
 }
