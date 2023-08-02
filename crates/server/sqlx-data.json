@@ -97,6 +97,18 @@
     },
     "query": "\nUPDATE users_items SET amount = amount + $1\n  WHERE user_id = $2 AND item_id = $3\n  RETURNING amount\n        "
   },
+  "2ca1ed7adf6a9edde9ccc4056dd6e1d1e8b3dca70a3676b51a19ad977e4a1269": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            DELETE FROM users WHERE id = $1\n            "
+  },
   "533ffa190cb02e238460fd57644a47b9e386b0e297f32bc9e4f7893059aacb5a": {
     "describe": {
       "columns": [
