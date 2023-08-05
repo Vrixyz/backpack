@@ -12,7 +12,7 @@ if [ ! -f "$PROD_CONF_FILE" ]; then
 fi
 
 set -o allexport
-source .env.prod
+source $PROD_CONF_FILE
 set +o allexport
 
 BACKPACK_BYPASS_VERIFICATION_PSQL=true

@@ -3,4 +3,4 @@
 set -x
 set -eo pipefail
 
-static-web-server --port 8787 --root ./generated_wasm
+static-web-server --root ./generated_wasm -w scripts/static-web-server.toml

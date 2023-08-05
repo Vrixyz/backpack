@@ -1,0 +1,20 @@
+[general]
+host = "::"
+port = 8889
+cache-control-headers = false
+page-fallback = "/public/index.html"
+
+
+[[advanced.headers]]
+source = "*"
+[advanced.headers.headers]
+Cache-Control = "no-cache, no-store, must-revalidate"
+Pragma = "no-cache"
+Expires = "0"
+
+[[advanced.headers]]
+source = "*.{js,css,png,jpg,jpeg}"
+[advanced.headers.headers]
+Cache-Control = "public, max-age=36000"
+Pragma = ""
+Expires = ""
