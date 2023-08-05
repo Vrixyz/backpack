@@ -53,4 +53,15 @@ impl UserId {
 
         Ok(UserId(rec.id))
     }
+    pub async fn delete(&self, connection: &PgPool) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+            DELETE FROM users WHERE id = $1
+            "#,
+            **self,
+        )
+        .execute(connection)
+        .await
+        .map(|_| ())
+    }
 }

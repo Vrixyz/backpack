@@ -255,6 +255,29 @@ paths:
 
   # authenticated
 
+  /authenticated/user:
+    delete:
+      tags:
+        - user as user
+      summary: Delete authenticated user, this operation is irreversible.
+      operationId: delete_user
+      responses:
+        "200":
+          description: Successful operation returns nothing.
+        "400":
+          description: An error desription is returned as a string.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: "Authenticated user owns resources which should be deleted before being able to delete user."
+      security:
+        - biscuit_token:
+            - admin
+            - user
   /authenticated/whoami:
     get:
       tags:

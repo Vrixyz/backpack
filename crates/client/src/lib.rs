@@ -139,6 +139,15 @@ impl BackpackClient {
         };
         Self::parse(Self::make_request(request).await?)
     }
+    pub async fn delete(&self, biscuit_raw: &[u8]) -> RequestResult<()> {
+        let request = Request {
+            headers: ehttp::headers(&[(AUTHORIZATION, &Self::get_auth_bearer_header(biscuit_raw))]),
+            method: "DELETE".to_owned(),
+            ..ehttp::Request::get(self.url.clone() + "/authenticated/user")
+        };
+        Self::make_request(request).await?;
+        Ok(())
+    }
 
     pub async fn modify_item(
         &self,

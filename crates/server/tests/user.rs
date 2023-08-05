@@ -45,7 +45,7 @@ async fn signup_and_login_as_admin() {
 async fn signup_and_login_as_user() {
     // Arrange
     let mut app = spawn_app().await;
-    // TODO: create a backpack App
+
     let app_id = AppId(0);
 
     // Act
@@ -57,4 +57,26 @@ async fn signup_and_login_as_user() {
         .login(&mut app.api_client, Some(app_id))
         .await
         .expect("login failed");
+}
+
+#[tokio::test]
+async fn signup_login_delete_user() {
+    // Arrange
+    let mut app = spawn_app().await;
+
+    let app_id = AppId(0);
+
+    // Act
+    let user = TestUser::generate(&mut app.api_client)
+        .await
+        .expect("error when generating test user");
+
+    let auth_info = user
+        .login(&mut app.api_client, Some(app_id))
+        .await
+        .expect("login failed");
+    app.api_client
+        .delete(&auth_info.biscuit_raw)
+        .await
+        .expect("delete user failed");
 }
