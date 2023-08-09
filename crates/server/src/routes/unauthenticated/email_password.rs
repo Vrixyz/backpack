@@ -4,21 +4,28 @@ use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTranspor
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use time::Duration;
 
 use crate::{
     auth_user::Role,
+    biscuit::TOKEN_TTL,
     models::{
         app::AppId,
         email_password::{create, exist, find},
     },
     random_names::random_name,
+    time::MockableDateTime,
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
 
 use crate::models::user::UserId;
 
-pub fn config(kp: web::Data<KeyPair>) -> impl HttpServiceFactory {
+pub fn config(
+    kp: web::Data<KeyPair>,
+    time: web::Data<MockableDateTime>,
+) -> impl HttpServiceFactory {
     web::scope("/email_password")
+        .app_data(time)
         .app_data(kp)
         .route("create", web::post().to(oauth_create_email_password))
         .route("login", web::post().to(oauth_login_email_password))
@@ -136,24 +143,33 @@ async fn oauth_login_email_password(
     req_data: web::Json<LoginEmailPasswordData>,
     connection: web::Data<PgPool>,
     root: web::Data<KeyPair>,
+    time: web::Data<MockableDateTime>,
 ) -> impl Responder {
     let Ok((_email_password_id, password_hash_existing, user_id)) =
         find(connection.as_ref(), &req_data.email).await else {
             // We do not return not found, to avoid giving information about an account existance.
-            return HttpResponse::Unauthorized().finish();
+            return dbg!(HttpResponse::Unauthorized().finish());
         };
     let Ok(true) =
         verify(&req_data.password_plain, &password_hash_existing)
         else {
-        return HttpResponse::Unauthorized().finish();
+        return dbg!(HttpResponse::Unauthorized().finish());
     };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
 
     let biscuit = match req_data.as_app_user {
-        Some(app_id) => user_id.create_biscuit(&root, Role::User(app_id)),
-        None => user_id.create_biscuit(&root, Role::Admin),
+        Some(app_id) => user_id.create_biscuit(
+            &root,
+            Role::User(app_id),
+            time.now_utc() + Duration::seconds(TOKEN_TTL),
+        ),
+        None => user_id.create_biscuit(
+            &root,
+            Role::Admin,
+            time.now_utc() + Duration::seconds(TOKEN_TTL),
+        ),
     };
-    HttpResponse::Ok()
+    dbg!(HttpResponse::Ok()
         .content_type(actix_web::http::header::ContentType::plaintext())
-        .body(biscuit.to_base64().unwrap())
+        .body(biscuit.to_base64().unwrap()))
 }

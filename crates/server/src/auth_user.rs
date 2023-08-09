@@ -5,11 +5,14 @@ use actix_web_httpauth::extractors::{
     bearer::{BearerAuth, Config},
     AuthenticationError,
 };
-use biscuit_auth::{Biscuit, KeyPair};
+use biscuit_auth::{
+    builder::{fact, Term},
+    Biscuit, KeyPair,
+};
 use serde::Serialize;
 
-use crate::models::app::AppId;
 use crate::models::user::UserId;
+use crate::{models::app::AppId, time::MockableDateTime};
 
 #[derive(PartialEq, Serialize, Eq, Clone, Copy, Debug)]
 #[non_exhaustive]
@@ -48,9 +51,10 @@ pub async fn validator(
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
     let root = req.app_data::<web::Data<KeyPair>>().unwrap();
+    let time = req.app_data::<web::Data<MockableDateTime>>().unwrap();
     if let Some(biscuit_info) = Biscuit::from_base64(credentials.token(), |_| root.public())
         .ok()
-        .and_then(|biscuit| authorize(&biscuit))
+        .and_then(|biscuit| authorize(&biscuit, time))
     {
         req.extensions_mut().insert(biscuit_info);
         Ok(req)
@@ -65,9 +69,10 @@ pub async fn validator_admin(
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, (Error, ServiceRequest)> {
     let root = req.app_data::<web::Data<KeyPair>>().unwrap();
+    let time = req.app_data::<web::Data<MockableDateTime>>().unwrap();
     if let Some(biscuit_info) = Biscuit::from_base64(credentials.token(), |_| root.public())
         .ok()
-        .and_then(|biscuit| authorize(&biscuit))
+        .and_then(|biscuit| authorize(&biscuit, time.get_ref()))
     {
         if biscuit_info.role == Role::Admin {
             req.extensions_mut().insert(biscuit_info);
@@ -79,10 +84,13 @@ pub async fn validator_admin(
     }
 }
 
-pub fn authorize(token: &Biscuit) -> Option<BiscuitInfo> {
+pub fn authorize(token: &Biscuit, time: &MockableDateTime) -> Option<BiscuitInfo> {
     let mut authorizer = token.authorizer().ok()?;
-
-    authorizer.set_time();
+    let time_fact = fact(
+        "time",
+        &[Term::Date(time.now_utc().unix_timestamp() as u64)],
+    );
+    authorizer.add_fact(time_fact).map_err(|_| ()).ok()?;
     authorizer.allow().map_err(|_| ()).ok()?;
     authorizer.authorize().map_err(|_| ()).ok()?;
 

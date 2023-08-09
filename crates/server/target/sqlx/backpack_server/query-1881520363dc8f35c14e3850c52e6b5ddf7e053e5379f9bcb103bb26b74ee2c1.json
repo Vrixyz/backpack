@@ -1,0 +1,23 @@
+{
+  "query": "\n    INSERT INTO users_items ( user_id, item_id, amount )\n    VALUES ( $1, $2, $3 )\n    RETURNING amount\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "amount",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "8f29273775a5221a34e57f771b8d5cb8cbd37aa01426903e6484cadb67e3be8b"
+}

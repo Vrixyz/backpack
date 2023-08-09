@@ -1,0 +1,27 @@
+{
+  "query": "\n        SELECT app_id, name\n        FROM apps_admins\n        JOIN apps\n        ON apps.id = app_id\n        WHERE user_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "app_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "12fe991802e093fca261e92f1904b939e6b7b7e822a9b1995102e0f12404de62"
+}

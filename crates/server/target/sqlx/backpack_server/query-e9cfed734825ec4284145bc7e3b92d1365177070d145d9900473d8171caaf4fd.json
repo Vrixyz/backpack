@@ -1,5 +1,5 @@
 {
-  "query": "\n        INSERT INTO items (name, app_id) VALUES ($1, $2)\n        RETURNING id\n        ",
+  "query": "SELECT id FROM apps WHERE id = $1",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,6 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
         "Int4"
       ]
     },
@@ -18,5 +17,5 @@
       false
     ]
   },
-  "hash": "67f716b8f7ece30df9c8fb3cd39dd1dd4130a7dccbb1fd92a30e450df5288748"
+  "hash": "f1d14ea7b059feb33baec7449b04b6d31ea737410ead400a8704d52fbc276aa0"
 }

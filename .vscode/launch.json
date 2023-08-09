@@ -44,53 +44,147 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'backpack-server'",
+            "name": "Debug unit tests in library 'backpack_client'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
                     "--lib",
-                    "--package=backpack-server"
+                    "--package=backpack_client"
                 ],
                 "filter": {
-                    "name": "backpack-server",
+                    "name": "backpack_client",
                     "kind": "lib"
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}/crates/backpack-server"
+            "cwd": "${workspaceFolder}"
         },
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'backpack-server'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=backpack-server",
-                    "--package=backpack-server"
-                ],
-                "filter": {
-                    "name": "backpack-server",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}/crates/backpack-server"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'backpack-server'",
+            "name": "Debug unit tests in library 'shared'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=backpack-server",
-                    "--package=backpack-server"
+                    "--lib",
+                    "--package=shared"
                 ],
                 "filter": {
-                    "name": "backpack-server",
+                    "name": "shared",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'example_game_lazy'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=example_game_lazy",
+                    "--package=example_game_lazy"
+                ],
+                "filter": {
+                    "name": "example_game_lazy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'example_game_lazy'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=example_game_lazy",
+                    "--package=example_game_lazy"
+                ],
+                "filter": {
+                    "name": "example_game_lazy",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'particles'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=particles"
+                ],
+                "filter": {
+                    "name": "particles",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'backpack_server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=backpack_server"
+                ],
+                "filter": {
+                    "name": "backpack_server",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'backpack_server'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=backpack_server",
+                    "--package=backpack_server"
+                ],
+                "filter": {
+                    "name": "backpack_server",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'backpack_server'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=backpack_server",
+                    "--package=backpack_server"
+                ],
+                "filter": {
+                    "name": "backpack_server",
                     "kind": "bin"
                 }
             },
@@ -106,7 +200,7 @@
                     "test",
                     "--no-run",
                     "--test=helper",
-                    "--package=backpack-server"
+                    "--package=backpack_server"
                 ],
                 "filter": {
                     "name": "helper",
@@ -125,7 +219,7 @@
                     "test",
                     "--no-run",
                     "--test=user",
-                    "--package=backpack-server"
+                    "--package=backpack_server"
                 ],
                 "filter": {
                     "name": "user",
@@ -133,7 +227,7 @@
                 }
             },
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}/crates/server"
         }
     ]
 }

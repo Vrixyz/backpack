@@ -61,7 +61,7 @@ impl BackpackClient {
                 .insert("Content-Type".into(), "application/json".into());
         }
         let response = ehttp::fetch_async(request).await;
-        match response {
+        match dbg!(response) {
             Err(error) => Err(RequestError::HttpError(error)),
             Ok(response) => {
                 if (400..=599).contains(&response.status) {

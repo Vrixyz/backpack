@@ -7,22 +7,25 @@ use sqlx::{
     ConnectOptions,
 };
 
-#[derive(Deserialize, Debug)]
+use crate::time::MockableDateTime;
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application_host: String,
     pub application_port: u16,
     pub private_key: Option<String>,
     pub github_admin_app: OAuth,
+    pub time: MockableDateTime,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct OAuth {
     pub client_id: String,
     pub client_secret: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: Secret<String>,

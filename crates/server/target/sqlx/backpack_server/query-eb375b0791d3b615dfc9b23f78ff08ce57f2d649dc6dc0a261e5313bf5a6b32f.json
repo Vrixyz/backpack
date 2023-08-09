@@ -1,5 +1,5 @@
 {
-  "query": "\n        INSERT INTO items (name, app_id) VALUES ($1, $2)\n        RETURNING id\n        ",
+  "query": "\n            INSERT INTO users (name) VALUES ($1)\n            RETURNING id\n            ",
   "describe": {
     "columns": [
       {
@@ -10,13 +10,12 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Int4"
+        "Varchar"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "67f716b8f7ece30df9c8fb3cd39dd1dd4130a7dccbb1fd92a30e450df5288748"
+  "hash": "f08759a8bfd67260457d585e24dcbdcecad3fc29f2d8da122cdefd3054b93caa"
 }

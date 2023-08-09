@@ -1,82 +1,98 @@
-use backpack_client::shared::{AppId, CreateEmailPasswordData};
-use serde::Serialize;
-use uuid::Uuid;
-
-use crate::helper::{spawn_app, TestUser};
-
 mod helper;
-/*
-#[tokio::test]
-async fn not_authenticated() {
-    let app = helper::spawn_app().await;
-    let client = reqwest::Client::new();
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
 
-    let response = client
-        .get(&format!("{}/api/v1/oauth/github/fake", app.address))
-        .send()
-        .await
-        .expect("Failed to execute request.");
+    use backpack_client::shared::{AppId, CreateEmailPasswordData};
+    use backpack_server::biscuit::TOKEN_TTL;
+    use serde::Serialize;
+    use time::OffsetDateTime;
+    use uuid::Uuid;
 
-    assert_eq!(401, response.status());
-    assert_eq!(Some(0), response.content_length());
-}*/
+    use crate::helper::{spawn_app, TestUser};
 
-#[derive(Serialize)]
-struct UuidInput {
-    uuid: Uuid,
-}
+    #[tokio::test]
+    async fn signup_and_login_as_admin() {
+        // Arrange
+        let mut app = spawn_app().await;
 
-#[tokio::test]
-async fn signup_and_login_as_admin() {
-    // Arrange
-    let mut app = spawn_app().await;
+        // Act
+        let user = TestUser::generate(&mut app.api_client)
+            .await
+            .expect("error when generating test user");
+        let auth_info = user
+            .login(&mut app.api_client, None)
+            .await
+            .expect("login failed");
+    }
 
-    // Act
-    let user = TestUser::generate(&mut app.api_client)
-        .await
-        .expect("error when generating test user");
-    let auth_info = user
-        .login(&mut app.api_client, None)
-        .await
-        .expect("login failed");
-}
+    #[tokio::test]
+    async fn signup_and_login_as_user() {
+        // Arrange
+        let mut app = spawn_app().await;
 
-#[tokio::test]
-async fn signup_and_login_as_user() {
-    // Arrange
-    let mut app = spawn_app().await;
+        let app_id = AppId(0);
 
-    let app_id = AppId(0);
+        // Act
+        let user = TestUser::generate(&mut app.api_client)
+            .await
+            .expect("error when generating test user");
 
-    // Act
-    let user = TestUser::generate(&mut app.api_client)
-        .await
-        .expect("error when generating test user");
+        let auth_info = user
+            .login(&mut app.api_client, Some(app_id))
+            .await
+            .expect("login failed");
+    }
 
-    let auth_info = user
-        .login(&mut app.api_client, Some(app_id))
-        .await
-        .expect("login failed");
-}
+    #[tokio::test]
+    async fn signup_login_delete_user() {
+        // Arrange
+        let mut app = spawn_app().await;
 
-#[tokio::test]
-async fn signup_login_delete_user() {
-    // Arrange
-    let mut app = spawn_app().await;
+        let app_id = AppId(0);
 
-    let app_id = AppId(0);
+        // Act
+        let user = TestUser::generate(&mut app.api_client)
+            .await
+            .expect("error when generating test user");
 
-    // Act
-    let user = TestUser::generate(&mut app.api_client)
-        .await
-        .expect("error when generating test user");
+        let auth_info = user
+            .login(&mut app.api_client, Some(app_id))
+            .await
+            .expect("login failed");
+        app.api_client
+            .delete(&auth_info.biscuit_raw)
+            .await
+            .expect("delete user failed");
+    }
 
-    let auth_info = user
-        .login(&mut app.api_client, Some(app_id))
-        .await
-        .expect("login failed");
-    app.api_client
-        .delete(&auth_info.biscuit_raw)
-        .await
-        .expect("delete user failed");
+    #[tokio::test]
+    async fn authentication_expires() {
+        // Arrange
+        let mut app = spawn_app().await;
+
+        let app_id = AppId(0);
+
+        let mut time = app.settings.time.clone();
+
+        // Act
+        time.set_override(
+            OffsetDateTime::now_utc().checked_sub(time::Duration::seconds(TOKEN_TTL + 200)),
+        );
+        let user = TestUser::generate(&mut app.api_client)
+            .await
+            .expect("error when generating test user");
+
+        let auth_info = user
+            .login(&mut app.api_client, Some(app_id))
+            .await
+            .expect("login failed");
+
+        time.set_override(None);
+
+        app.api_client
+            .whoami(&auth_info.biscuit_raw)
+            .await
+            .expect_err("Token should have expired.");
+    }
 }

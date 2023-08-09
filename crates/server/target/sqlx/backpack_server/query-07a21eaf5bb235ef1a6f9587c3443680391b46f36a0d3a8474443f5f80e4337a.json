@@ -1,0 +1,27 @@
+{
+  "query": "\n            SELECT id, name FROM users WHERE id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "b798bb7430c8d1cfc8bf8412a9f845c0f31774513bbbd6bdd5876b07e76ec292"
+}

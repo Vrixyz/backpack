@@ -5,7 +5,7 @@ use backpack_client::{
     BackpackClient, RequestError,
 };
 use backpack_server::{
-    configuration::{get_configuration, DatabaseSettings},
+    configuration::{get_configuration, DatabaseSettings, Settings},
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
@@ -28,6 +28,7 @@ static TRACING: Lazy<()> = Lazy::new(|| {
 pub struct TestApp {
     pub db_pool: PgPool,
     pub api_client: BackpackClient,
+    pub settings: Settings,
 }
 
 pub async fn spawn_app() -> TestApp {
@@ -35,19 +36,20 @@ pub async fn spawn_app() -> TestApp {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind random port");
     let port = listener.local_addr().unwrap().port();
 
-    let mut configuration = get_configuration();
-    configuration.database.database_name = format!("test-{}", Uuid::new_v4());
-    configuration.application_port = port;
-    let connection_pool = configure_database(&configuration.database).await;
+    let mut settings = get_configuration();
+    settings.database.database_name = format!("test-{}", Uuid::new_v4());
+    settings.application_port = port;
+    let connection_pool = configure_database(&settings.database).await;
 
-    let server = backpack_server::run(listener, connection_pool.clone(), configuration)
+    let server = backpack_server::run(listener, connection_pool.clone(), settings.clone())
         .expect("Failed to bind address");
-    let _ = tokio::spawn(server);
+    drop(tokio::spawn(server));
 
     let url = format!("http://127.0.0.1:{port}");
     TestApp {
         db_pool: connection_pool,
         api_client: BackpackClient::new(url + "/api/v1"),
+        settings,
     }
 }
 
@@ -78,6 +80,7 @@ pub struct TestUser {
     pub email: String,
     pub password: String,
 }
+#[derive(Debug)]
 pub struct UserAuthentication {
     pub biscuit_raw: Vec<u8>,
     pub infos: BiscuitInfo,

@@ -1,0 +1,24 @@
+{
+  "query": "\n            INSERT INTO users_email_password (email, password_hash, is_verified, user_id) VALUES ($1, $2, $3, $4)\n            RETURNING id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Text",
+        "Bool",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2144a74280e1ccb6cb3b3576144e5c5ee4d5d8268c3828b38d1e040199279ac8"
+}

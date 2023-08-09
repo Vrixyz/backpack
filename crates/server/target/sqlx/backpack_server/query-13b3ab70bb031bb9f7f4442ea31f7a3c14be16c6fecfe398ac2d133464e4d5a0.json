@@ -1,0 +1,13 @@
+{
+  "query": "\n                DELETE FROM items\n                WHERE id = $1;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c099d96aae7c039140bb722216c75fdae56416e6f3b67c8ab9da1056900188a1"
+}

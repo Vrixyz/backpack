@@ -1,5 +1,5 @@
 {
-  "query": "\n        INSERT INTO items (name, app_id) VALUES ($1, $2)\n        RETURNING id\n        ",
+  "query": "SELECT id FROM users_email_password WHERE email = $1",
   "describe": {
     "columns": [
       {
@@ -10,13 +10,12 @@
     ],
     "parameters": {
       "Left": [
-        "Varchar",
-        "Int4"
+        "Text"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "67f716b8f7ece30df9c8fb3cd39dd1dd4130a7dccbb1fd92a30e450df5288748"
+  "hash": "68134af3246b0e2072477d6909bd9eb809bfbaeb4418fb4c5cec0356beaba571"
 }

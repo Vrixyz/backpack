@@ -1,13 +1,18 @@
+use std::time::UNIX_EPOCH;
+
 use actix_web::cookie::time::{format_description::well_known::Rfc3339, Duration, OffsetDateTime};
 use biscuit_auth::{
-    builder::{BiscuitBuilder, Fact, Term},
+    builder::{date, fact, BiscuitBuilder, Fact, Term},
     Authorizer, Biscuit, KeyPair,
 };
 use serde::{Deserialize, Serialize};
 
 use super::models::app::AppId;
 use super::models::user::UserId;
-use crate::auth_user::{BiscuitInfo, Role};
+use crate::{
+    auth_user::{BiscuitInfo, Role},
+    time::MockableDateTime,
+};
 
 pub const TOKEN_TTL: i64 = 600;
 
@@ -111,7 +116,12 @@ impl<'a> BiscuitBaker<Role> for BiscuitBuilder<'a> {
 }
 
 impl UserId {
-    pub fn create_biscuit(&self, root: &KeyPair, role: Role) -> Biscuit {
+    pub fn create_biscuit(
+        &self,
+        root: &KeyPair,
+        role: Role,
+        expiration_date: OffsetDateTime,
+    ) -> Biscuit {
         let mut builder = Biscuit::builder(root);
 
         builder = BiscuitBuilder::bake(builder, *self);
@@ -120,9 +130,7 @@ impl UserId {
             .add_authority_check(
                 format!(
                     r#"check if time($time), $time < {}"#,
-                    (OffsetDateTime::now_utc() + Duration::seconds(TOKEN_TTL))
-                        .format(&Rfc3339)
-                        .unwrap()
+                    expiration_date.format(&Rfc3339).unwrap()
                 )
                 .as_str(),
             )
@@ -132,14 +140,18 @@ impl UserId {
     }
 }
 
-pub fn authorize_user_only(token: &Biscuit) -> Option<UserId> {
+pub fn authorize_user_only(token: &Biscuit, time: &MockableDateTime) -> Option<UserId> {
     let mut authorizer = token.authorizer().ok()?;
 
-    authorizer.set_time();
+    let time_fact = fact(
+        "time",
+        &[Term::Date(time.now_utc().unix_timestamp() as u64)],
+    );
+    authorizer.add_fact(time_fact).map_err(|_| ()).ok()?;
     authorizer.allow().map_err(|_| ()).ok()?;
     authorizer.authorize().map_err(|_| ()).ok()?;
 
-    UserId::try_from(&mut authorizer)
+    dbg!(UserId::try_from(&mut authorizer)
         .map_err(|_| "authorize error")
-        .ok()
+        .ok())
 }
