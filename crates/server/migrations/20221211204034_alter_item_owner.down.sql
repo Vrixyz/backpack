@@ -1,0 +1,1 @@
+ALTER TABLE items DROP COLUMN IF EXISTS app_id;
