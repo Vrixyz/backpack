@@ -28,6 +28,42 @@ pub struct User {
     pub name: String,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct AuthenticationResponse {
+    pub auth_token: String,
+    pub refresh_token: RefreshToken,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
+pub struct RefreshTokenId(pub i32);
+impl std::ops::Deref for RefreshTokenId {
+    type Target = i32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+pub struct RefreshTokenString(pub String);
+
+impl std::ops::Deref for RefreshTokenString {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct RefreshToken {
+    pub refresh_token: RefreshTokenString,
+    /// Format is date time such as RFC3339 https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
+    ///
+    /// example: `2030-07-21T17:32:28Z`
+    pub expiration_date: String,
+}
+
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AppId(pub i32);
 

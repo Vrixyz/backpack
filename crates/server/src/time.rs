@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use ::serde::{Deserialize, Serialize};
 use time::*;
 
 //#[cfg(not(test))]
@@ -23,7 +23,7 @@ mod not_mockable {
 mod mockable {
     use std::sync::{Arc, RwLock};
 
-    use serde::{de, ser};
+    use ::serde::{de, ser};
 
     use super::*;
 
@@ -35,7 +35,7 @@ mod mockable {
     impl Serialize for MockableDateTime {
         fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
         where
-            S: serde::Serializer,
+            S: ::serde::Serializer,
         {
             match self.time_override.read() {
                 Ok(lock) => match *lock {
@@ -50,7 +50,7 @@ mod mockable {
     impl<'de> Deserialize<'de> for MockableDateTime {
         fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
         where
-            D: serde::Deserializer<'de>,
+            D: ::serde::Deserializer<'de>,
         {
             let timestamp = Option::<i64>::deserialize(deserializer)?;
             Ok(Self {

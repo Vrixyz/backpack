@@ -109,6 +109,29 @@
     },
     "query": "\n            DELETE FROM users WHERE id = $1\n            "
   },
+  "50a4ddc45e64d867588c5e5fe1dc02943047e0873d75c1d4755f1154cce15339": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Varchar",
+          "Int4",
+          "Timestamp",
+          "Timestamp"
+        ]
+      }
+    },
+    "query": "\n    INSERT INTO refresh_tokens ( refresh_token, user_id, expiration_date, revoked, created_at )\n    VALUES ( $1, $2, $3, true, $4 ) RETURNING id\n            "
+  },
   "533ffa190cb02e238460fd57644a47b9e386b0e297f32bc9e4f7893059aacb5a": {
     "describe": {
       "columns": [

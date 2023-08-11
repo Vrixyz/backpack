@@ -7,5 +7,5 @@ CREATE TABLE users_email_password(
    Reference to the user connected with that email/password.
    */
    user_id int NOT NULL,
-   FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+   FOREIGN KEY(user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 );

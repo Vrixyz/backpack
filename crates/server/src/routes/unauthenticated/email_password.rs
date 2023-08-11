@@ -1,8 +1,10 @@
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use biscuit_auth::KeyPair;
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
+use rand::{distributions::Alphanumeric, Rng};
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
+use shared::{AuthenticationResponse, RefreshToken};
 use sqlx::PgPool;
 use time::Duration;
 
@@ -10,6 +12,7 @@ use crate::{
     auth_user::Role,
     biscuit::TOKEN_TTL,
     models::{
+        self,
         app::AppId,
         email_password::{create, exist, find},
     },
@@ -17,6 +20,7 @@ use crate::{
     time::MockableDateTime,
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
+use shared::RefreshTokenString;
 
 use crate::models::user::UserId;
 
@@ -156,20 +160,35 @@ async fn oauth_login_email_password(
         return dbg!(HttpResponse::Unauthorized().finish());
     };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
-
+    let time_now = time.now_utc();
     let biscuit = match req_data.as_app_user {
         Some(app_id) => user_id.create_biscuit(
             &root,
             Role::User(app_id),
-            time.now_utc() + Duration::seconds(TOKEN_TTL),
+            time_now + Duration::seconds(TOKEN_TTL),
         ),
-        None => user_id.create_biscuit(
-            &root,
-            Role::Admin,
-            time.now_utc() + Duration::seconds(TOKEN_TTL),
-        ),
+        None => user_id.create_biscuit(&root, Role::Admin, time_now + Duration::seconds(TOKEN_TTL)),
     };
-    dbg!(HttpResponse::Ok()
-        .content_type(actix_web::http::header::ContentType::plaintext())
-        .body(biscuit.to_base64().unwrap()))
+    let refresh_token: String = rand::thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(255)
+        .map(char::from)
+        .collect();
+    let Ok(refresh_token) = models::refresh_token::RefreshToken::create(
+    connection.as_ref(),
+        RefreshTokenString(refresh_token),
+        user_id,
+        time_now + Duration::seconds(TOKEN_TTL),
+        time_now)
+     .await else {
+        return dbg!(HttpResponse::InternalServerError().finish());
+    };
+    let authentication_token = AuthenticationResponse {
+        auth_token: biscuit.to_base64().unwrap(),
+        refresh_token: RefreshToken {
+            refresh_token: refresh_token.refresh_token,
+            expiration_date: serde_json::to_string(&refresh_token.expiration_date).unwrap(),
+        },
+    };
+    dbg!(HttpResponse::Ok().json(authentication_token))
 }

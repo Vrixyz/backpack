@@ -16,8 +16,8 @@ servers:
   - url: http://127.0.0.1:8080/api/v1
   - url: https://app-c3f0bdf4-ef26-470d-ace6-18b04dd819d6.cleverapps.io/api/v1
 tags:
-  - name: Unauthenticated
-    description: Everything you can do without being authenticated. Mainly to get a Biscuit authentication token.
+  - name: Authentication
+    description: Everything you can do without being fully authenticated. Mainly to get a Biscuit authentication token.
   # - name: user
   #   description: A user owns items, he can authenticate as admin to create and modify apps and items he manages.
   - name: app
@@ -29,11 +29,11 @@ tags:
   - name: item as user
     description: Operations about items, authenticated as user or admin
 paths:
-  # authentication
+  # Authentication
   /unauthenticated/email_password/create:
     post:
       tags:
-        - Unauthenticated
+        - Authentication
       summary: Create a new user
       description: If no existing users have provided email, the user is created and a password is sent by mail.
       operationId: createUserEmail
@@ -62,9 +62,12 @@ paths:
   /unauthenticated/email_password/login:
     post:
       tags:
-        - Unauthenticated
+        - Authentication
       summary: Login with an user/email
-      description: Login with an account created via `/create_email_password`.
+      description:
+        "Login with an account created via `/create_email_password`.<br />\
+        The returned authentication token is short lived and will need to be refreshed frequently.<br />\
+        The returned refresh token is long lived."
       operationId: loginUserEmailPassword
       requestBody:
         description: The email and password of the existing user.
@@ -93,16 +96,44 @@ paths:
         "200":
           description: OK
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-                example: En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
+                $ref: "#/components/schemas/AuthenticationResponse"
         "403":
           description: User not existing or wrong credentials.
+  /authenticated/email_password/login/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: 🚧 refresh a (potentially expired) authentication token
+      description: Refresh a token by getting a new one. Provide info from a previous call to `/login`.
+      operationId: loginRefreshUserEmailPassword
+      requestBody:
+        description: The email and password of the existing user.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  example: "0d-ace1-14b02dd819"
+              required:
+                - refresh_token
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationResponse"
+        "403":
+          description: User not existing, wrong credentials or refresh token expired/revoked.
   /unauthenticated/health_check:
     get:
       tags:
-        - Unauthenticated
+        - Authentication
       summary: Returns 200
       description: Useful to verify the server is up.
       operationId: healthcheck
@@ -503,6 +534,22 @@ paths:
             - admin
 components:
   schemas:
+    AuthenticationResponse:
+      type: object
+      properties:
+        authToken:
+          type: string
+          example: En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
+        refreshToken:
+          type: object
+          properties:
+            id:
+              type: string
+              example: Tv2c-rd0kDSazrww4cD1UCeytDS
+            expirationDate:
+              type: string
+              format: date-time
+              example: 2030-07-21T17:32:28Z
     BiscuitInfo:
       type: object
       properties:

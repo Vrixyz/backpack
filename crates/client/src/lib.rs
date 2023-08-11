@@ -2,8 +2,8 @@ use ehttp::Request;
 use serde::de::DeserializeOwned;
 pub use shared;
 use shared::{
-    BiscuitInfo, CreateEmailPasswordData, CreatedUserEmailPasswordData, ItemAmount, ItemId,
-    LoginEmailPasswordData, UserId, UserItemModify,
+    AuthenticationResponse, BiscuitInfo, CreateEmailPasswordData, CreatedUserEmailPasswordData,
+    ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken, UserId, UserItemModify,
 };
 use thiserror::Error;
 
@@ -101,7 +101,7 @@ impl BackpackClient {
     pub async fn login(
         &self,
         data: &LoginEmailPasswordData,
-    ) -> RequestResult<(Vec<u8>, BiscuitInfo)> {
+    ) -> RequestResult<(RefreshToken, Vec<u8>, BiscuitInfo)> {
         match serde_json::to_vec(&data) {
             Err(err) => Err(err.into()),
             Ok(data) => {
@@ -110,21 +110,20 @@ impl BackpackClient {
                     data,
                 );
                 let response = Self::make_request(request).await?;
-                let biscuit_raw = std::str::from_utf8(&response)
-                    .map_err(|err| RequestError::Other(err.to_string()));
-                match biscuit_raw {
-                    Err(err) => Err(err),
-                    Ok(biscuit_raw) => {
-                        let biscuit_raw = biscuit_raw.as_bytes();
-                        let biscuit_raw_saved = biscuit_raw.to_vec();
-                        // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
-                        // self is cloned because it could be destroyed during the network call.
-                        let biscuit_info = self.whoami(biscuit_raw).await;
-                        match biscuit_info {
-                            Err(e) => Err(e),
-                            Ok(biscuit_info) => Ok((biscuit_raw_saved, biscuit_info)),
-                        }
-                    }
+                let authentication_response: AuthenticationResponse = Self::parse(response)?;
+                let biscuit_raw = authentication_response.auth_token.as_bytes();
+
+                let biscuit_raw_saved = biscuit_raw.to_vec();
+                // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
+                // self is cloned because it could be destroyed during the network call.
+                let biscuit_info = self.whoami(biscuit_raw).await;
+                match biscuit_info {
+                    Err(e) => Err(e),
+                    Ok(biscuit_info) => Ok((
+                        authentication_response.refresh_token,
+                        biscuit_raw_saved,
+                        biscuit_info,
+                    )),
                 }
             }
         }

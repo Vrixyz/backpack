@@ -115,7 +115,7 @@ impl TestUser {
             .await?;
 
         assert!(
-            biscuit.1.role
+            biscuit.2.role
                 == match as_app_user {
                     Some(app_id) => Role::User(app_id),
                     None => Role::Admin,
@@ -123,8 +123,8 @@ impl TestUser {
         );
 
         Ok(UserAuthentication {
-            biscuit_raw: biscuit.0,
-            infos: biscuit.1,
+            biscuit_raw: biscuit.1,
+            infos: biscuit.2,
         })
     }
 }

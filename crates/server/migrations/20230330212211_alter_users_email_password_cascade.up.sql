@@ -7,6 +7,6 @@ DROP CONSTRAINT users_email_password_user_id_fkey;
 -- add the "on delete cascade" constraint
 ALTER TABLE users_email_password
 ADD CONSTRAINT users_email_password_user_id_fkey
-FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 COMMIT;

@@ -3,7 +3,8 @@ use std::sync::{Arc, RwLock};
 use backpack_client::{BackpackClient, RequestError};
 use bevy::{prelude::*, tasks::IoTaskPool};
 use shared::{
-    BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, UserId,
+    BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken,
+    UserId,
 };
 
 pub struct BackpackClientPlugin;
@@ -34,8 +35,8 @@ impl<T> Default for ClientTask<T> {
 }
 
 #[derive(Component, Default)]
-pub struct LoginTask(ClientTask<(Vec<u8>, BiscuitInfo)>);
-pub struct LoginTaskResultEvent(pub Result<(Vec<u8>, BiscuitInfo), RequestError>);
+pub struct LoginTask(ClientTask<(RefreshToken, Vec<u8>, BiscuitInfo)>);
+pub struct LoginTaskResultEvent(pub Result<(RefreshToken, Vec<u8>, BiscuitInfo), RequestError>);
 
 pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: LoginEmailPasswordData) {
     let thread_pool = IoTaskPool::get();
