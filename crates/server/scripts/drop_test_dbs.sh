@@ -12,8 +12,6 @@ set -v
 
 touch $test_databases_file
 
-# this can fail if postgres has no access to the file.
-# https://stackoverflow.com/questions/54031813/i-am-trying-to-copy-a-file-but-getting-error-message
 PGPASSWORD=$PGPASSWORD PGUSER=$PGUSER psql -d postgres -c "\copy (SELECT datname FROM pg_database WHERE datname LIKE 'test_%' AND datistemplate=false) TO '$test_databases_file'" 
 
 while read dbname
