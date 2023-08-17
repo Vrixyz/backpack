@@ -1,18 +1,13 @@
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use biscuit_auth::KeyPair;
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
-use rand::{distributions::Alphanumeric, Rng};
+use rand::Rng;
 use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
-use shared::{AuthenticationResponse, RefreshToken};
 use sqlx::PgPool;
-use time::Duration;
 
 use crate::{
-    auth_user::Role,
-    biscuit::TOKEN_TTL,
     models::{
-        self,
         app::AppId,
         email_password::{create, exist, find},
     },
@@ -20,9 +15,10 @@ use crate::{
     time::MockableDateTime,
 };
 use bcrypt::{hash, verify, DEFAULT_COST};
-use shared::RefreshTokenString;
 
 use crate::models::user::UserId;
+
+use super::auth::create_new_authentication_token;
 
 pub fn config(
     kp: web::Data<KeyPair>,
@@ -31,8 +27,8 @@ pub fn config(
     web::scope("/email_password")
         .app_data(time)
         .app_data(kp)
-        .route("create", web::post().to(oauth_create_email_password))
-        .route("login", web::post().to(oauth_login_email_password))
+        .route("create", web::post().to(create_email_password))
+        .route("login", web::post().to(login_email_password))
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -58,12 +54,13 @@ pub struct CreatedUserEmailPasswordData {
     #[serde(serialize_with = "expose_secret_string")]
     pub password: Secret<String>,
 }
+
 #[tracing::instrument(
-    name = "oauth signup",
+    name = "create_email_password",
     skip_all,
     fields(req_data=%&*req_data)
 )]
-async fn oauth_create_email_password(
+async fn create_email_password(
     connection: web::Data<PgPool>,
     req_data: web::Json<CreateEmailPasswordData>,
 ) -> impl Responder {
@@ -105,7 +102,7 @@ async fn oauth_create_email_password(
         dotenvy::var("BACKPACK_EMAIL_PASSWORD").unwrap(),
     );
 
-    // Open a remote connection to gmail
+    // Open a remote connection to mail service
     let mailer = SmtpTransport::relay("smtp.zoho.com")
         .unwrap()
         .credentials(creds)
@@ -120,7 +117,7 @@ async fn oauth_create_email_password(
     // We should not create biscuit here, because we need to verify the email first.
     // there should be another route where user provides the received password along with the email.
     // THOUGHTS: it could be a direct link from the email.
-    // - my first idea was to let the password in the email, and ask the user to ente it on backpack login page.
+    // - my first idea was to let the password in the email, and ask the user to enter it on backpack login page.
     // - I'm tempted to share a link like "/login?email=bla&password=password"
     // But sharing password in query url is a bad practice,
     // but I guess it could be fine as a one time password though,
@@ -143,15 +140,16 @@ pub struct LoginEmailPasswordData {
     pub as_app_user: Option<AppId>,
 }
 
-async fn oauth_login_email_password(
+#[tracing::instrument(name = "login_email_password", skip_all)]
+async fn login_email_password(
     req_data: web::Json<LoginEmailPasswordData>,
     connection: web::Data<PgPool>,
     root: web::Data<KeyPair>,
     time: web::Data<MockableDateTime>,
-) -> impl Responder {
+) -> HttpResponse {
     let Ok((_email_password_id, password_hash_existing, user_id)) =
         find(connection.as_ref(), &req_data.email).await else {
-            // We do not return not found, to avoid giving information about an account existance.
+            // We do not return not found, to avoid giving information about an account existence.
             return dbg!(HttpResponse::Unauthorized().finish());
         };
     let Ok(true) =
@@ -160,35 +158,5 @@ async fn oauth_login_email_password(
         return dbg!(HttpResponse::Unauthorized().finish());
     };
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
-    let time_now = time.now_utc();
-    let biscuit = match req_data.as_app_user {
-        Some(app_id) => user_id.create_biscuit(
-            &root,
-            Role::User(app_id),
-            time_now + Duration::seconds(TOKEN_TTL),
-        ),
-        None => user_id.create_biscuit(&root, Role::Admin, time_now + Duration::seconds(TOKEN_TTL)),
-    };
-    let refresh_token: String = rand::thread_rng()
-        .sample_iter(&Alphanumeric)
-        .take(255)
-        .map(char::from)
-        .collect();
-    let Ok(refresh_token) = models::refresh_token::RefreshToken::create(
-    connection.as_ref(),
-        RefreshTokenString(refresh_token),
-        user_id,
-        time_now + Duration::seconds(TOKEN_TTL),
-        time_now)
-     .await else {
-        return dbg!(HttpResponse::InternalServerError().finish());
-    };
-    let authentication_token = AuthenticationResponse {
-        auth_token: biscuit.to_base64().unwrap(),
-        refresh_token: RefreshToken {
-            refresh_token: refresh_token.refresh_token,
-            expiration_date: serde_json::to_string(&refresh_token.expiration_date).unwrap(),
-        },
-    };
-    dbg!(HttpResponse::Ok().json(authentication_token))
+    create_new_authentication_token(connection, root, time, user_id, req_data.as_app_user).await
 }

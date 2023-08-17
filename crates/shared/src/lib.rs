@@ -47,6 +47,12 @@ impl std::ops::Deref for RefreshTokenId {
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct RefreshTokenString(pub String);
 
+impl std::fmt::Display for RefreshTokenString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", &self.0[0..8])
+    }
+}
+
 impl std::ops::Deref for RefreshTokenString {
     type Target = String;
 
@@ -55,7 +61,7 @@ impl std::ops::Deref for RefreshTokenString {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RefreshToken {
     pub refresh_token: RefreshTokenString,
     /// Format is date time such as RFC3339 https://datatracker.ietf.org/doc/html/rfc3339#section-5.6

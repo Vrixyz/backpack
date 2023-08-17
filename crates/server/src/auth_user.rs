@@ -23,6 +23,15 @@ pub enum Role {
     User(AppId),
 }
 
+impl Role {
+    // TODO: #18 Leverage From rust trait for Role -> Option<AppId>
+    pub fn to_option(&self) -> Option<AppId> {
+        match self {
+            Role::User(app_id) => Some(*app_id),
+            Role::Admin => None,
+        }
+    }
+}
 impl Display for Role {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")
@@ -93,6 +102,41 @@ pub fn authorize(token: &Biscuit, time: &MockableDateTime) -> Option<BiscuitInfo
     authorizer.add_fact(time_fact).map_err(|_| ()).ok()?;
     authorizer.allow().map_err(|_| ()).ok()?;
     authorizer.authorize().map_err(|_| ()).ok()?;
+
+    BiscuitInfo::try_from(&mut authorizer)
+        .map_err(|_| "failed ")
+        .ok()
+}
+
+#[tracing::instrument(name = "decode biscuit but doesn't check inner data", skip_all)]
+pub async fn validator_no_check(
+    req: ServiceRequest,
+    credentials: BearerAuth,
+) -> Result<ServiceRequest, (Error, ServiceRequest)> {
+    let root = req.app_data::<web::Data<KeyPair>>().unwrap();
+    let time = req.app_data::<web::Data<MockableDateTime>>().unwrap();
+    if let Some(biscuit_info) = Biscuit::from_base64(credentials.token(), |_| root.public())
+        .ok()
+        .and_then(|biscuit| decode_without_authorization(&biscuit, time))
+    {
+        req.extensions_mut().insert(biscuit_info);
+        Ok(req)
+    } else {
+        Err((AuthenticationError::from(Config::default()).into(), req))
+    }
+}
+
+pub fn decode_without_authorization(
+    token: &Biscuit,
+    time: &MockableDateTime,
+) -> Option<BiscuitInfo> {
+    let mut authorizer = token.authorizer().ok()?;
+    let time_fact = fact(
+        "time",
+        &[Term::Date(time.now_utc().unix_timestamp() as u64)],
+    );
+    authorizer.add_fact(time_fact).map_err(|_| ()).ok()?;
+    authorizer.allow().map_err(|_| ()).ok()?;
 
     BiscuitInfo::try_from(&mut authorizer)
         .map_err(|_| "failed ")

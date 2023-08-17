@@ -52,7 +52,7 @@ pub fn run(
                 web::scope("/api/v1")
                     .service(routes::admin::config(root.clone()))
                     .service(routes::authenticated::config(root.clone()))
-                    .service(routes::unauthenticated::config(root.clone(), time.clone())),
+                    .service(routes::authentication::config(root.clone(), time.clone())),
             )
             //
             //

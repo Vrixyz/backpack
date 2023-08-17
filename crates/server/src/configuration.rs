@@ -37,6 +37,7 @@ pub struct DatabaseSettings {
 
 pub fn get_configuration() -> Settings {
     let file = std::env::var("CONFIGURATION").unwrap_or_else(|_| "configuration.dhall".to_string());
+
     serde_dhall::from_file(file).parse().unwrap()
 }
 

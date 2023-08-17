@@ -31,7 +31,7 @@ impl RefreshToken {
         let rec = sqlx::query!(
             r#"
     INSERT INTO refresh_tokens ( refresh_token, user_id, expiration_date, revoked, created_at )
-    VALUES ( $1, $2, $3, true, $4 ) RETURNING id
+    VALUES ( $1, $2, $3, false, $4 ) RETURNING id
             "#,
             &*refresh_token,
             *user_id,
@@ -49,5 +49,52 @@ impl RefreshToken {
             revoked: false,
             created_at,
         })
+    }
+    pub async fn get(
+        pool: &PgPool,
+        refresh_token: &RefreshTokenString,
+        user_id: UserId,
+    ) -> Result<RefreshToken, sqlx::Error> {
+        sqlx::query!(
+            r#"
+            SELECT 
+                id,
+                refresh_token,
+                user_id,
+                expiration_date,
+                revoked,
+                created_at
+            FROM refresh_tokens
+            WHERE refresh_token = $1
+            AND user_id = $2
+            "#,
+            &refresh_token.0,
+            *user_id,
+        )
+        .fetch_one(pool)
+        .await
+        .map(|r| RefreshToken {
+            id: RefreshTokenId(r.id),
+            refresh_token: RefreshTokenString(r.refresh_token),
+            user_id: UserId(r.user_id),
+            expiration_date: r.expiration_date.assume_utc(),
+            revoked: r.revoked,
+            created_at: r.created_at.assume_utc(),
+        })
+    }
+    pub async fn revoke(
+        pool: &PgPool,
+        refresh_token_id: RefreshTokenId,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+            UPDATE refresh_tokens SET revoked = true
+            WHERE id = $1
+            "#,
+            refresh_token_id.0
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
     }
 }

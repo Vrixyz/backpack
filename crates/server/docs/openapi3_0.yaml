@@ -30,7 +30,7 @@ tags:
     description: Operations about items, authenticated as user or admin
 paths:
   # Authentication
-  /unauthenticated/email_password/create:
+  /authentication/email_password/create:
     post:
       tags:
         - Authentication
@@ -59,7 +59,7 @@ paths:
                 example: "your generated password, to be used on login"
         "500":
           description: Internal server error
-  /unauthenticated/email_password/login:
+  /authentication/email_password/login:
     post:
       tags:
         - Authentication
@@ -101,7 +101,7 @@ paths:
                 $ref: "#/components/schemas/AuthenticationResponse"
         "403":
           description: User not existing or wrong credentials.
-  /authenticated/email_password/login/refresh:
+  /authentication/email_password/login/refresh:
     post:
       tags:
         - Authentication
@@ -130,7 +130,7 @@ paths:
                 $ref: "#/components/schemas/AuthenticationResponse"
         "403":
           description: User not existing, wrong credentials or refresh token expired/revoked.
-  /unauthenticated/health_check:
+  /authentication/health_check:
     get:
       tags:
         - Authentication

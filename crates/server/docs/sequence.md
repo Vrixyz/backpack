@@ -12,6 +12,7 @@ sequenceDiagram
 ```
 
 Then you can login either as:
+
 - **admin**: to manage apps and their items
 - **user**: to authenticate, and modify your items owned as a player from apps you play.
 
@@ -25,7 +26,9 @@ sequenceDiagram
 ```
 
 # Admin
+
 With any user account, you can login as **admin**, then:
+
 - create apps
 - add items to an app you created.
 - :construction: later, give rights to foreign apps for an item you manage ; with specific rights (read/write/increase/substract ?)
@@ -59,6 +62,7 @@ The easiest way to modify items is to ask backpack to modify an item from the cl
 This solution is considered "insecure", as clients could "easily" cheat by forging requests to ask for unverified modification.
 
 Despite that, it can be useful for:
+
 - fast prototyping, game jams
 - non-critical items
   - single player games
@@ -75,9 +79,11 @@ sequenceDiagram
     backpack->>DB: modify the item
     backpack->>-app: OK
 ```
+
 ## App verified item modification
 
 :construction: WIP, this part would need:
+
 - an app password
 - an app role
 - maybe a password specific app, to pass to each requests, easier for developers to implement than maintaining a bisuit token.

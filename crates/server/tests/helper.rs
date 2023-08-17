@@ -9,6 +9,7 @@ use backpack_server::{
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
+use shared::RefreshToken;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -82,6 +83,7 @@ pub struct TestUser {
 }
 #[derive(Debug)]
 pub struct UserAuthentication {
+    pub refresh_token: RefreshToken,
     pub biscuit_raw: Vec<u8>,
     pub infos: BiscuitInfo,
 }
@@ -123,6 +125,7 @@ impl TestUser {
         );
 
         Ok(UserAuthentication {
+            refresh_token: biscuit.0,
             biscuit_raw: biscuit.1,
             infos: biscuit.2,
         })

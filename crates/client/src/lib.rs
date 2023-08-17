@@ -3,7 +3,8 @@ use serde::de::DeserializeOwned;
 pub use shared;
 use shared::{
     AuthenticationResponse, BiscuitInfo, CreateEmailPasswordData, CreatedUserEmailPasswordData,
-    ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken, UserId, UserItemModify,
+    ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken, RefreshTokenString, UserId,
+    UserItemModify,
 };
 use thiserror::Error;
 
@@ -91,7 +92,7 @@ impl BackpackClient {
             Err(err) => Err(err.into()),
             Ok(data) => {
                 let request = ehttp::Request::post(
-                    self.url.clone() + "/unauthenticated/email_password/create",
+                    self.url.clone() + "/authentication/email_password/create",
                     data,
                 );
                 Self::parse(Self::make_request(request).await?)
@@ -106,26 +107,33 @@ impl BackpackClient {
             Err(err) => Err(err.into()),
             Ok(data) => {
                 let request = ehttp::Request::post(
-                    self.url.clone() + "/unauthenticated/email_password/login",
+                    self.url.clone() + "/authentication/email_password/login",
                     data,
                 );
                 let response = Self::make_request(request).await?;
-                let authentication_response: AuthenticationResponse = Self::parse(response)?;
-                let biscuit_raw = authentication_response.auth_token.as_bytes();
-
-                let biscuit_raw_saved = biscuit_raw.to_vec();
-                // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
-                // self is cloned because it could be destroyed during the network call.
-                let biscuit_info = self.whoami(biscuit_raw).await;
-                match biscuit_info {
-                    Err(e) => Err(e),
-                    Ok(biscuit_info) => Ok((
-                        authentication_response.refresh_token,
-                        biscuit_raw_saved,
-                        biscuit_info,
-                    )),
-                }
+                self.handle_authentication_response(response).await
             }
+        }
+    }
+
+    async fn handle_authentication_response(
+        &self,
+        response: Vec<u8>,
+    ) -> Result<(RefreshToken, Vec<u8>, BiscuitInfo), RequestError> {
+        let authentication_response: AuthenticationResponse = Self::parse(response)?;
+        let biscuit_raw = authentication_response.auth_token.as_bytes();
+
+        let biscuit_raw_saved = biscuit_raw.to_vec();
+        // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
+        // self is cloned because it could be destroyed during the network call.
+        let biscuit_info = self.whoami(biscuit_raw).await;
+        match biscuit_info {
+            Err(e) => Err(e),
+            Ok(biscuit_info) => Ok((
+                authentication_response.refresh_token,
+                biscuit_raw_saved,
+                biscuit_info,
+            )),
         }
     }
 
@@ -205,5 +213,29 @@ impl BackpackClient {
             ))
         };
         Self::parse(Self::make_request(request).await?)
+    }
+
+    pub async fn refresh(
+        &self,
+        biscuit_raw: &[u8],
+        refresh_token: RefreshToken,
+    ) -> RequestResult<(RefreshToken, Vec<u8>, BiscuitInfo)> {
+        match serde_json::to_vec(&refresh_token) {
+            Err(err) => Err(err.into()),
+            Ok(data) => {
+                let request = Request {
+                    headers: ehttp::headers(&[(
+                        AUTHORIZATION,
+                        &Self::get_auth_bearer_header(biscuit_raw),
+                    )]),
+                    ..ehttp::Request::post(
+                        format!("{}/authentication/auth/refresh", self.url),
+                        data,
+                    )
+                };
+                self.handle_authentication_response(Self::make_request(request).await?)
+                    .await
+            }
+        }
     }
 }
