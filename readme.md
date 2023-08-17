@@ -32,21 +32,51 @@ Helpful documentations for the project:
 <details>
 <summary>From source ?</summary>
 
-- setup your secrets 
-  - private key for biscuit
-  - oauth third party
-  - database connection
+- setup your secrets
+  - see [.env template](/crates/server/.env.template)
 - start the backpack server
 
 </details>
 
-- :construction: Get the url of the Backpack server you connect to. Official server wip.
+- Get the url of the Backpack server you connect to. :construction: Official server WIP.
 - Use the admin interface to set up items and server to server communication
   - Sign up/Sign in with provided means (email/password or third party (github...))
   - Create an app
   - Create one or several item
   - You will use app's and items' IDs to develop your app which interact with those app/items.
-- Choose a strategy to update your items, *see [sequence diagram](crates/backpack-server/docs/sequence.md) for more details*
+
+<details><summary>Choose a strategy to update your items, <i>see <a href=crates/backpack-server/docs/sequence.md>sequence diagram</a> for more details</i>
+</summary>
+
+<p>
+
+```mermaid
+flowchart TD
+    A[Backpack Authentication]
+    LGC('lazy' Game client )
+    B[Backpack API]
+    SGC('secure' Game client)
+    AE[Email/Password]
+    AO["(WIP) other auth providers"]
+    SG('secure' Game server)
+
+    style LGC stroke:#ffff00,stroke-dasharray: 5 5
+
+    style SGC stroke:#00ff00,stroke-dasharray: 5 5
+    style SG stroke:#00ff00,stroke-dasharray: 5 5
+
+    LGC--> A
+    LGC --> B
+    SGC --> A
+    A --> AE
+    A --> AO
+    SGC --> SG
+    SG --> B
+```
+
+</p>
+</details> 
+
   - **Lazy:** Clients call directly to Backpack, potentially enabling users to abuse forging requests.
   - **Secure:** Clients call to another logic server *(which you are responsible of)* to refill or use their items, those operations are done through server-server communication.
 
