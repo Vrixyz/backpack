@@ -54,7 +54,7 @@ fn fix_wasm_input(mut windows: Query<&mut Window>) {
 
 #[derive(Resource, Debug)]
 struct AuthData {
-    data: Option<(Vec<u8>, BiscuitInfo)>,
+    data: Option<(shared::RefreshToken, Vec<u8>, BiscuitInfo)>,
 }
 
 #[derive(Resource, Debug, Default)]
@@ -99,11 +99,14 @@ impl Plugin for AuthPlugin {
         app.insert_resource(AuthData { data: None });
         app.add_plugin(BackpackClientPlugin);
         app.add_plugin(Game);
-        app.add_system(ui_auth.in_set(OnUpdate(game::GameState::Warmup)));
-        app.add_system(handle_login_result);
-        app.add_system(handle_signup_result);
+        app.add_systems(Update, ui_auth.run_if(in_state(game::GameState::Warmup)));
+        app.add_systems(Update, handle_login_result);
+        app.add_systems(Update, handle_signup_result);
         app.add_state::<PopupSignupSuccess>();
-        app.add_system(ui_signup_successful.in_set(OnUpdate(PopupSignupSuccess::Shown)));
+        app.add_systems(
+            Update,
+            ui_signup_successful.run_if(in_state(PopupSignupSuccess::Shown)),
+        );
         app.init_resource::<AuthInput>();
         app.insert_resource(BackpackCom::new(self.host.clone() + "/api/v1".into()));
         app.init_resource::<BackpackItems>();

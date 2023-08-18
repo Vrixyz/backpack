@@ -2,11 +2,12 @@ use bevy::prelude::*;
 
 use super::{Enemy, PlayerUnit};
 
-#[derive(Component)]
+#[derive(Debug, Component)]
 pub struct CollisionTrigger {
     pub is_colliding: bool,
 }
 
+#[derive(Debug, Event)]
 pub struct StayCollisionEvent {
     pub entity_player: Entity,
     pub entity_enemy: Entity,

@@ -28,12 +28,13 @@ impl Plugin for ScoreboardPlugin {
 
         app.add_state::<LeaderboardScreen>();
         app.add_plugin(JornetPlugin::with_leaderboard(jornet_id, jornet_secret));
-        app.add_startup_system(leaderboard_setup);
+        app.add_systems(Startup, leaderboard_setup);
         app.add_systems(
-            (ui_leaderboard, refresh_leaderboard).in_set(OnUpdate(LeaderboardScreen::Show)),
+            Update,
+            (ui_leaderboard, refresh_leaderboard).run_if(in_state(LeaderboardScreen::Show)),
         );
-        app.add_system(show_leaderboard.in_schedule(OnEnter(GameState::EndScreen)));
-        app.add_system(hide_leaderboard.in_schedule(OnExit(GameState::EndScreen)));
+        app.add_systems(OnEnter(GameState::EndScreen), show_leaderboard);
+        app.add_systems(OnExit(GameState::EndScreen), hide_leaderboard);
     }
 }
 

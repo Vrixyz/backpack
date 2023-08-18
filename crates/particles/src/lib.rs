@@ -6,13 +6,13 @@ pub struct ParticlesPlugin;
 impl Plugin for ParticlesPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ParticleExplosion>()
-            .add_system(update_velocity)
-            .add_system(destroy_after)
-            .add_system(handle_particle_events);
+            .add_systems(Update, update_velocity)
+            .add_systems(Update, destroy_after)
+            .add_systems(Update, handle_particle_events);
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct ParticleExplosion {
     pub location: Vec2,
     pub color: Color,

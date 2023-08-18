@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use backpack_client::{BackpackClient, RequestError};
-use bevy::{prelude::*, tasks::IoTaskPool};
+use bevy::{gizmos, prelude::*, tasks::IoTaskPool};
 use shared::{
     BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken,
     UserId,
@@ -12,13 +12,13 @@ pub struct BackpackClientPlugin;
 impl Plugin for BackpackClientPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LoginTaskResultEvent>();
-        app.add_system(handle_login_tasks);
+        app.add_systems(Update, handle_login_tasks);
         app.add_event::<SignupTaskResultEvent>();
-        app.add_system(handle_signup_tasks);
+        app.add_systems(Update, handle_signup_tasks);
         app.add_event::<GetItemsTaskResultEvent>();
-        app.add_system(handle_get_items_tasks);
+        app.add_systems(Update, handle_get_items_tasks);
         app.add_event::<ModifyItemTaskResultEvent>();
-        app.add_system(handle_modify_item_tasks);
+        app.add_systems(Update, handle_modify_item_tasks);
     }
 }
 
@@ -36,6 +36,7 @@ impl<T> Default for ClientTask<T> {
 
 #[derive(Component, Default)]
 pub struct LoginTask(ClientTask<(RefreshToken, Vec<u8>, BiscuitInfo)>);
+#[derive(Debug, Event)]
 pub struct LoginTaskResultEvent(pub Result<(RefreshToken, Vec<u8>, BiscuitInfo), RequestError>);
 
 pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: LoginEmailPasswordData) {
@@ -72,6 +73,7 @@ fn handle_login_tasks(
 }
 #[derive(Component, Default)]
 pub struct SignupTask(ClientTask<shared::CreatedUserEmailPasswordData>);
+#[derive(Debug, Event)]
 pub struct SignupTaskResultEvent(pub Result<shared::CreatedUserEmailPasswordData, RequestError>);
 
 pub fn bevy_signup(
@@ -115,6 +117,7 @@ fn handle_signup_tasks(
 
 #[derive(Component, Default)]
 pub struct GetItemsTask(ClientTask<Vec<ItemAmount>>);
+#[derive(Debug, Event)]
 pub struct GetItemsTaskResultEvent(pub Result<Vec<ItemAmount>, RequestError>);
 
 pub fn bevy_get_items(
@@ -158,6 +161,7 @@ fn handle_get_items_tasks(
 
 #[derive(Component, Default)]
 pub struct ModifyItemTask(ClientTask<(ItemId, UserId, i32)>);
+#[derive(Debug, Event)]
 pub struct ModifyItemTaskResultEvent(pub Result<(ItemId, UserId, i32), RequestError>);
 
 pub fn bevy_modify_item(

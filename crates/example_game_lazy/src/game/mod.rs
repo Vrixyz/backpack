@@ -132,6 +132,7 @@ impl Plugin for Game {
         app.init_resource::<GameDef>();
         app.add_startup_system(load_assets);
         app.add_systems(
+            Update,
             (
                 update_wanted_movement_player
                     .before(update_movement)
@@ -143,60 +144,67 @@ impl Plugin for Game {
                 ui_warmup::ui_tuto_start,
                 ui_warmup::handle_tap_to_start.after(collision_warmup),
             )
-                .in_set(OnUpdate(GameState::Warmup)),
+                .run_if(in_state(GameState::Warmup)),
         );
-        app.add_system(
-            init_loading_play
-                .in_schedule(OnEnter(GameState::LoadingPlay))
-                .before(loading_play_use_currency),
-        );
-        app.add_system(
-            loading_play_use_currency
-                .in_schedule(OnEnter(GameState::LoadingPlay))
-                .before(handle_modify_result),
-        );
-        app.add_system(handle_modify_result.in_set(OnUpdate(GameState::LoadingPlay)));
         app.add_systems(
+            OnEnter(GameState::LoadingPlay),
+            init_loading_play.before(loading_play_use_currency),
+        );
+        app.add_systems(
+            OnEnter(GameState::LoadingPlay),
+            loading_play_use_currency.before(handle_modify_result),
+        );
+        app.add_systems(
+            Update,
+            handle_modify_result.run_if(in_state(GameState::LoadingPlay)),
+        );
+        app.add_systems(
+            Update,
             (
                 update_wanted_movement_player
                     .before(update_movement)
                     .after(mouse::my_cursor_system),
                 spawn_planned,
             )
-                .in_set(OnUpdate(GameState::Playing)),
+                .run_if(in_state(GameState::Playing)),
         );
-        app.add_system(init_timer.in_schedule(OnEnter(GameState::Playing)));
+        app.add_systems(OnEnter(GameState::Playing), init_timer);
         app.add_systems(
+            Update,
             (
                 update_collisions_player_playing.after(collisions::collision_player_enemies),
                 juice_collisions,
                 juice_score,
             )
-                .in_set(OnUpdate(GameState::Playing)),
+                .run_if(in_state(GameState::Playing)),
         );
         app.add_systems(
-            (ui_playing::ui_playing, more_enemies).in_set(OnUpdate(GameState::Playing)),
+            Update,
+            (ui_playing::ui_playing, more_enemies).run_if(in_state(GameState::Playing)),
         );
         app.add_systems(
-            (utils::despawn::<Enemy>, utils::despawn::<PlannedSpawn>)
-                .in_schedule(OnEnter(GameState::Warmup)),
+            OnEnter(GameState::Warmup),
+            (utils::despawn::<Enemy>, utils::despawn::<PlannedSpawn>),
         );
         app.add_systems(
-            (utils::despawn::<PlayerUnit>, create_player)
-                .chain()
-                .in_schedule(OnEnter(GameState::Warmup)),
+            OnEnter(GameState::Warmup),
+            (utils::despawn::<PlayerUnit>, create_player).chain(),
         );
-        app.add_system(ui_warmup::handle_get_items_result);
-        app.add_system(ui_warmup::handle_modify_item_result);
-        app.add_system(update_movement.before(collisions::collision_player_enemies))
-            .add_system(bounce_enemies.after(update_movement));
+        app.add_systems(Update, ui_warmup::handle_get_items_result);
+        app.add_systems(Update, ui_warmup::handle_modify_item_result);
+        app.add_systems(
+            Update,
+            update_movement.before(collisions::collision_player_enemies),
+        )
+        .add_systems(Update, bounce_enemies.after(update_movement));
 
         app.add_systems(
+            Update,
             (
                 ui_endscreen::ui_endscreen,
                 ui_endscreen::ui_end_title_and_score,
             )
-                .in_set(OnUpdate(GameState::EndScreen)),
+                .run_if(in_state(GameState::EndScreen)),
         );
     }
 }
@@ -414,10 +422,10 @@ fn loading_play_use_currency(
     bevy_modify_item(
         &mut commands,
         &backpack.client,
-        &auth.0,
+        &auth.1,
         &ItemId(1),
         -(game_def.enemy_count as i32),
-        &auth.1.user_id,
+        &auth.2.user_id,
     );
     *loading_state = LoadingPlayState::WaitingResponse;
 }

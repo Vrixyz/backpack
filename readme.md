@@ -109,4 +109,6 @@ An admin interface and a Backpack library using [bevy](https://bevyengine.org/) 
 
 # Thanks
 
-A lot of code originally inspired by https://github.com/vleue/jornet
+- [Jornet](https://github.com/vleue/jornet) for inspiration
+- [Zero2prod](https://www.zero2prod.com) for great advices and backend organisation
+- all dependencies, stargazers and [sponsors](https://github.com/sponsors/Vrixyz) :heart:

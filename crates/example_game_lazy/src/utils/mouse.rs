@@ -12,7 +12,7 @@ pub struct MousePlugin;
 impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<MousePos>();
-        app.add_system(my_cursor_system);
+        app.add_systems(Update, my_cursor_system);
     }
 }
 
@@ -38,7 +38,8 @@ pub fn my_cursor_system(
         let window_size = Vec2::new(wnd.width(), wnd.height());
 
         // convert screen position [0..resolution] to ndc [-1..1] (gpu coordinates)
-        let ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
+        let mut ndc = (screen_pos / window_size) * 2.0 - Vec2::ONE;
+        ndc.y = -ndc.y;
 
         // matrix for undoing the projection and camera transform
         let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();

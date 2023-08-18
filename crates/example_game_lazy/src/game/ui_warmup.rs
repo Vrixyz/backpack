@@ -73,7 +73,7 @@ pub(super) fn ui_warmup(
                 if get_items_tasks.is_empty() {
                     let get_items_button = ui.button("Get items");
                     if get_items_button.clicked() {
-                        bevy_get_items(&mut commands, &backpack.client, &auth.0, &auth.1.user_id);
+                        bevy_get_items(&mut commands, &backpack.client, &auth.1, &auth.2.user_id);
                     }
                 } else {
                     ui.label("Getting items...");
@@ -114,10 +114,10 @@ pub(super) fn ui_warmup(
                                                 bevy_modify_item(
                                                     &mut commands,
                                                     &backpack.client,
-                                                    &auth.0,
+                                                    &auth.1,
                                                     &item.item.id,
                                                     1,
-                                                    &auth.1.user_id,
+                                                    &auth.2.user_id,
                                                 );
                                             }
                                         }
