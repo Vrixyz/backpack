@@ -123,9 +123,15 @@ pub fn bevy_login(
     let client = client.clone();
 
     // TODO: get a handle to authentication mutex then provide it with the authentication data ; probably also in signup?
+    let mutex_to_update_auth_token = authentication.authentication_token.clone();
     thread_pool
         .spawn(async move {
             let response = client.login(&data).await;
+            if let Ok(new_token) = &response {
+                let mut auth_token_update = mutex_to_update_auth_token.lock().await;
+                *auth_token_update = Some(new_token.clone());
+            }
+
             *fill_result_rwlock.write().unwrap() = Some(response);
         })
         .detach();

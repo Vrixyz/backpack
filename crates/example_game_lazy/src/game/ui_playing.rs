@@ -33,10 +33,7 @@ pub(super) fn ui_scoring(
         };
         egui::Area::new(format!("score {i}"))
             .fixed_pos(egui::pos2(0f32, 0f32))
-            .anchor(
-                Align2::LEFT_BOTTOM,
-                egui::Vec2::new(position.x, -position.y),
-            )
+            .anchor(Align2::LEFT_TOP, egui::Vec2::new(position.x, position.y))
             .show(ctxs.ctx_mut(), |ui| match score {
                 ScoreNear::Scoring(_) => {
                     ui.label("scoring");

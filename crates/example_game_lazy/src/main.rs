@@ -172,6 +172,7 @@ fn ui_auth(
                     bevy_login(
                         &mut commands,
                         &backpack.client,
+                        &*authentication,
                         LoginEmailPasswordData {
                             email: auth_input.email.clone(),
                             password_plain: auth_input.password.clone(),
