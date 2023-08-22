@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthenticationToken {
     pub refresh_token: RefreshToken,
     pub raw_biscuit: Vec<u8>,

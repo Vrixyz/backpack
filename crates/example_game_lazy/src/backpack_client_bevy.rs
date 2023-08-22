@@ -33,6 +33,9 @@ pub struct BackpackClientAuthRefresh {
 }
 
 impl BackpackClientAuthRefresh {
+    pub fn set(&mut self, authentication_token: Option<AuthenticationToken>) {
+        self.authentication_token = Arc::new(Mutex::new(authentication_token));
+    }
     pub fn is_authenticated(&self) -> bool {
         let auth_token = futures::executor::block_on(self.authentication_token.lock());
         auth_token.is_some()

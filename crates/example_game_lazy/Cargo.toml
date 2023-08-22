@@ -24,6 +24,7 @@ bevy_prototype_debug_lines = "0.11.1"
 lerp = "0.4.0"
 rand = "0.8.5"
 bevy_jornet = "0.5"
+bevy_pkv = "0.8.0"
 
 # Our stuff
 particles = { path = "../particles" }

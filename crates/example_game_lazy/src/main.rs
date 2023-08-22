@@ -9,8 +9,10 @@ use bevy_egui::{
     egui::{self, Color32, RichText},
     EguiContexts, EguiPlugin,
 };
+use bevy_pkv::PkvStore;
 use shared::{
-    AppId, BiscuitInfo, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData, UserId,
+    AppId, AuthenticationToken, BiscuitInfo, CreateEmailPasswordData, ItemAmount,
+    LoginEmailPasswordData, UserId,
 };
 
 mod backpack_client_bevy;
@@ -26,22 +28,33 @@ fn main() {
     let email = dotenvy::var("BACKPACK_GAME_EXAMPLE_USERNAME").unwrap();
     let password = dotenvy::var("BACKPACK_GAME_EXAMPLE_PASSWORD").unwrap();
     let host = dotenvy::var("BACKPACK_SERVER_BASE_URL").unwrap();
-    App::new()
-        .add_plugins(DefaultPlugins.set(LogPlugin {
-            level: Level::DEBUG,
-            filter: "wgpu=info,bevy_render=info,bevy_ecs=info,wgpu_core=warn".to_string(),
-        }))
-        .add_plugins(EguiPlugin)
-        .insert_resource(AuthInput {
-            email: email.to_string(),
-            password: password.to_string(),
-            sign_in: password.is_empty(),
-        })
-        .add_plugins(AuthPlugin {
-            host: dbg!(host.to_string()),
-        })
-        .add_systems(Startup, fix_wasm_input)
-        .run();
+
+    let mut app = App::new();
+    let pkv_store = PkvStore::new("Backpack", "Example_lazy");
+    if let Ok(authentication_token) = pkv_store.get::<AuthenticationToken>("authentication_token") {
+        app.insert_resource(AuthenticationCache {
+            user_id: Some(authentication_token.biscuit_info.user_id),
+        });
+        let mut backpack_auth_refresher = BackpackClientAuthRefresh::default();
+        backpack_auth_refresher.set(Some(authentication_token));
+        app.insert_resource(backpack_auth_refresher);
+    }
+    app.insert_resource(pkv_store);
+    app.add_plugins(DefaultPlugins.set(LogPlugin {
+        level: Level::DEBUG,
+        filter: "wgpu=info,bevy_render=info,bevy_ecs=info,wgpu_core=warn".to_string(),
+    }))
+    .add_plugins(EguiPlugin)
+    .insert_resource(AuthInput {
+        email: email.to_string(),
+        password: password.to_string(),
+        sign_in: password.is_empty(),
+    })
+    .add_plugins(AuthPlugin {
+        host: dbg!(host.to_string()),
+    })
+    .add_systems(Startup, fix_wasm_input)
+    .run();
 }
 
 struct AuthPlugin {
@@ -98,7 +111,6 @@ struct BackpackItems {
 
 impl Plugin for AuthPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<AuthenticationCache>();
         app.add_plugins(BackpackClientPlugin);
         app.add_plugins(Game);
         app.add_systems(Update, ui_auth.run_if(in_state(game::GameState::Warmup)));
@@ -109,8 +121,9 @@ impl Plugin for AuthPlugin {
             Update,
             ui_signup_successful.run_if(in_state(PopupSignupSuccess::Shown)),
         );
+        app.init_resource::<AuthenticationCache>();
         app.init_resource::<AuthInput>();
-        app.insert_resource(BackpackCom::new(dbg!(self.host.clone()) + "/api/v1".into()));
+        app.insert_resource(BackpackCom::new(dbg!(self.host.clone()) + "/api/v1"));
         app.init_resource::<BackpackItems>();
     }
 }
@@ -196,11 +209,14 @@ fn ui_auth(
 }
 
 fn handle_login_result(
+    mut pkv: ResMut<PkvStore>,
     mut events: EventReader<LoginTaskResultEvent>,
     mut auth_cache: ResMut<AuthenticationCache>,
 ) {
     for res in events.iter() {
         if let Ok(auth_token) = &res.0 {
+            pkv.set("authentication_token", auth_token)
+                .expect("failed to store authentication token.");
             auth_cache.user_id = Some(auth_token.biscuit_info.user_id)
         } else {
             dbg!("Login failed.");
