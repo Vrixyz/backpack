@@ -6,10 +6,9 @@ use actix_web::{
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
-use crate::{
-    auth_user::BiscuitInfo,
-    models::{app::AppId, item::create},
-};
+use shared::BiscuitInfo;
+
+use crate::models::{app::AppId, item::create, user::UserId};
 
 pub fn config() -> impl HttpServiceFactory {
     web::scope("/item")
@@ -34,13 +33,16 @@ async fn create_item(
     app_id: web::Path<i32>,
 ) -> impl Responder {
     let user = biscuit.user_id;
-    let Ok(owned_apps) = AppId::get_all_for_user(user, &connection).await else {
+    let Ok(owned_apps) = AppId::get_all_for_user(UserId::from(user), &connection).await else {
         return HttpResponse::Unauthorized().body("no apps for user");
     };
-    if !owned_apps.iter().any(|app| app.app_id.0 == *app_id) {
+    if !owned_apps
+        .iter()
+        .any(|app| app.app_id == AppId::from(*app_id))
+    {
         return HttpResponse::Unauthorized().body("app not authorized for user");
     }
-    if let Ok(item_id) = create(&item.0.name, AppId(*app_id), &connection).await {
+    if let Ok(item_id) = create(&item.0.name, AppId::from(*app_id), &connection).await {
         HttpResponse::Ok().json(item_id)
     } else {
         HttpResponse::InternalServerError().finish()

@@ -11,48 +11,9 @@ use biscuit_auth::{
 };
 use serde::Serialize;
 
-use crate::models::user::UserId;
-use crate::{models::app::AppId, time::MockableDateTime};
-
-#[derive(PartialEq, Serialize, Eq, Clone, Copy, Debug)]
-#[non_exhaustive]
-pub enum Role {
-    /// Connected as an admin, still, the user should be admin for the apps to be able to modify admin data.
-    Admin,
-    /// Connected as a user of a specific app.
-    User(AppId),
-}
-
-impl Role {
-    // TODO: #18 Leverage From rust trait for Role -> Option<AppId>
-    pub fn to_option(&self) -> Option<AppId> {
-        match self {
-            Role::User(app_id) => Some(*app_id),
-            Role::Admin => None,
-        }
-    }
-}
-impl Display for Role {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
-#[derive(Clone, Serialize, Debug)]
-pub struct BiscuitInfo {
-    pub user_id: UserId,
-    pub role: Role,
-}
-
-impl Display for BiscuitInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "BiscuitInfo{{user_id: {}, role:{}}}",
-            self.user_id.0, self.role
-        )
-    }
-}
+use crate::biscuit::parse_biscuit_info;
+use crate::time::MockableDateTime;
+use shared::{BiscuitInfo, Role};
 
 #[tracing::instrument(name = "validate biscuit as user or admin", skip_all)]
 pub async fn validator(
@@ -99,12 +60,19 @@ pub fn authorize(token: &Biscuit, time: &MockableDateTime) -> Option<BiscuitInfo
         "time",
         &[Term::Date(time.now_utc().unix_timestamp() as u64)],
     );
-    authorizer.add_fact(time_fact).map_err(|_| ()).ok()?;
+    authorizer.add_fact(dbg!(time_fact)).map_err(|_| ()).ok()?;
     authorizer.allow().map_err(|_| ()).ok()?;
-    authorizer.authorize().map_err(|_| ()).ok()?;
-
-    BiscuitInfo::try_from(&mut authorizer)
-        .map_err(|_| "failed ")
+    dbg!("allowed");
+    authorizer
+        .authorize()
+        .map_err(|err| {
+            dbg!(err);
+            ()
+        })
+        .ok()?;
+    dbg!("authorized");
+    parse_biscuit_info(&mut authorizer)
+        .map_err(|err| dbg!(err))
         .ok()
 }
 
@@ -138,7 +106,7 @@ pub fn decode_without_authorization(
     authorizer.add_fact(time_fact).map_err(|_| ()).ok()?;
     authorizer.allow().map_err(|_| ()).ok()?;
 
-    BiscuitInfo::try_from(&mut authorizer)
+    parse_biscuit_info(&mut authorizer)
         .map_err(|_| "failed ")
         .ok()
 }

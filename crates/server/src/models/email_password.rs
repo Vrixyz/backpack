@@ -30,7 +30,7 @@ pub async fn find(
         (
             EmailPasswordId(rec.id),
             rec.password_hash,
-            UserId(rec.user_id),
+            UserId::from(rec.user_id),
         )
     })
 }

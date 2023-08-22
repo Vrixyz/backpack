@@ -134,7 +134,7 @@ impl ItemFull {
                 id: ItemId(r.id),
                 name: r.name,
             },
-            app_id: AppId(r.app_id),
+            app_id: AppId::from(r.app_id),
         })
         .ok()
     }
@@ -149,7 +149,7 @@ impl ItemWithName {
             r#"
             SELECT id, name FROM items WHERE app_id = $1
             "#,
-            app_id.0
+            *app_id
         )
         .fetch_all(connection)
         .await?;

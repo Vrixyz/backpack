@@ -48,7 +48,7 @@ impl GithubUser {
         )
         .fetch_one(connection)
         .await
-        .map(|record| UserId(record.user_id))
+        .map(|record| UserId::from(record.user_id))
         .ok()
     }
 }

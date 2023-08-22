@@ -28,7 +28,7 @@ impl ItemId {
     VALUES ( $1, $2, $3 )
     RETURNING amount
             "#,
-            user.0,
+            *user,
             self.0,
             amount
         )
@@ -51,7 +51,7 @@ UPDATE users_items SET amount = amount + $1
   RETURNING amount
         "#,
             amount,
-            user.0,
+            *user,
             self.0
         )
         .fetch_one(pool)

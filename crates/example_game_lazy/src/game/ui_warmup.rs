@@ -6,15 +6,15 @@ use bevy_egui::{
 
 use crate::{
     backpack_client_bevy::{
-        bevy_get_items, bevy_modify_item, GetItemsTask, GetItemsTaskResultEvent,
-        ModifyItemTaskResultEvent,
+        bevy_get_items, bevy_modify_item, BackpackClientAuthRefresh, GetItemsTask,
+        GetItemsTaskResultEvent, ModifyItemTaskResultEvent,
     },
-    AuthData, BackpackCom, BackpackItems,
+    AuthenticationCache, BackpackCom, BackpackItems,
 };
 
 use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
 
-pub(super) fn ui_tuto_start(auth_data: Res<AuthData>, mut ctxs: EguiContexts) {
+pub(super) fn ui_tuto_start(auth_cache: Res<AuthenticationCache>, mut ctxs: EguiContexts) {
     egui::Area::new("my_area")
         .fixed_pos(egui::pos2(0.0, 0.0))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -23,7 +23,7 @@ pub(super) fn ui_tuto_start(auth_data: Res<AuthData>, mut ctxs: EguiContexts) {
                 egui::Color32::BLUE,
                 "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
             );
-            if auth_data.data.is_none() {
+            if auth_cache.user_id.is_none() {
                 ui.colored_label(
                     egui::Color32::RED,
                     "\n\nYou are not connected,\nYou won't gain any items.",
@@ -56,77 +56,83 @@ pub(super) fn handle_tap_to_start(
 
 pub(super) fn ui_warmup(
     mut commands: Commands,
+    time: Res<Time>,
     mut ctxs: EguiContexts,
-    auth_data: Res<AuthData>,
+    authentication: Res<BackpackClientAuthRefresh>,
+    authentication_cache: Res<AuthenticationCache>,
     items: Res<BackpackItems>,
     mut game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
     get_items_tasks: Query<Entity, With<GetItemsTask>>,
 ) {
-    if auth_data.data.is_none() {
+    if authentication_cache.user_id.is_none() {
         return;
     }
+    let get_current_user_id = || authentication_cache.user_id.unwrap();
     egui::Window::new("Warmup")
         .auto_sized()
         .show(ctxs.ctx_mut(), |ui| {
-            if let Some(auth) = &auth_data.data {
-                if get_items_tasks.is_empty() {
-                    let get_items_button = ui.button("Get items");
-                    if get_items_button.clicked() {
-                        bevy_get_items(&mut commands, &backpack.client, &auth.1, &auth.2.user_id);
-                    }
-                } else {
-                    ui.label("Getting items...");
+            if get_items_tasks.is_empty() {
+                let get_items_button = ui.button("Get items");
+                if get_items_button.clicked() {
+                    bevy_get_items(
+                        &mut commands,
+                        &*time,
+                        &backpack.client,
+                        &authentication,
+                        &get_current_user_id(),
+                    );
                 }
-                if !items.items.is_empty() {
-                    ui.group(|ui| {
-                        for item in (*items.items).iter() {
-                            if item.item.id.0 == 1 {
-                                ui.horizontal(|ui| {
-                                    ui.label(format!(
-                                        "{}({}): {}",
-                                        item.item.name,
-                                        item.item.id.0,
-                                        item.amount - game_def.enemy_count as i32
-                                    ));
-                                    ui.vertical(|ui| {
-                                        if item.amount > game_def.enemy_count as i32 {
-                                            if ui.button("+1 enemy").clicked() {
-                                                game_def.enemy_count += 1;
-                                            }
-                                        } else {
-                                            // Not enough item amount
-                                            if ui.button("Not enough enemy in stock").clicked() {
-                                                dbg!("not enough item amount");
-                                            }
+            } else {
+                ui.label("Getting items...");
+            }
+            if !items.items.is_empty() {
+                ui.group(|ui| {
+                    for item in (*items.items).iter() {
+                        if item.item.id.0 == 1 {
+                            ui.horizontal(|ui| {
+                                ui.label(format!(
+                                    "{}({}): {}",
+                                    item.item.name,
+                                    item.item.id.0,
+                                    item.amount - game_def.enemy_count as i32
+                                ));
+                                ui.vertical(|ui| {
+                                    if item.amount > game_def.enemy_count as i32 {
+                                        if ui.button("+1 enemy").clicked() {
+                                            game_def.enemy_count += 1;
                                         }
-                                        if game_def.enemy_count > 0 {
-                                            // Can remove enemies
-                                            if ui.button("-1 enemy").clicked() {
-                                                game_def.enemy_count -= 1;
-                                            }
+                                    } else {
+                                        // Not enough item amount
+                                        if ui.button("Not enough enemy in stock").clicked() {
+                                            dbg!("not enough item amount");
                                         }
-                                        if std::env::var("CHEAT").unwrap_or("false".into())
-                                            == "true"
-                                        {
-                                            // Cheat
-                                            if ui.button("+1").clicked() {
-                                                bevy_modify_item(
-                                                    &mut commands,
-                                                    &backpack.client,
-                                                    &auth.1,
-                                                    &item.item.id,
-                                                    1,
-                                                    &auth.2.user_id,
-                                                );
-                                            }
+                                    }
+                                    if game_def.enemy_count > 0 {
+                                        // Can remove enemies
+                                        if ui.button("-1 enemy").clicked() {
+                                            game_def.enemy_count -= 1;
                                         }
-                                    });
+                                    }
+                                    if std::env::var("CHEAT").unwrap_or("false".into()) == "true" {
+                                        // Cheat
+                                        if ui.button("+1").clicked() {
+                                            bevy_modify_item(
+                                                &mut commands,
+                                                &*time,
+                                                &backpack.client,
+                                                &authentication,
+                                                &item.item.id,
+                                                1,
+                                                &get_current_user_id(),
+                                            );
+                                        }
+                                    }
                                 });
-                            }
+                            });
                         }
-                    });
-                }
+                    }
+                });
             }
         });
 }

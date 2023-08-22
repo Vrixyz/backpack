@@ -6,7 +6,6 @@ use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::{
-    auth_user::Role,
     biscuit::TokenReply,
     configuration::Settings,
     models::{user::UserId, user_github::GithubUser},

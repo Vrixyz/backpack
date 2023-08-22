@@ -2,7 +2,8 @@ use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use serde::Serialize;
 use sqlx::PgPool;
 
-use crate::{auth_user::BiscuitInfo, models::user::UserId};
+use crate::models::user::UserId;
+use shared::BiscuitInfo;
 
 pub(crate) fn config() -> impl HttpServiceFactory {
     web::scope("/user")
@@ -21,7 +22,7 @@ struct Identity<'a> {
     fields(user_id=%&*user_id)
 )]
 async fn get_user(connection: web::Data<PgPool>, user_id: web::Path<i32>) -> impl Responder {
-    let user_id = UserId(*user_id);
+    let user_id: UserId = UserId::from(*user_id);
     HttpResponse::Ok().json(Identity {
         user_id: &user_id,
         name: user_id.get(&connection).await.unwrap().name,
@@ -34,7 +35,7 @@ async fn delete_user(
     account: web::ReqData<BiscuitInfo>,
 ) -> impl Responder {
     let user_id = account.user_id.clone();
-    match user_id.delete(&connection).await {
+    match UserId::from(user_id).delete(&connection).await {
         Ok(_) => HttpResponse::Ok().finish(),
         _ => HttpResponse::Forbidden().body("yo"),
     }

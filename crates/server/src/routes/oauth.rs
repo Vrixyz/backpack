@@ -4,8 +4,9 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use serde::Serialize;
 use sqlx::PgPool;
 
-use crate::auth_user::{validator, BiscuitInfo};
+use shared::BiscuitInfo;
 
+use crate::auth_user::validator;
 use crate::models::user::UserId;
 
 pub(crate) fn routes() -> impl HttpServiceFactory {
@@ -15,8 +16,8 @@ pub(crate) fn routes() -> impl HttpServiceFactory {
 }
 
 #[derive(Serialize)]
-struct Identity<'a> {
-    user_id: &'a UserId,
+struct Identity {
+    user_id: UserId,
     name: String,
 }
 
@@ -24,8 +25,9 @@ async fn whoami(
     account: web::ReqData<BiscuitInfo>,
     connection: web::Data<PgPool>,
 ) -> impl Responder {
+    let user_id = UserId::from(account.user_id);
     HttpResponse::Ok().json(Identity {
-        user_id: &account.user_id,
-        name: account.user_id.get(&connection).await.unwrap().name,
+        user_id,
+        name: user_id.get(&connection).await.unwrap().name,
     })
 }

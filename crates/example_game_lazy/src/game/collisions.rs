@@ -18,7 +18,7 @@ pub struct CollisionsPlugin;
 impl Plugin for CollisionsPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<StayCollisionEvent>();
-        app.add_system(collision_player_enemies);
+        app.add_systems(Update, collision_player_enemies);
     }
 }
 

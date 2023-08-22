@@ -593,9 +593,9 @@ dependencies = [
 
 [[package]]
 name = "async-lock"
-version = "2.7.0"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa24f727524730b077666307f2734b4a1a1c57acb79193127dcc8914d5242dd7"
+checksum = "287272293e9d8c41773cec55e365490fe034813a2f172f502d6ddcf75b2f582b"
 dependencies = [
  "event-listener",
 ]
@@ -3212,6 +3212,7 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 name = "example_game_lazy"
 version = "0.1.0"
 dependencies = [
+ "async-lock",
  "backpack_client",
  "bevy 0.11.0",
  "bevy_egui 0.21.0",
@@ -3219,6 +3220,7 @@ dependencies = [
  "bevy_prototype_debug_lines",
  "dotenvy 0.15.7 (git+https://github.com/allan2/dotenvy.git)",
  "dotenvy_macro",
+ "futures",
  "js-sys",
  "lerp",
  "particles",

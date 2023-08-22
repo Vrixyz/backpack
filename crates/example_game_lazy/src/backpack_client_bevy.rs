@@ -1,16 +1,21 @@
-use std::sync::{Arc, RwLock};
+use async_lock::Mutex;
+use std::{
+    sync::{Arc, RwLock},
+    time::UNIX_EPOCH,
+};
 
 use backpack_client::{BackpackClient, RequestError};
-use bevy::{gizmos, prelude::*, tasks::IoTaskPool};
+use bevy::{gizmos, prelude::*, tasks::IoTaskPool, utils::Instant};
 use shared::{
-    BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken,
-    UserId,
+    AuthenticationToken, BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId,
+    LoginEmailPasswordData, RefreshToken, UserId,
 };
 
 pub struct BackpackClientPlugin;
 
 impl Plugin for BackpackClientPlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<BackpackClientAuthRefresh>();
         app.add_event::<LoginTaskResultEvent>();
         app.add_systems(Update, handle_login_tasks);
         app.add_event::<SignupTaskResultEvent>();
@@ -19,6 +24,22 @@ impl Plugin for BackpackClientPlugin {
         app.add_systems(Update, handle_get_items_tasks);
         app.add_event::<ModifyItemTaskResultEvent>();
         app.add_systems(Update, handle_modify_item_tasks);
+    }
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct BackpackClientAuthRefresh {
+    authentication_token: Arc<Mutex<Option<AuthenticationToken>>>,
+}
+
+impl BackpackClientAuthRefresh {
+    pub fn is_authenticated(&self) -> bool {
+        let auth_token = futures::executor::block_on(self.authentication_token.lock());
+        auth_token.is_some()
+    }
+    pub fn disconnect(&self) {
+        let mut auth_token = futures::executor::block_on(self.authentication_token.lock());
+        *auth_token = None;
     }
 }
 
@@ -34,16 +55,74 @@ impl<T> Default for ClientTask<T> {
     }
 }
 
-#[derive(Component, Default)]
-pub struct LoginTask(ClientTask<(RefreshToken, Vec<u8>, BiscuitInfo)>);
-#[derive(Debug, Event)]
-pub struct LoginTaskResultEvent(pub Result<(RefreshToken, Vec<u8>, BiscuitInfo), RequestError>);
+async fn check_refresh_and_report_token(
+    unix_now: i64,
+    client: &BackpackClient,
+    authentication_token: &Arc<Mutex<Option<AuthenticationToken>>>,
+) -> Result<Option<AuthenticationToken>, RequestError> {
+    let mut guard = authentication_token.lock().await;
+    let Some(token) = &*guard else {
+        return Err(RequestError::ClientError("The authentication token is not set. call login() first.".into()));
+    };
+    let authentication_token = match check_and_refresh_token(unix_now, client, token).await {
+        Ok(Some(new_token)) => {
+            *guard = Some(new_token.clone());
+            new_token
+        }
+        Ok(None) => return Ok(None),
+        Err(err) => {
+            return Err(err);
+        }
+    };
 
-pub fn bevy_login(commands: &mut Commands, client: &BackpackClient, data: LoginEmailPasswordData) {
+    Ok(Some(authentication_token))
+}
+
+async fn check_and_refresh_token(
+    unix_now: i64,
+    client: &BackpackClient,
+    token: &AuthenticationToken,
+) -> Result<Option<AuthenticationToken>, RequestError> {
+    // If authentication token expires "soon", we better refresh it.
+    // As communication from client to server can be long or interrupted,
+    // we shouldn't wait for the token to actually expire.
+    let safe_time_to_refresh = 30;
+    if !token
+        .biscuit_info
+        .will_expire(unix_now + safe_time_to_refresh)
+    {
+        return Ok(None);
+    }
+    client
+        .refresh(&token.raw_biscuit, &token.refresh_token)
+        .await
+        .map(|token| Some(token))
+}
+
+#[derive(Component)]
+pub struct LoginTask(ClientTask<AuthenticationToken>);
+
+impl Default for LoginTask {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
+#[derive(Debug, Event)]
+pub struct LoginTaskResultEvent(pub Result<AuthenticationToken, RequestError>);
+
+pub fn bevy_login(
+    commands: &mut Commands,
+    client: &BackpackClient,
+    authentication: &BackpackClientAuthRefresh,
+    data: LoginEmailPasswordData,
+) {
     let thread_pool = IoTaskPool::get();
     let task = LoginTask::default();
     let fill_result_rwlock = task.0.result.clone();
     let client = client.clone();
+
+    // TODO: get a handle to authentication mutex then provide it with the authentication data ; probably also in signup?
     thread_pool
         .spawn(async move {
             let response = client.login(&data).await;
@@ -122,19 +201,61 @@ pub struct GetItemsTaskResultEvent(pub Result<Vec<ItemAmount>, RequestError>);
 
 pub fn bevy_get_items(
     commands: &mut Commands,
+    time: &Time,
     client: &BackpackClient,
-    biscuit_raw: &[u8],
+    authentication: &BackpackClientAuthRefresh,
     user_id: &UserId,
 ) {
     let thread_pool = IoTaskPool::get();
     let client = client.clone();
-    let data = (biscuit_raw.to_vec(), *user_id);
+    let user_id = *user_id;
     let task = GetItemsTask::default();
     let fill_result_rwlock = task.0.result.clone();
+
+    // TODO: #22 fix wasm
+    let unix_now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    let authentication_mutex = authentication.authentication_token.clone();
     thread_pool
         .spawn(async move {
-            let res = client.get_items(&data.0, &data.1).await;
-            *fill_result_rwlock.write().unwrap() = Some(res);
+            async fn call_get_items(
+                client: BackpackClient,
+                authentication_token: &AuthenticationToken,
+                data: UserId,
+            ) -> Result<Vec<ItemAmount>, RequestError> {
+                client.get_items(&authentication_token.raw_biscuit, &data).await
+            }
+
+            let auth_token = check_refresh_and_report_token(
+                unix_now,
+                &client,
+                &authentication_mutex,
+            );
+            *fill_result_rwlock.write().unwrap() = Some(
+                match dbg!(auth_token
+                .await)
+                {
+                    Err(err) => {
+                        Err(err)
+                    }
+                    Ok(Some(authentication_token)) => {
+                        dbg!(call_get_items(client, &authentication_token, user_id).await)
+                    }
+                    Ok(None) => {
+                        let guard = authentication_mutex.lock().await;
+                        match &*guard {
+                            Some(authentication_token) => {
+                                dbg!(call_get_items(client, authentication_token, user_id).await)
+                            }
+                            None => {
+                                Err(RequestError::Other("Authentication token is None, there might have been a log out with bad timing.".into()))
+                            }
+                        }
+                    }
+                },
+            );
         })
         .detach();
     commands.spawn(task);
@@ -166,28 +287,72 @@ pub struct ModifyItemTaskResultEvent(pub Result<(ItemId, UserId, i32), RequestEr
 
 pub fn bevy_modify_item(
     commands: &mut Commands,
+    time: &Time,
     client: &BackpackClient,
-    biscuit_raw: &[u8],
+    authentication: &BackpackClientAuthRefresh,
     item_id: &ItemId,
     amount: i32,
     user_id: &UserId,
 ) {
     let thread_pool = IoTaskPool::get();
     let client = client.clone();
-    let data = (biscuit_raw.to_vec(), *item_id, *user_id);
+    let data = (*item_id, *user_id);
     let task = ModifyItemTask::default();
     let fill_result_rwlock = task.0.result.clone();
+
+    // TODO: #22 fix wasm
+    let unix_now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+    let authentication_mutex = authentication.authentication_token.clone();
     thread_pool
         .spawn(async move {
-            let res = client
-                .modify_item(&data.0, data.1, amount, data.2)
+            async fn call_modify_item(
+                client: BackpackClient,
+                authentication_token: &AuthenticationToken,
+                data: (ItemId, UserId),
+                amount: i32,
+            ) -> Result<(ItemId, UserId, i32), RequestError> {
+                client
+                    .modify_item(&authentication_token.raw_biscuit, data.0, amount, data.1)
+                    .await
+                    .map(|r| (data.0, data.1, r))
+            }
+
+            let auth_token = check_refresh_and_report_token(
+                unix_now,
+                &client,
+                &authentication_mutex,
+            );
+            *fill_result_rwlock.write().unwrap() = Some(
+                match auth_token
                 .await
-                .map(|r| (data.1, data.2, r));
-            *fill_result_rwlock.write().unwrap() = Some(res);
+                {
+                    Err(err) => {
+                        Err(err)
+                    }
+                    Ok(Some(authentication_token)) => {
+                        call_modify_item(client, &authentication_token, data, amount).await
+                    }
+                    Ok(None) => {
+                        let guard = authentication_mutex.lock().await;
+                        match &*guard {
+                            Some(authentication_token) => {
+                                call_modify_item(client, authentication_token, data, amount).await
+                            }
+                            None => {
+                                Err(RequestError::Other("Authentication token is None, there might have been a log out with bad timing.".into()))
+                            }
+                        }
+                    }
+                },
+            );
         })
         .detach();
     commands.spawn(task);
 }
+
 fn handle_modify_item_tasks(
     mut commands: Commands,
     mut tasks: Query<(Entity, &mut ModifyItemTask)>,

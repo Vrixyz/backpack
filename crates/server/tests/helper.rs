@@ -81,6 +81,8 @@ pub struct TestUser {
     pub email: String,
     pub password: String,
 }
+
+// TODO: #24 use shared::AuthenticationToken ; return that directly from BackpackClient
 #[derive(Debug)]
 pub struct UserAuthentication {
     pub refresh_token: RefreshToken,
@@ -117,7 +119,7 @@ impl TestUser {
             .await?;
 
         assert!(
-            biscuit.2.role
+            biscuit.biscuit_info.role
                 == match as_app_user {
                     Some(app_id) => Role::User(app_id),
                     None => Role::Admin,
@@ -125,9 +127,9 @@ impl TestUser {
         );
 
         Ok(UserAuthentication {
-            refresh_token: biscuit.0,
-            biscuit_raw: biscuit.1,
-            infos: biscuit.2,
+            refresh_token: biscuit.refresh_token,
+            biscuit_raw: biscuit.raw_biscuit,
+            infos: biscuit.biscuit_info,
         })
     }
 }

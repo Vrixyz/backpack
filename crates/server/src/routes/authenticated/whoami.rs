@@ -1,6 +1,6 @@
 use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 
-use crate::auth_user::BiscuitInfo;
+use shared::BiscuitInfo;
 
 pub(crate) fn config() -> impl HttpServiceFactory {
     web::resource("/whoami").route(web::get().to(whoami))

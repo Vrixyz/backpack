@@ -2,9 +2,9 @@ use ehttp::Request;
 use serde::de::DeserializeOwned;
 pub use shared;
 use shared::{
-    AuthenticationResponse, BiscuitInfo, CreateEmailPasswordData, CreatedUserEmailPasswordData,
-    ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken, RefreshTokenString, UserId,
-    UserItemModify,
+    AuthenticationResponse, AuthenticationToken, BiscuitInfo, CreateEmailPasswordData,
+    CreatedUserEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, RefreshToken,
+    RefreshTokenString, UserId, UserItemModify,
 };
 use thiserror::Error;
 
@@ -26,6 +26,8 @@ pub enum RequestError {
     HttpError(String),
     #[error("Error 4xx or 5xx")]
     StatusError { status: u16, bytes: Vec<u8> },
+    #[error("Error due to wrong usage of API.")]
+    ClientError(String),
     #[error("other error")]
     Other(String),
 }
@@ -61,8 +63,9 @@ impl BackpackClient {
                 .headers
                 .insert("Content-Type".into(), "application/json".into());
         }
+        dbg!(std::str::from_utf8(&request.body));
         let response = ehttp::fetch_async(request).await;
-        match dbg!(response) {
+        match response {
             Err(error) => Err(RequestError::HttpError(error)),
             Ok(response) => {
                 if (400..=599).contains(&response.status) {
@@ -71,6 +74,7 @@ impl BackpackClient {
                         bytes: response.bytes,
                     });
                 }
+                dbg!(std::str::from_utf8(&response.bytes), &response.status);
                 Ok(response.bytes)
             }
         }
@@ -99,10 +103,7 @@ impl BackpackClient {
             }
         }
     }
-    pub async fn login(
-        &self,
-        data: &LoginEmailPasswordData,
-    ) -> RequestResult<(RefreshToken, Vec<u8>, BiscuitInfo)> {
+    pub async fn login(&self, data: &LoginEmailPasswordData) -> RequestResult<AuthenticationToken> {
         match serde_json::to_vec(&data) {
             Err(err) => Err(err.into()),
             Ok(data) => {
@@ -111,15 +112,38 @@ impl BackpackClient {
                     data,
                 );
                 let response = Self::make_request(request).await?;
+                dbg!("login ok!");
                 self.handle_authentication_response(response).await
             }
         }
     }
-
+    pub async fn refresh(
+        &self,
+        biscuit_raw: &[u8],
+        refresh_token: &RefreshToken,
+    ) -> RequestResult<AuthenticationToken> {
+        match serde_json::to_vec(&refresh_token) {
+            Err(err) => Err(err.into()),
+            Ok(data) => {
+                let request = Request {
+                    headers: ehttp::headers(&[(
+                        AUTHORIZATION,
+                        &Self::get_auth_bearer_header(biscuit_raw),
+                    )]),
+                    ..ehttp::Request::post(
+                        format!("{}/authentication/auth/refresh", self.url),
+                        data,
+                    )
+                };
+                self.handle_authentication_response(Self::make_request(request).await?)
+                    .await
+            }
+        }
+    }
     async fn handle_authentication_response(
         &self,
         response: Vec<u8>,
-    ) -> Result<(RefreshToken, Vec<u8>, BiscuitInfo), RequestError> {
+    ) -> Result<AuthenticationToken, RequestError> {
         let authentication_response: AuthenticationResponse = Self::parse(response)?;
         let biscuit_raw = authentication_response.auth_token.as_bytes();
 
@@ -127,13 +151,13 @@ impl BackpackClient {
         // FIXME: this whoami call could be avoided by decrypting the biscuit with server public key.
         // self is cloned because it could be destroyed during the network call.
         let biscuit_info = self.whoami(biscuit_raw).await;
-        match biscuit_info {
+        match dbg!(biscuit_info) {
             Err(e) => Err(e),
-            Ok(biscuit_info) => Ok((
-                authentication_response.refresh_token,
-                biscuit_raw_saved,
+            Ok(biscuit_info) => Ok(AuthenticationToken {
+                refresh_token: authentication_response.refresh_token,
+                raw_biscuit: biscuit_raw_saved,
                 biscuit_info,
-            )),
+            }),
         }
     }
 
@@ -213,29 +237,5 @@ impl BackpackClient {
             ))
         };
         Self::parse(Self::make_request(request).await?)
-    }
-
-    pub async fn refresh(
-        &self,
-        biscuit_raw: &[u8],
-        refresh_token: RefreshToken,
-    ) -> RequestResult<(RefreshToken, Vec<u8>, BiscuitInfo)> {
-        match serde_json::to_vec(&refresh_token) {
-            Err(err) => Err(err.into()),
-            Ok(data) => {
-                let request = Request {
-                    headers: ehttp::headers(&[(
-                        AUTHORIZATION,
-                        &Self::get_auth_bearer_header(biscuit_raw),
-                    )]),
-                    ..ehttp::Request::post(
-                        format!("{}/authentication/auth/refresh", self.url),
-                        data,
-                    )
-                };
-                self.handle_authentication_response(Self::make_request(request).await?)
-                    .await
-            }
-        }
     }
 }

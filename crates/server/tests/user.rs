@@ -1,7 +1,6 @@
 mod helper;
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
 
     use backpack_client::shared::{AppId, CreateEmailPasswordData};
     use backpack_server::biscuit::TOKEN_TTL;
@@ -126,14 +125,14 @@ mod tests {
             .expect_err("Token should have expired.");
         let new_auth = app
             .api_client
-            .refresh(&auth_info.biscuit_raw, auth_info.refresh_token.clone())
+            .refresh(&auth_info.biscuit_raw, &auth_info.refresh_token)
             .await
             .expect("Token should have correctly be refreshed.");
         let (auth_info, old_auth_info) = (
             UserAuthentication {
-                refresh_token: new_auth.0,
-                biscuit_raw: new_auth.1,
-                infos: new_auth.2,
+                refresh_token: new_auth.refresh_token,
+                biscuit_raw: new_auth.raw_biscuit,
+                infos: new_auth.biscuit_info,
             },
             auth_info,
         );
@@ -143,7 +142,7 @@ mod tests {
             .expect("Token should work.");
         time.set_override(OffsetDateTime::now_utc().checked_add(time::Duration::seconds(60 * 2)));
         app.api_client
-            .refresh(&old_auth_info.biscuit_raw, old_auth_info.refresh_token)
+            .refresh(&old_auth_info.biscuit_raw, &old_auth_info.refresh_token)
             .await
             .expect_err("Old token should not be usable.");
     }
