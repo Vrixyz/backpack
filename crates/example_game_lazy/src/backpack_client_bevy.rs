@@ -69,6 +69,7 @@ async fn check_refresh_and_report_token(
     };
     let authentication_token = match check_and_refresh_token(unix_now, client, token).await {
         Ok(Some(new_token)) => {
+            // TODO: #27 send an event to inform the authentication token did change
             *guard = Some(new_token.clone());
             new_token
         }
