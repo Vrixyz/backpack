@@ -9,12 +9,12 @@ use crate::{
         bevy_get_items, bevy_modify_item, BackpackClientAuthRefresh, GetItemsTask,
         GetItemsTaskResultEvent, ModifyItemTaskResultEvent,
     },
-    AuthenticationCache, BackpackCom, BackpackItems,
+    BackpackCom, BackpackItems,
 };
 
 use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
 
-pub(super) fn ui_tuto_start(auth_cache: Res<AuthenticationCache>, mut ctxs: EguiContexts) {
+pub(super) fn ui_tuto_start(auth_cache: Res<BackpackClientAuthRefresh>, mut ctxs: EguiContexts) {
     egui::Area::new("my_area")
         .fixed_pos(egui::pos2(0.0, 0.0))
         .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
@@ -23,7 +23,7 @@ pub(super) fn ui_tuto_start(auth_cache: Res<AuthenticationCache>, mut ctxs: Egui
                 egui::Color32::BLUE,
                 "TAP\nin Game Area\nTo START!\n\nAvoid little bevies.",
             );
-            if auth_cache.user_id.is_none() {
+            if auth_cache.current_authentication_token.is_none() {
                 ui.colored_label(
                     egui::Color32::RED,
                     "\n\nYou are not connected,\nYou won't gain any items.",
@@ -59,16 +59,14 @@ pub(super) fn ui_warmup(
     time: Res<Time>,
     mut ctxs: EguiContexts,
     authentication: Res<BackpackClientAuthRefresh>,
-    authentication_cache: Res<AuthenticationCache>,
     items: Res<BackpackItems>,
     mut game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
     get_items_tasks: Query<Entity, With<GetItemsTask>>,
 ) {
-    if authentication_cache.user_id.is_none() {
+    let Some(current_user_id) = authentication.get_current_user_id() else {
         return;
-    }
-    let get_current_user_id = || authentication_cache.user_id.unwrap();
+    };
     egui::Window::new("Warmup")
         .auto_sized()
         .show(ctxs.ctx_mut(), |ui| {
@@ -80,7 +78,7 @@ pub(super) fn ui_warmup(
                         &*time,
                         &backpack.client,
                         &authentication,
-                        &get_current_user_id(),
+                        &current_user_id,
                     );
                 }
             } else {
@@ -117,14 +115,14 @@ pub(super) fn ui_warmup(
                                     if std::env::var("CHEAT").unwrap_or("false".into()) == "true" {
                                         // Cheat
                                         if ui.button("+1").clicked() {
-                                            bevy_modify_item(
+                                            let _ = bevy_modify_item(
                                                 &mut commands,
                                                 &*time,
                                                 &backpack.client,
                                                 &authentication,
                                                 &item.item.id,
                                                 1,
-                                                &get_current_user_id(),
+                                                &current_user_id,
                                             );
                                         }
                                     }

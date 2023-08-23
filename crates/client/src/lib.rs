@@ -28,6 +28,8 @@ pub enum RequestError {
     StatusError { status: u16, bytes: Vec<u8> },
     #[error("Error due to wrong usage of API.")]
     ClientError(String),
+    #[error("No authentication token")]
+    NoAuthToken,
     #[error("other error")]
     Other(String),
 }

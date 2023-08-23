@@ -24,7 +24,7 @@ use crate::{
         self,
         mouse::{self, GameCamera, MousePos},
     },
-    AuthenticationCache, BackpackCom, BackpackItems,
+    BackpackCom, BackpackItems,
 };
 use shared::ItemId;
 
@@ -403,7 +403,6 @@ fn loading_play_use_currency(
     mut commands: Commands,
     time: Res<Time>,
     authentication: Res<BackpackClientAuthRefresh>,
-    auth_cache: Res<AuthenticationCache>,
     game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
     mut game_state: ResMut<NextState<GameState>>,
@@ -412,7 +411,7 @@ fn loading_play_use_currency(
     if *loading_state != LoadingPlayState::Init {
         return;
     }
-    let Some(user_id) = &auth_cache.user_id else {
+    let Some(user_id) = &authentication.get_current_user_id() else {
         *loading_state = LoadingPlayState::StartedWithoutBenefit;
         //dbg!(game_state.set(GameState::Warmup));
         dbg!(game_state.set(GameState::Playing));

@@ -32,9 +32,6 @@ fn main() {
     let mut app = App::new();
     let pkv_store = PkvStore::new("Backpack", "Example_lazy");
     if let Ok(authentication_token) = pkv_store.get::<AuthenticationToken>("authentication_token") {
-        app.insert_resource(AuthenticationCache {
-            user_id: Some(authentication_token.biscuit_info.user_id),
-        });
         let mut backpack_auth_refresher = BackpackClientAuthRefresh::default();
         backpack_auth_refresher.set(Some(authentication_token));
         app.insert_resource(backpack_auth_refresher);
@@ -65,11 +62,6 @@ struct AuthPlugin {
 fn fix_wasm_input(mut windows: Query<&mut Window>) {
     let mut window = windows.single_mut();
     window.prevent_default_event_handling = false;
-}
-
-#[derive(Resource, Debug, Default)]
-struct AuthenticationCache {
-    pub user_id: Option<UserId>,
 }
 
 #[derive(Resource, Debug, Default)]
@@ -114,14 +106,16 @@ impl Plugin for AuthPlugin {
         app.add_plugins(BackpackClientPlugin);
         app.add_plugins(Game);
         app.add_systems(Update, ui_auth.run_if(in_state(game::GameState::Warmup)));
-        app.add_systems(Update, handle_login_result);
+        app.add_systems(
+            Update,
+            handle_authentication_change.run_if(resource_changed::<BackpackClientAuthRefresh>()),
+        );
         app.add_systems(Update, handle_signup_result);
         app.add_state::<PopupSignupSuccess>();
         app.add_systems(
             Update,
             ui_signup_successful.run_if(in_state(PopupSignupSuccess::Shown)),
         );
-        app.init_resource::<AuthenticationCache>();
         app.init_resource::<AuthInput>();
         app.insert_resource(BackpackCom::new(dbg!(self.host.clone()) + "/api/v1"));
         app.init_resource::<BackpackItems>();
@@ -145,7 +139,6 @@ fn ui_auth(
     mut commands: Commands,
     mut ctxs: EguiContexts,
     mut auth_input: ResMut<AuthInput>,
-    mut auth_cache: ResMut<AuthenticationCache>,
     mut authentication: ResMut<BackpackClientAuthRefresh>,
     backpack: Res<BackpackCom>,
     login_task: Query<Entity, With<LoginTask>>,
@@ -153,10 +146,9 @@ fn ui_auth(
 ) {
     egui::Window::new("Auth").show(ctxs.ctx_mut(), |ui| {
         //ui.label(format!("current role: {:?}", auth_data));
-        if auth_cache.user_id.is_some() {
+        if authentication.current_authentication_token.is_some() {
             if ui.button("Disconnect").clicked() {
-                authentication.disconnect();
-                auth_cache.user_id = None;
+                authentication.set(None);
             }
             return;
         }
@@ -208,20 +200,17 @@ fn ui_auth(
     });
 }
 
-fn handle_login_result(
+/// Called only when BackpackClientAuthRefresh has changed.
+fn handle_authentication_change(
     mut pkv: ResMut<PkvStore>,
-    mut events: EventReader<LoginTaskResultEvent>,
-    mut auth_cache: ResMut<AuthenticationCache>,
+    authentication: Res<BackpackClientAuthRefresh>,
 ) {
-    for res in events.iter() {
-        if let Ok(auth_token) = &res.0 {
-            pkv.set("authentication_token", auth_token)
-                .expect("failed to store authentication token.");
-            auth_cache.user_id = Some(auth_token.biscuit_info.user_id)
-        } else {
-            dbg!("Login failed.");
-        }
-    }
+    dbg!("authentication changed");
+    pkv.set(
+        "authentication_token",
+        &authentication.current_authentication_token,
+    )
+    .expect("failed to store authentication token.");
 }
 
 fn handle_signup_result(
