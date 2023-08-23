@@ -25,6 +25,9 @@ sequenceDiagram
     app->>-app: store credentials
 ```
 
+Once you have your credentials, keep in mind you'll need to refresh these or your session might be terminated. Check how it's done in the [example game](/crates/example_game_lazy)
+
+
 # Admin
 
 With any user account, you can login as **admin**, then:
