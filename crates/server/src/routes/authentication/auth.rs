@@ -8,12 +8,12 @@ use actix_web_httpauth::{
 use biscuit_auth::{Biscuit, KeyPair};
 use rand::{distributions::Alphanumeric, Rng};
 use serde::Deserialize;
-use shared::{AuthenticationResponse, RefreshToken};
+use shared::{AuthenticationResponse, RefreshToken, Role};
 use sqlx::PgPool;
 use time::Duration;
 
 use crate::{
-    auth_user::{decode_without_authorization, validator, validator_no_check, Role},
+    auth_user::{decode_without_authorization, validator, validator_no_check},
     biscuit::TOKEN_TTL,
     models::{self, app::AppId},
     time::MockableDateTime,
@@ -63,7 +63,7 @@ pub(super) async fn refresh_authentication_token(
     else {
         return HttpResponse::InternalServerError().finish();
     };
-    let Ok(refresh_token) = models::refresh_token::RefreshToken::get(&*connection, &req_data.refresh_token, biscuit_info.user_id).await else {
+    let Ok(refresh_token) = models::refresh_token::RefreshToken::get(&*connection, &req_data.refresh_token, UserId::from(biscuit_info.user_id)).await else {
         return HttpResponse::RangeNotSatisfiable().finish();
     };
     if refresh_token.revoked {
@@ -82,8 +82,8 @@ pub(super) async fn refresh_authentication_token(
         connection,
         root,
         time,
-        biscuit_info.user_id,
-        biscuit_info.role.to_option(),
+        UserId::from(biscuit_info.user_id),
+        biscuit_info.role.to_option().map(AppId::from),
     )
     .await
 }
@@ -96,10 +96,11 @@ pub(super) async fn create_new_authentication_token(
     as_app_user: Option<AppId>,
 ) -> HttpResponse {
     let time_now = time.now_utc();
+    let expiration_date = time_now + Duration::seconds(TOKEN_TTL);
     let biscuit = match as_app_user {
         Some(app_id) => user_id.create_biscuit(
             &root,
-            Role::User(app_id),
+            Role::User(app_id.0),
             time_now + Duration::seconds(TOKEN_TTL),
         ),
         None => user_id.create_biscuit(&root, Role::Admin, time_now + Duration::seconds(TOKEN_TTL)),
@@ -122,8 +123,9 @@ pub(super) async fn create_new_authentication_token(
         auth_token: biscuit.to_base64().unwrap(),
         refresh_token: RefreshToken {
             refresh_token: refresh_token.refresh_token,
-            expiration_date: serde_json::to_string(&refresh_token.expiration_date).unwrap(),
+            expiration_date_unix_timestamp: refresh_token.expiration_date.unix_timestamp(),
         },
+        expiration_date_unix_timestamp: expiration_date.unix_timestamp(),
     };
     HttpResponse::Ok().json(authentication_token)
 }

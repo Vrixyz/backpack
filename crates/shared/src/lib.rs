@@ -1,7 +1,16 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthenticationToken {
+    pub refresh_token: RefreshToken,
+    pub raw_biscuit: Vec<u8>,
+    pub biscuit_info: BiscuitInfo,
+}
+
 // FIXME: pub i32 is pretty bad for type safety, because it allows to create wrong users ; should I split UserIdExisting and UserIdUnreliable (to be used for queries)?
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
 pub struct UserId(pub i32);
 
 impl std::ops::Deref for UserId {
@@ -30,6 +39,8 @@ pub struct User {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AuthenticationResponse {
+    /// unix timestamp (seconds since 1970)
+    pub expiration_date_unix_timestamp: i64,
     pub auth_token: String,
     pub refresh_token: RefreshToken,
 }
@@ -64,10 +75,13 @@ impl std::ops::Deref for RefreshTokenString {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RefreshToken {
     pub refresh_token: RefreshTokenString,
-    /// Format is date time such as RFC3339 https://datatracker.ietf.org/doc/html/rfc3339#section-5.6
-    ///
-    /// example: `2030-07-21T17:32:28Z`
-    pub expiration_date: String,
+    /// unix timestamp (seconds since 1970)
+    pub expiration_date_unix_timestamp: i64,
+}
+impl RefreshToken {
+    pub fn will_expire(&self, at_unix_time_seconds_utc: i64) -> bool {
+        self.expiration_date_unix_timestamp <= at_unix_time_seconds_utc
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
@@ -87,18 +101,49 @@ pub struct App {
     pub name: String,
 }
 
-#[derive(Clone, PartialEq, Eq, Deserialize, Copy, Debug)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, Copy, Debug)]
 pub enum Role {
     /// Connected as an admin, still, the user should be admin for the apps to be able to modify admin data.
     Admin,
     /// Connected as a user of a specific app.
     User(AppId),
 }
+impl Display for Role {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+impl Role {
+    // TODO: #18 Leverage From rust trait for Role -> Option<AppId>
+    pub fn to_option(&self) -> Option<AppId> {
+        match self {
+            Role::User(app_id) => Some(*app_id),
+            Role::Admin => None,
+        }
+    }
+}
 
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct BiscuitInfo {
+    pub expiration_date_unix_timestamp: i64,
     pub user_id: UserId,
     pub role: Role,
+}
+
+impl Display for BiscuitInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "BiscuitInfo{{user_id: {}, role:{:?}, expiration: {}}}",
+            self.user_id.0, self.role, self.expiration_date_unix_timestamp
+        )
+    }
+}
+
+impl BiscuitInfo {
+    pub fn will_expire(&self, at_unix_time_seconds_utc: i64) -> bool {
+        self.expiration_date_unix_timestamp <= at_unix_time_seconds_utc
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

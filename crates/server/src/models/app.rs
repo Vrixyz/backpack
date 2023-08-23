@@ -3,14 +3,26 @@ use sqlx::PgPool;
 
 use super::user::UserId;
 
+// TODO: #25 to remove in favor of shared::AppId.
 #[derive(PartialEq, Eq, Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct AppId(pub i32);
+pub struct AppId(pub shared::AppId);
 
 impl std::ops::Deref for AppId {
     type Target = i32;
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl From<shared::AppId> for AppId {
+    fn from(value: shared::AppId) -> Self {
+        Self(value)
+    }
+}
+impl From<i32> for AppId {
+    fn from(value: i32) -> Self {
+        Self(shared::AppId(value))
     }
 }
 
@@ -64,7 +76,7 @@ impl AppId {
         .fetch_one(connection)
         .await
         .map(|r| App {
-            id: AppId(r.id),
+            id: AppId::from(r.id),
             name: r.name,
         })
         .ok()
@@ -80,7 +92,7 @@ impl AppId {
         .fetch_one(connection)
         .await?;
 
-        Ok(AppId(rec.id))
+        Ok(AppId::from(rec.id))
     }
 
     pub async fn get_all_for_user(
@@ -104,7 +116,7 @@ impl AppId {
             .into_iter()
             .map(|r| AppWithName {
                 name: r.name,
-                app_id: AppId(r.app_id),
+                app_id: AppId::from(r.app_id),
             })
             .collect())
     }
@@ -114,7 +126,7 @@ impl AppId {
                 DELETE FROM apps
                 WHERE id = $1;
             "#,
-            self.0,
+            self.0 .0,
         )
         .execute(pool)
         .await?;
@@ -142,7 +154,7 @@ impl AppId {
             .into_iter()
             .map(|r| AppWithName {
                 name: r.name,
-                app_id: AppId(r.id),
+                app_id: AppId::from(r.id),
             })
             .collect())
     }

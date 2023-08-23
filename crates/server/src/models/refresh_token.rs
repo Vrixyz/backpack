@@ -1,12 +1,7 @@
-use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
-use actix_web_httpauth::middleware::HttpAuthentication;
-use biscuit_auth::KeyPair;
 use serde::{Deserialize, Serialize};
 use shared::{RefreshTokenId, RefreshTokenString};
 use sqlx::PgPool;
 use time::{OffsetDateTime, PrimitiveDateTime};
-
-use crate::auth_user::validator;
 
 use super::user::UserId;
 
@@ -76,7 +71,7 @@ impl RefreshToken {
         .map(|r| RefreshToken {
             id: RefreshTokenId(r.id),
             refresh_token: RefreshTokenString(r.refresh_token),
-            user_id: UserId(r.user_id),
+            user_id: UserId::from(r.user_id),
             expiration_date: r.expiration_date.assume_utc(),
             revoked: r.revoked,
             created_at: r.created_at.assume_utc(),

@@ -5,10 +5,10 @@ use actix_web::{dev::HttpServiceFactory, web, HttpResponse, Responder};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::auth_user::BiscuitInfo;
 use crate::models::app::AppId;
 use crate::models::item::{ItemAmount, ItemFull, ItemId, ItemWithName};
 use crate::models::user::UserId;
+use shared::BiscuitInfo;
 
 pub(crate) fn config() -> impl HttpServiceFactory {
     web::scope("/item")
@@ -53,7 +53,7 @@ async fn get_item(connection: web::Data<PgPool>, item_id: web::Path<i32>) -> imp
 )]
 /// For a given user, returns all its existing items.
 async fn get_user_items(connection: web::Data<PgPool>, user_id: web::Path<i32>) -> impl Responder {
-    let user_id = UserId(*user_id);
+    let user_id = UserId::from(*user_id);
     if let Ok(res) = user_id.get_items(&connection).await {
         HttpResponse::Ok().json(res)
     } else {
@@ -70,7 +70,7 @@ async fn get_user_item(
     connection: web::Data<PgPool>,
     user_id_item_id: web::Path<(i32, i32)>,
 ) -> impl Responder {
-    let user_id = UserId(user_id_item_id.0);
+    let user_id = UserId::from(user_id_item_id.0);
     let item_id = ItemId(user_id_item_id.1);
     if let Ok(res) = ItemAmount::get(&connection, user_id, item_id).await {
         HttpResponse::Ok().json(res)
@@ -99,9 +99,9 @@ async fn modify_item(
     let user = biscuit.user_id;
     let item_id = ItemId(user_id_item_id.1);
     match biscuit.role {
-        crate::auth_user::Role::Admin => {
+        shared::Role::Admin => {
             let authorized_apps = AppId::get_all_for_item(&connection, item_id).await.unwrap();
-            if !AppId::get_all_for_user(user, &connection)
+            if !AppId::get_all_for_user(UserId::from(user), &connection)
                 .await
                 .unwrap()
                 .iter()
@@ -115,7 +115,7 @@ async fn modify_item(
                     .body("You're not admin of any app owner of this item.");
             }
         }
-        crate::auth_user::Role::User(app_id) => {
+        shared::Role::User(app_id) => {
             if biscuit.user_id.0 != user_id_item_id.0 {
                 return HttpResponse::Unauthorized()
                     .body("You are not allowed to modify other users' items (yet).");
@@ -123,7 +123,7 @@ async fn modify_item(
             let authorized_apps = AppId::get_all_for_item(&connection, item_id).await.unwrap();
             if !authorized_apps
                 .iter()
-                .any(|authorized_app| authorized_app.app_id == app_id)
+                .any(|authorized_app| authorized_app.app_id == AppId::from(app_id))
             {
                 return HttpResponse::Unauthorized()
                     .body("The app does not have rights to modify this item.");
@@ -131,7 +131,7 @@ async fn modify_item(
         }
     }
     if let Ok(new_amount) = item_id
-        .modify_amount(user, user_item_modify.amount, &connection)
+        .modify_amount(UserId::from(user), user_item_modify.amount, &connection)
         .await
     {
         HttpResponse::Ok().json(new_amount)
@@ -146,7 +146,7 @@ async fn modify_item(
     fields(app_id=%&*app_id)
 )]
 async fn get_app_items(connection: web::Data<PgPool>, app_id: web::Path<i32>) -> impl Responder {
-    let app_id = AppId(*app_id);
+    let app_id = AppId::from(*app_id);
     if let Ok(res) = ItemWithName::get_for_app(&connection, app_id).await {
         HttpResponse::Ok().json(res)
     } else {

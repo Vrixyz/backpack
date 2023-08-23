@@ -5,9 +5,9 @@ use actix_web::{HttpMessage, HttpRequest};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::auth_user::BiscuitInfo;
 use crate::models::app::AppAdmin;
 use crate::models::app::AppId;
+use shared::BiscuitInfo;
 
 pub(super) fn config() -> impl HttpServiceFactory {
     web::resource("/app")
@@ -42,7 +42,7 @@ async fn create_app(
     };
     let app_id = AppId::create(&connection, &req_data.name).await.unwrap();
     AppAdmin {
-        user_id: user,
+        user_id: user.into(),
         app_id,
     }
     .create_app_admin_relation(&connection)
@@ -57,7 +57,7 @@ async fn get_apps_for_admin(connection: web::Data<PgPool>, req: HttpRequest) -> 
         return HttpResponse::Unauthorized().finish();
     };
 
-    if let Ok(apps) = AppId::get_all_for_user(user, &connection).await {
+    if let Ok(apps) = AppId::get_all_for_user(user.into(), &connection).await {
         HttpResponse::Ok().json(apps)
     } else {
         HttpResponse::InternalServerError().finish()
@@ -84,9 +84,9 @@ async fn delete_app(
     let Some(user) = req.extensions().get::<BiscuitInfo>().map(|b| {b.user_id}) else {
         return HttpResponse::Unauthorized().finish();
     };
-    let app = AppId(app_id.id);
+    let app = AppId::from(app_id.id);
 
-    let Ok(apps) = AppId::get_all_for_user(user, &connection).await
+    let Ok(apps) = AppId::get_all_for_user(user.into(), &connection).await
     else {
         return HttpResponse::InternalServerError().finish();
     };

@@ -9,10 +9,9 @@ use serde::{Deserialize, Serialize};
 
 use super::models::app::AppId;
 use super::models::user::UserId;
-use crate::{
-    auth_user::{BiscuitInfo, Role},
-    time::MockableDateTime,
-};
+use crate::time::MockableDateTime;
+
+use shared::{BiscuitInfo, Role};
 
 pub const TOKEN_TTL: i64 = 600;
 
@@ -23,63 +22,70 @@ pub struct TokenReply {
     pub token: String,
 }
 
+pub struct AuthorizedWrapper<T>(pub T);
+
+impl<T> std::ops::Deref for AuthorizedWrapper<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 pub trait BiscuitBaker<T> {
     fn bake(builder: BiscuitBuilder, ingredient: T) -> BiscuitBuilder;
 }
 
-impl<'a> TryFrom<&'a mut Authorizer<'a>> for Role {
-    type Error = String;
-
-    fn try_from(authorizer: &mut Authorizer) -> Result<Self, Self::Error> {
-        let admin: Option<Vec<(bool,)>> = authorizer
-            .query("data($is_admin) <- is_admin($is_admin)")
-            .ok();
-        match admin {
-            Some(res) if !res.is_empty() && res[0].0 => Ok(Role::Admin),
-            _ => {
-                let app_id: Vec<(String,)> = authorizer
-                    .query("data($app_id) <- user_app_id($app_id)")
-                    .map_err(|_| "query app_id error")?;
-                Ok(Role::User(AppId(
-                    app_id
-                        .get(0)
-                        .ok_or("get(0) error")?
-                        .0
-                        .as_str()
-                        .parse::<i32>()
-                        .map_err(|_| "parse error")?,
-                )))
-            }
+fn parse_role(authorizer: &mut Authorizer) -> Result<Role, String> {
+    let admin: Option<Vec<(bool,)>> = authorizer
+        .query("data($is_admin) <- is_admin($is_admin)")
+        .ok();
+    match admin {
+        Some(res) if !res.is_empty() && res[0].0 => Ok(Role::Admin),
+        _ => {
+            let app_id: Vec<(String,)> = authorizer
+                .query("data($app_id) <- user_app_id($app_id)")
+                .map_err(|_| "query app_id error")?;
+            Ok(Role::User(shared::AppId(
+                app_id
+                    .get(0)
+                    .ok_or("get(0) error")?
+                    .0
+                    .as_str()
+                    .parse::<i32>()
+                    .map_err(|_| "parse error")?,
+            )))
         }
     }
 }
 
-impl<'a> TryFrom<&'a mut Authorizer<'a>> for UserId {
-    type Error = String;
-
-    fn try_from(value: &mut Authorizer) -> Result<Self, Self::Error> {
-        let res: Vec<(String,)> = value
-            .query("data($id) <- user($id)")
-            .map_err(|_| "query error")?;
-        Ok(UserId(
-            res.get(0)
-                .ok_or("get(0) error")?
-                .0
-                .as_str()
-                .parse::<i32>()
-                .map_err(|_| "parse error")?,
-        ))
-    }
+fn parse_user_id(authorizer: &mut Authorizer) -> Result<UserId, String> {
+    let res: Vec<(String,)> = authorizer
+        .query("data($id) <- user($id)")
+        .map_err(|_| "query error")?;
+    Ok(UserId::from(
+        res.get(0)
+            .ok_or("get(0) error")?
+            .0
+            .as_str()
+            .parse::<i32>()
+            .map_err(|_| "parse error")?,
+    ))
 }
-impl<'a, 'b: 'a> TryFrom<&'b mut Authorizer<'a>> for BiscuitInfo {
-    type Error = String;
 
-    fn try_from(authorizer: &'a mut Authorizer<'b>) -> Result<Self, Self::Error> {
-        Ok(Self {
-            user_id: UserId::try_from(&mut authorizer.clone())?,
-            role: Role::try_from(authorizer)?,
-        })
-    }
+fn parse_expiration_date(authorizer: &mut Authorizer) -> Result<i64, String> {
+    let res: Vec<(i64,)> = authorizer
+        .query("data($unix_timestamp) <- expiration_date($unix_timestamp)")
+        .map_err(|err| err.to_string())?;
+    Ok(res.get(0).ok_or("get(0) error")?.0)
+}
+
+pub fn parse_biscuit_info(authorizer: &mut Authorizer) -> Result<BiscuitInfo, String> {
+    Ok(BiscuitInfo {
+        expiration_date_unix_timestamp: parse_expiration_date(authorizer)?,
+        user_id: parse_user_id(authorizer)?.0,
+        role: parse_role(authorizer)?,
+    })
 }
 
 impl<'a> BiscuitBaker<UserId> for BiscuitBuilder<'a> {
@@ -127,6 +133,11 @@ impl UserId {
         builder = BiscuitBuilder::bake(builder, *self);
         builder = BiscuitBuilder::bake(builder, role);
         builder
+            .add_authority_fact(
+                format!(r#"expiration_date({})"#, expiration_date.unix_timestamp()).as_str(),
+            )
+            .unwrap();
+        builder
             .add_authority_check(
                 format!(
                     r#"check if time($time), $time < {}"#,
@@ -151,7 +162,7 @@ pub fn authorize_user_only(token: &Biscuit, time: &MockableDateTime) -> Option<U
     authorizer.allow().map_err(|_| ()).ok()?;
     authorizer.authorize().map_err(|_| ()).ok()?;
 
-    dbg!(UserId::try_from(&mut authorizer)
+    dbg!(parse_user_id(&mut authorizer)
         .map_err(|_| "authorize error")
         .ok())
 }

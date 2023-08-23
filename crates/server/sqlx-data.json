@@ -75,6 +75,57 @@
     },
     "query": "\n            SELECT id, name FROM apps WHERE id = $1\n            "
   },
+  "26c76cf8fc222fe3dd1dece7f0acbaaef45c2ffffcaec2535d771e932051db1e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int4"
+        },
+        {
+          "name": "refresh_token",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "expiration_date",
+          "ordinal": 3,
+          "type_info": "Timestamp"
+        },
+        {
+          "name": "revoked",
+          "ordinal": 4,
+          "type_info": "Bool"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 5,
+          "type_info": "Timestamp"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            SELECT \n                id,\n                refresh_token,\n                user_id,\n                expiration_date,\n                revoked,\n                created_at\n            FROM refresh_tokens\n            WHERE refresh_token = $1\n            AND user_id = $2\n            "
+  },
   "2b5bb2937da51c6ac3b1ff27a87e3a6377a778250f5d76de8d85fb5605521624": {
     "describe": {
       "columns": [
@@ -109,7 +160,7 @@
     },
     "query": "\n            DELETE FROM users WHERE id = $1\n            "
   },
-  "50a4ddc45e64d867588c5e5fe1dc02943047e0873d75c1d4755f1154cce15339": {
+  "349441685e3719cd14a9cc37b101a383446b5cd7d2d1fed8a43924ba0bf2463e": {
     "describe": {
       "columns": [
         {
@@ -130,7 +181,19 @@
         ]
       }
     },
-    "query": "\n    INSERT INTO refresh_tokens ( refresh_token, user_id, expiration_date, revoked, created_at )\n    VALUES ( $1, $2, $3, true, $4 ) RETURNING id\n            "
+    "query": "\n    INSERT INTO refresh_tokens ( refresh_token, user_id, expiration_date, revoked, created_at )\n    VALUES ( $1, $2, $3, false, $4 ) RETURNING id\n            "
+  },
+  "382f8afdd4d3a5e107e269b67f6a98029f6fa0a52ff0c0e31164198d74316693": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int4"
+        ]
+      }
+    },
+    "query": "\n            UPDATE refresh_tokens SET revoked = true\n            WHERE id = $1\n            "
   },
   "533ffa190cb02e238460fd57644a47b9e386b0e297f32bc9e4f7893059aacb5a": {
     "describe": {

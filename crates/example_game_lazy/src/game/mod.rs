@@ -17,12 +17,14 @@ use particles::ParticleExplosion;
 use rand::prelude::*;
 
 use crate::{
-    backpack_client_bevy::{bevy_modify_item, ModifyItemTaskResultEvent},
+    backpack_client_bevy::{
+        bevy_modify_item, BackpackClientAuthRefresh, ModifyItemTaskResultEvent,
+    },
     utils::{
         self,
         mouse::{self, GameCamera, MousePos},
     },
-    AuthData, BackpackCom, BackpackItems,
+    BackpackCom, BackpackItems,
 };
 use shared::ItemId;
 
@@ -123,14 +125,14 @@ impl Plugin for Game {
         app.insert_resource(LoadingPlayState::Unknown);
         app.insert_resource(EnemySpawnTimer { ..default() });
         app.add_state::<GameState>();
-        app.add_plugin(mouse::MousePlugin);
-        app.add_plugin(DebugLinesPlugin::default());
-        app.add_plugin(collisions::CollisionsPlugin);
-        app.add_plugin(scoreboard::ScoreboardPlugin);
-        app.add_plugin(scoring::ScorePlugin);
-        app.add_plugin(particles::ParticlesPlugin);
+        app.add_plugins(mouse::MousePlugin);
+        app.add_plugins(DebugLinesPlugin::default());
+        app.add_plugins(collisions::CollisionsPlugin);
+        app.add_plugins(scoreboard::ScoreboardPlugin);
+        app.add_plugins(scoring::ScorePlugin);
+        app.add_plugins(particles::ParticlesPlugin);
         app.init_resource::<GameDef>();
-        app.add_startup_system(load_assets);
+        app.add_systems(Startup, load_assets);
         app.add_systems(
             Update,
             (
@@ -399,7 +401,8 @@ fn clear_collision_warmup(mut query: Query<(&mut Sprite, &mut CollisionState), W
 
 fn loading_play_use_currency(
     mut commands: Commands,
-    auth_data: Res<AuthData>,
+    time: Res<Time>,
+    authentication: Res<BackpackClientAuthRefresh>,
     game_def: ResMut<GameDef>,
     backpack: Res<BackpackCom>,
     mut game_state: ResMut<NextState<GameState>>,
@@ -408,7 +411,7 @@ fn loading_play_use_currency(
     if *loading_state != LoadingPlayState::Init {
         return;
     }
-    let Some(auth) = &auth_data.data else {
+    let Some(user_id) = &authentication.get_current_user_id() else {
         *loading_state = LoadingPlayState::StartedWithoutBenefit;
         //dbg!(game_state.set(GameState::Warmup));
         dbg!(game_state.set(GameState::Playing));
@@ -421,11 +424,12 @@ fn loading_play_use_currency(
     }
     bevy_modify_item(
         &mut commands,
+        &*time,
         &backpack.client,
-        &auth.1,
+        &authentication,
         &ItemId(1),
         -(game_def.enemy_count as i32),
-        &auth.2.user_id,
+        user_id,
     );
     *loading_state = LoadingPlayState::WaitingResponse;
 }
