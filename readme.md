@@ -45,7 +45,7 @@ Helpful documentations for the project:
   - Create one or several item
   - You will use app's and items' IDs to develop your app which interact with those app/items.
 
-<details><summary>Choose a strategy to update your items, <i>see <a href=crates/backpack-server/docs/sequence.md>sequence diagram</a> for more details</i>
+<details><summary>Choose a strategy to update your items, <i>see <a href=crates/server/docs/sequence.md>sequence diagram</a> for more details</i>
 </summary>
 
 <p>
