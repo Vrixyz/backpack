@@ -16,21 +16,21 @@ use lerp::Lerp;
 use particles::ParticleExplosion;
 use rand::prelude::*;
 
-use crate::{
-    backpack_client_bevy::{
-        bevy_modify_item, BackpackClientAuthRefresh, ModifyItemTaskResultEvent,
-    },
-    utils::{
-        self,
-        mouse::{self, GameCamera, MousePos},
-    },
-    BackpackCom, BackpackItems,
+use backpack_client_bevy::{
+    bevy_modify_item, BackpackClientAuthRefresh, ModifyItemTaskResultEvent,
 };
 use shared::ItemId;
 
 use self::{
     collisions::StayCollisionEvent,
     scoring::{Score, ScoreNear, ScoreNearDef},
+};
+use crate::{
+    utils::{
+        self,
+        mouse::{self, GameCamera, MousePos},
+    },
+    BackpackCom, BackpackItems,
 };
 
 pub struct Game;

@@ -1,15 +1,18 @@
+// public
+pub use backpack_client::{BackpackClient, RequestError};
+
+// external
 use async_lock::Mutex;
-use futures::channel::mpsc::Sender;
+use bevy::{gizmos, prelude::*, tasks::IoTaskPool, utils::Instant};
 use std::{
     sync::{Arc, RwLock},
     time::UNIX_EPOCH,
 };
 
-use backpack_client::{BackpackClient, RequestError};
-use bevy::{gizmos, prelude::*, tasks::IoTaskPool, utils::Instant};
+// Internal
 use shared::{
-    AuthenticationToken, BiscuitInfo, CreateEmailPasswordData, ItemAmount, ItemId,
-    LoginEmailPasswordData, RefreshToken, User, UserId,
+    AuthenticationToken, CreateEmailPasswordData, ItemAmount, ItemId, LoginEmailPasswordData, User,
+    UserId,
 };
 
 pub struct BackpackClientPlugin;
@@ -150,7 +153,6 @@ pub fn bevy_login(
     let fill_result_rwlock = task.0.result.clone();
     let client = client.clone();
 
-    // TODO: get a handle to authentication mutex then provide it with the authentication data ; probably also in signup?
     let mutex_to_update_auth_token = authentication.pending_refreshed_auth_token.clone();
     thread_pool
         .spawn(async move {
@@ -385,5 +387,15 @@ fn handle_modify_item_tasks(
             // Task is complete, so remove task component from entity
             commands.entity(entity).remove::<ModifyItemTask>();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn it_works() {
+        assert!(true);
     }
 }

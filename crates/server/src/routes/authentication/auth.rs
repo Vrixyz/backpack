@@ -63,17 +63,17 @@ pub(super) async fn refresh_authentication_token(
     else {
         return HttpResponse::InternalServerError().finish();
     };
-    let Ok(refresh_token) = models::refresh_token::RefreshToken::get(&*connection, &req_data.refresh_token, UserId::from(biscuit_info.user_id)).await else {
-        return HttpResponse::RangeNotSatisfiable().finish();
+    let Ok(refresh_token) = models::refresh_token::RefreshToken::get(&connection, &req_data.refresh_token, UserId::from(biscuit_info.user_id)).await else {
+        return HttpResponse::BadRequest().finish();
     };
     if refresh_token.revoked {
         // token reuse? Is that a malicious usage?
-        return HttpResponse::RangeNotSatisfiable().finish();
+        return HttpResponse::BadRequest().finish();
     }
-
-    // FIXME: #20 check refresh token is not expired!
-
-    // TODO: #19 refresh token should be revoked and returned in a same DB request.
+    if refresh_token.expiration_date < time.now_utc() {
+        return HttpResponse::Forbidden().finish();
+    }
+    // TODO: #19 refresh token should be returned and revoked in a same DB request (or transaction).
     let Ok(_) = models::refresh_token::RefreshToken::revoke(&connection, refresh_token.id).await else {
         return HttpResponse::Forbidden().finish();
     };

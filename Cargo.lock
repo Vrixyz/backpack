@@ -652,6 +652,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "backpack_client_bevy"
+version = "0.1.0"
+dependencies = [
+ "async-lock",
+ "backpack_client",
+ "bevy 0.11.0",
+ "futures",
+ "shared",
+]
+
+[[package]]
+name = "backpack_client_bevy_egui"
+version = "0.1.0"
+dependencies = [
+ "backpack_client_bevy",
+ "bevy 0.11.0",
+ "bevy_egui 0.21.0",
+ "bevy_pkv",
+ "shared",
+]
+
+[[package]]
 name = "backpack_server"
 version = "0.1.0"
 dependencies = [
@@ -2932,12 +2954,12 @@ checksum = "1aaf95b3e5c8f23aa320147307562d361db0ae0d51242340f558153b4eb2439b"
 [[package]]
 name = "dotenvy"
 version = "0.15.7"
-source = "git+https://github.com/allan2/dotenvy.git#e330110a7cd9064ec913e554c9fc325c9d7cdb88"
+source = "git+https://github.com/allan2/dotenvy.git#ce5bfde5d758df2cf26ecd765f26be7219d348b2"
 
 [[package]]
 name = "dotenvy_macro"
 version = "0.15.7"
-source = "git+https://github.com/allan2/dotenvy.git#e330110a7cd9064ec913e554c9fc325c9d7cdb88"
+source = "git+https://github.com/allan2/dotenvy.git#ce5bfde5d758df2cf26ecd765f26be7219d348b2"
 dependencies = [
  "dotenvy 0.15.7 (git+https://github.com/allan2/dotenvy.git)",
  "proc-macro2",
@@ -3251,8 +3273,8 @@ checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 name = "example_game_lazy"
 version = "0.1.0"
 dependencies = [
- "async-lock",
- "backpack_client",
+ "backpack_client_bevy",
+ "backpack_client_bevy_egui",
  "bevy 0.11.0",
  "bevy_egui 0.21.0",
  "bevy_jornet",
@@ -3260,7 +3282,6 @@ dependencies = [
  "bevy_prototype_debug_lines",
  "dotenvy 0.15.7 (git+https://github.com/allan2/dotenvy.git)",
  "dotenvy_macro",
- "futures",
  "js-sys",
  "lerp",
  "particles",
@@ -3272,6 +3293,16 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "example_game_lazy_simple"
+version = "0.1.0"
+dependencies = [
+ "backpack_client_bevy_egui",
+ "bevy 0.11.0",
+ "bevy_egui 0.21.0",
+ "dotenvy 0.15.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

@@ -1,15 +1,12 @@
+use crate::{BackpackCom, BackpackItems};
+use backpack_client_bevy::{
+    bevy_get_items, bevy_modify_item, BackpackClientAuthRefresh, GetItemsTask,
+    GetItemsTaskResultEvent, ModifyItemTaskResultEvent,
+};
 use bevy::{prelude::*, window::PrimaryWindow};
 use bevy_egui::{
     egui::{self, Align2},
     EguiContext, EguiContexts,
-};
-
-use crate::{
-    backpack_client_bevy::{
-        bevy_get_items, bevy_modify_item, BackpackClientAuthRefresh, GetItemsTask,
-        GetItemsTaskResultEvent, ModifyItemTaskResultEvent,
-    },
-    BackpackCom, BackpackItems,
 };
 
 use super::{mouse::MousePos, CollisionState, GameDef, GameDefBorder, GameState};
