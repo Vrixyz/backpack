@@ -3303,6 +3303,7 @@ dependencies = [
  "bevy 0.11.0",
  "bevy_egui 0.21.0",
  "dotenvy 0.15.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "shared",
 ]
 
 [[package]]

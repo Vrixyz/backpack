@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 bevy = "0.11"
 bevy_egui = "*"
-backpack_client_bevy_egui = { path = "../client_bevy_egui" }
 dotenvy = "*"
+backpack_client_bevy_egui = { path = "../client_bevy_egui" }
+shared = { path = "../shared" }
