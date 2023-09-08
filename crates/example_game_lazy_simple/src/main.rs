@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_egui::*;
+use shared::{AppId, Role};
 
 fn main() {
     App::new().add_plugins(GamePlugin).run();
@@ -27,6 +28,7 @@ impl Plugin for GamePlugin {
             password: password.to_string(),
             sign_in: password.is_empty(),
         })
+        .insert_resource(BackpackRole(Role::User(AppId(1))))
         .add_plugins(AuthPlugin {
             host: dbg!(host.to_string()),
         })
@@ -129,7 +131,6 @@ fn handle_modify_item_result(
 ) {
     for res in events.iter() {
         if let Ok(item) = &res.0 {
-            dbg!(item);
             if let Some(saved_item) = resource_items
                 .items
                 .iter_mut()

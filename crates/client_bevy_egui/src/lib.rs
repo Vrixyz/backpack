@@ -9,7 +9,7 @@ use bevy_pkv::*;
 
 pub use backpack_client_bevy::*;
 use shared::{
-    AppId, AuthenticationToken, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData,
+    AppId, AuthenticationToken, CreateEmailPasswordData, ItemAmount, LoginEmailPasswordData, Role,
 };
 
 pub struct AuthPlugin {
@@ -48,6 +48,9 @@ impl Default for PopupSignupSuccess {
     }
 }
 
+#[derive(Resource)]
+pub struct BackpackRole(pub Role);
+
 #[derive(Resource, Default)]
 pub struct BackpackItems {
     pub items: Vec<ItemAmount>,
@@ -55,6 +58,10 @@ pub struct BackpackItems {
 
 impl Plugin for AuthPlugin {
     fn build(&self, app: &mut App) {
+        assert!(
+            app.world.get_resource::<BackpackRole>().is_some(),
+            "`AuthPlugin` requires a `BackpackRole` resource to know how to connect to Backpack's API."
+        );
         let pkv_store = PkvStore::new("Backpack", "Example_lazy");
         if let Ok(authentication_token) =
             pkv_store.get::<AuthenticationToken>("authentication_token")
@@ -111,6 +118,7 @@ fn ui_auth(
     mut ctxs: EguiContexts,
     mut auth_input: ResMut<AuthInput>,
     mut authentication: ResMut<BackpackClientAuthRefresh>,
+    backpack_role: Res<BackpackRole>,
     backpack: Res<BackpackCom>,
     login_task: Query<Entity, With<LoginTask>>,
     signup_task: Query<Entity, With<SignupTask>>,
@@ -148,11 +156,11 @@ fn ui_auth(
                     bevy_login(
                         &mut commands,
                         &backpack.client,
-                        &*authentication,
+                        &authentication,
                         LoginEmailPasswordData {
                             email: auth_input.email.clone(),
                             password_plain: auth_input.password.clone(),
-                            as_app_user: Some(AppId(1)),
+                            as_app_user: backpack_role.0.to_option(),
                         },
                     );
                 }

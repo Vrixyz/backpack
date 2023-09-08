@@ -12,7 +12,7 @@ use bevy_egui::{
 use bevy_pkv::PkvStore;
 use shared::{
     AppId, AuthenticationToken, BiscuitInfo, CreateEmailPasswordData, ItemAmount,
-    LoginEmailPasswordData, UserId,
+    LoginEmailPasswordData, Role, UserId,
 };
 
 pub mod utils;
@@ -38,6 +38,7 @@ fn main() {
         password: password.to_string(),
         sign_in: password.is_empty(),
     })
+    .insert_resource(BackpackRole(Role::User(AppId(1))))
     .add_plugins(AuthPlugin {
         host: dbg!(host.to_string()),
     })
