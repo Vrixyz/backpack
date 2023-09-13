@@ -3,7 +3,7 @@ mod helper;
 mod tests {
 
     use backpack_client::shared::{AppId, CreateEmailPasswordData};
-    use backpack_server::biscuit::TOKEN_TTL;
+    use backpack_server::biscuit::AUTHENTICATION_TOKEN_TTL;
     use serde::Serialize;
     use time::OffsetDateTime;
     use uuid::Uuid;
@@ -76,7 +76,8 @@ mod tests {
 
         // Act
         time.set_override(
-            OffsetDateTime::now_utc().checked_sub(time::Duration::seconds(TOKEN_TTL + 200)),
+            OffsetDateTime::now_utc()
+                .checked_sub(time::Duration::seconds(AUTHENTICATION_TOKEN_TTL + 200)),
         );
         let user = TestUser::generate(&mut app.api_client)
             .await
@@ -106,7 +107,8 @@ mod tests {
 
         // Act
         time.set_override(
-            OffsetDateTime::now_utc().checked_sub(time::Duration::seconds(TOKEN_TTL + 200)),
+            OffsetDateTime::now_utc()
+                .checked_sub(time::Duration::seconds(AUTHENTICATION_TOKEN_TTL + 200)),
         );
         let user = TestUser::generate(&mut app.api_client)
             .await

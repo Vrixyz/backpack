@@ -14,7 +14,7 @@ use time::Duration;
 
 use crate::{
     auth_user::{decode_without_authorization, validator, validator_no_check},
-    biscuit::TOKEN_TTL,
+    biscuit::{AUTHENTICATION_TOKEN_TTL, REFRESH_TOKEN_TTL},
     models::{self, app::AppId},
     time::MockableDateTime,
 };
@@ -70,7 +70,7 @@ pub(super) async fn refresh_authentication_token(
         // token reuse? Is that a malicious usage?
         return HttpResponse::BadRequest().finish();
     }
-    if refresh_token.expiration_date < time.now_utc() {
+    if dbg!(refresh_token.expiration_date) < dbg!(time.now_utc()) {
         return HttpResponse::Forbidden().finish();
     }
     // TODO: #19 refresh token should be returned and revoked in a same DB request (or transaction).
@@ -96,14 +96,10 @@ pub(super) async fn create_new_authentication_token(
     as_app_user: Option<AppId>,
 ) -> HttpResponse {
     let time_now = time.now_utc();
-    let expiration_date = time_now + Duration::seconds(TOKEN_TTL);
+    let auth_expiration_date = time_now + Duration::seconds(AUTHENTICATION_TOKEN_TTL);
     let biscuit = match as_app_user {
-        Some(app_id) => user_id.create_biscuit(
-            &root,
-            Role::User(app_id.0),
-            time_now + Duration::seconds(TOKEN_TTL),
-        ),
-        None => user_id.create_biscuit(&root, Role::Admin, time_now + Duration::seconds(TOKEN_TTL)),
+        Some(app_id) => user_id.create_biscuit(&root, Role::User(app_id.0), auth_expiration_date),
+        None => user_id.create_biscuit(&root, Role::Admin, auth_expiration_date),
     };
     let refresh_token: String = rand::thread_rng()
         .sample_iter(&Alphanumeric)
@@ -114,7 +110,7 @@ pub(super) async fn create_new_authentication_token(
     connection.as_ref(),
         RefreshTokenString(refresh_token),
         user_id,
-        time_now + Duration::seconds(TOKEN_TTL),
+        time_now + Duration::seconds(REFRESH_TOKEN_TTL),
         time_now)
      .await else {
         return HttpResponse::InternalServerError().finish();
@@ -125,7 +121,7 @@ pub(super) async fn create_new_authentication_token(
             refresh_token: refresh_token.refresh_token,
             expiration_date_unix_timestamp: refresh_token.expiration_date.unix_timestamp(),
         },
-        expiration_date_unix_timestamp: expiration_date.unix_timestamp(),
+        expiration_date_unix_timestamp: auth_expiration_date.unix_timestamp(),
     };
     HttpResponse::Ok().json(authentication_token)
 }

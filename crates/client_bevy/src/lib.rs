@@ -124,6 +124,7 @@ async fn check_and_refresh_token(
     {
         return Ok(None);
     }
+    bevy::log::debug!("refresh token");
     client
         .refresh(&token.raw_biscuit, &token.refresh_token)
         .await

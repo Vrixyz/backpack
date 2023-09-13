@@ -13,7 +13,8 @@ use crate::time::MockableDateTime;
 
 use shared::{BiscuitInfo, Role};
 
-pub const TOKEN_TTL: i64 = 600;
+pub const AUTHENTICATION_TOKEN_TTL: i64 = 30;
+pub const REFRESH_TOKEN_TTL: i64 = 30 * 24 * 3600;
 
 /// Contains a biscuit token.
 #[derive(Debug, Serialize, Deserialize)]
