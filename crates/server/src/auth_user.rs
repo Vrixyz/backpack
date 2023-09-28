@@ -67,7 +67,6 @@ pub fn authorize(token: &Biscuit, time: &MockableDateTime) -> Option<BiscuitInfo
         .authorize()
         .map_err(|err| {
             dbg!(err);
-            ()
         })
         .ok()?;
     dbg!("authorized");

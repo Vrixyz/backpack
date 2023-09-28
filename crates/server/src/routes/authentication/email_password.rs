@@ -160,3 +160,29 @@ async fn login_email_password(
     // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
     create_new_authentication_token(connection, root, time, user_id, req_data.as_app_user).await
 }
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct RequestPasswordChangeData {
+    pub email: String,
+}
+
+#[tracing::instrument(name = "request_password_change_email_password", skip_all)]
+async fn request_password_change_email_password(
+    req_data: web::Json<LoginEmailPasswordData>,
+    connection: web::Data<PgPool>,
+    root: web::Data<KeyPair>,
+    time: web::Data<MockableDateTime>,
+) -> HttpResponse {
+    let Ok((_email_password_id, password_hash_existing, user_id)) =
+        find(connection.as_ref(), &req_data.email).await else {
+            // We do not return not found, to avoid giving information about an account existence.
+            return dbg!(HttpResponse::Unauthorized().finish());
+        };
+    let Ok(true) =
+        verify(&req_data.password_plain, &password_hash_existing)
+        else {
+        return dbg!(HttpResponse::Unauthorized().finish());
+    };
+    // TODO: set email password as verified ? (or create another route to do that, it would probably be better.)
+    create_new_authentication_token(connection, root, time, user_id, req_data.as_app_user).await
+}

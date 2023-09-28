@@ -19,6 +19,10 @@ pub(crate) fn config() -> impl HttpServiceFactory {
             "/{item_id}/user/{user_id}/modify",
             web::post().to(modify_item),
         )
+        .route(
+            "/{item_id}/user/{user_id}/send_item",
+            web::post().to(send_item),
+        )
         .route("/app/{item_id}", web::get().to(get_app_items))
 }
 
@@ -135,6 +139,94 @@ async fn modify_item(
         .await
     {
         HttpResponse::Ok().json(new_amount)
+    } else {
+        HttpResponse::InternalServerError().finish()
+    }
+}
+
+#[derive(Deserialize)]
+pub struct UserItemSend {
+    pub amount: i32,
+    pub user_to_send_to: UserId,
+}
+
+impl Display for UserItemSend {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Send {} to {}", self.amount, self.user_to_send_to.0 .0)
+    }
+}
+
+/// For a authenticated user, sends item to another
+/// It does not check yet:
+/// - :construction: If the item is allowed to be modified by the app the user is authenticated on
+/// - :construction: If item is allowed to be modified by user
+///
+#[tracing::instrument(
+    name = "Send item",
+    skip_all,
+    fields(biscuit=%&*biscuit, user_item_send=%&*user_item_send)
+)]
+async fn send_item(
+    connection: web::Data<PgPool>,
+    user_id_item_id: web::Path<(i32, i32)>,
+    biscuit: ReqData<BiscuitInfo>,
+    user_item_send: web::Json<UserItemSend>,
+) -> impl Responder {
+    let user = biscuit.user_id;
+    let item_id = ItemId(user_id_item_id.1);
+    match biscuit.role {
+        shared::Role::Admin => {
+            let authorized_apps = AppId::get_all_for_item(&connection, item_id).await.unwrap();
+            if !AppId::get_all_for_user(UserId::from(user), &connection)
+                .await
+                .unwrap()
+                .iter()
+                .any(|app| {
+                    authorized_apps
+                        .iter()
+                        .any(|authorized_app| authorized_app.app_id == app.app_id)
+                })
+            {
+                return HttpResponse::Unauthorized()
+                    .body("You're not admin of any app owner of this item.");
+            }
+        }
+        shared::Role::User(app_id) => {
+            if user_item_send.amount <= 0 {
+                return HttpResponse::BadRequest().body("amount to send should be positive (> 0).");
+            }
+            if biscuit.user_id.0 != user_id_item_id.0 {
+                return HttpResponse::Unauthorized()
+                    .body("You are not allowed to modify other users' items (yet).");
+            }
+            let authorized_apps = AppId::get_all_for_item(&connection, item_id).await.unwrap();
+            if !authorized_apps
+                .iter()
+                .any(|authorized_app| authorized_app.app_id == AppId::from(app_id))
+            {
+                return HttpResponse::Unauthorized()
+                    .body("The app does not have rights to modify this item.");
+            }
+        }
+    }
+    // TODO: use transations!
+    if let Ok(new_amount) = item_id
+        .modify_amount(UserId::from(user), -user_item_send.amount, &connection)
+        .await
+    {
+        if (item_id
+            .modify_amount(
+                user_item_send.user_to_send_to,
+                user_item_send.amount,
+                &connection,
+            )
+            .await)
+            .is_ok()
+        {
+            HttpResponse::Ok().json(new_amount)
+        } else {
+            HttpResponse::InternalServerError().finish()
+        }
     } else {
         HttpResponse::InternalServerError().finish()
     }

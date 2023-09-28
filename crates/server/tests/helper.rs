@@ -1,7 +1,7 @@
 use std::net::TcpListener;
 
 use backpack_client::{
-    shared::{AppId, BiscuitInfo, Role, UserId},
+    shared::{AppId, Role, UserId},
     BackpackClient, RequestError,
 };
 use backpack_server::{
@@ -9,7 +9,7 @@ use backpack_server::{
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
-use shared::RefreshToken;
+use shared::AuthenticationToken;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -82,14 +82,6 @@ pub struct TestUser {
     pub password: String,
 }
 
-// TODO: #24 use shared::AuthenticationToken ; return that directly from BackpackClient
-#[derive(Debug)]
-pub struct UserAuthentication {
-    pub refresh_token: RefreshToken,
-    pub biscuit_raw: Vec<u8>,
-    pub infos: BiscuitInfo,
-}
-
 impl TestUser {
     pub async fn generate(client: &mut BackpackClient) -> Result<Self, RequestError> {
         let email = Uuid::new_v4().to_string() + "@example.com";
@@ -109,7 +101,7 @@ impl TestUser {
         &self,
         client: &mut BackpackClient,
         as_app_user: Option<AppId>,
-    ) -> Result<UserAuthentication, RequestError> {
+    ) -> Result<AuthenticationToken, RequestError> {
         let biscuit = client
             .login(&backpack_client::shared::LoginEmailPasswordData {
                 email: self.email.clone(),
@@ -126,10 +118,6 @@ impl TestUser {
                 }
         );
 
-        Ok(UserAuthentication {
-            refresh_token: biscuit.refresh_token,
-            biscuit_raw: biscuit.raw_biscuit,
-            infos: biscuit.biscuit_info,
-        })
+        Ok(biscuit)
     }
 }

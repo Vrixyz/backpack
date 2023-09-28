@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Backpack API
   description: |-
@@ -46,7 +46,8 @@ paths:
               properties:
                 email:
                   type: string
-                  example: "new.user@example.com"
+                  examples:
+                    - "new.user@example.com"
         required: true
       responses:
         "201":
@@ -54,9 +55,19 @@ paths:
           content:
             text/plain:
               schema:
-                description: "The generated password ; it's also sent by email."
-                type: string
-                example: "your generated password, to be used on login"
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: "The id of the created user."
+                    examples:
+                      - 42
+                  password_plain:
+                    type: string
+                    format: password
+                    description: "Password copypasted from email on creation"
+                    examples:
+                      - "5~#_ER]rz/..."
         "500":
           description: Internal server error
   /authentication/email_password/login:
@@ -78,16 +89,19 @@ paths:
               properties:
                 email:
                   type: string
-                  example: "new.user@example.com"
+                  examples:
+                    - "new.user@example.com"
                 password_plain:
                   type: string
                   format: password
                   description: "Password copypasted from email on creation"
-                  example: "5~#_ER]rz/..."
+                  examples:
+                    - "5~#_ER]rz/..."
                 as_app_user:
                   type: integer
                   description: "id of the app to authenticate on"
-                  example: "42"
+                  examples:
+                    - "42"
               required:
                 - email
                 - password_plain
@@ -117,7 +131,8 @@ paths:
               properties:
                 refresh_token:
                   type: string
-                  example: "0d-ace1-14b02dd819"
+                  examples:
+                    - "0d-ace1-14b02dd819"
               required:
                 - refresh_token
         required: true
@@ -276,8 +291,8 @@ paths:
                   type: integer
         required: true
       responses:
-        "201":
-          description: Successful operation returns the id of created app.
+        "200":
+          description: Successful operation returns nothing.
         "401":
           description: Unauthorized. (User is not admin of the owner app?)
       security:
@@ -304,7 +319,8 @@ paths:
                 properties:
                   name:
                     type: string
-                    example: "Authenticated user owns resources which should be deleted before being able to delete user."
+                    examples:
+                      - "Authenticated user owns resources which should be deleted before being able to delete user."
       security:
         - biscuit_token:
             - admin
@@ -317,11 +333,10 @@ paths:
       operationId: whoami
       responses:
         "200":
-          description: Successful operation returns the id of created app.
+          description: Successful operation returns biscuit info.<br/>👻This should be exposed through pubilc key.
           content:
             application/json:
               schema:
-                description: biscuit info
                 $ref: "#/components/schemas/BiscuitInfo"
       security:
         - biscuit_token:
@@ -349,7 +364,8 @@ paths:
                 properties:
                   name:
                     type: string
-                    example: "super name"
+                    examples:
+                      - "super name"
       security:
         - biscuit_token:
             - admin
@@ -387,7 +403,62 @@ paths:
         required: true
       responses:
         "201":
-          description: Successful operation returns the id of created app.
+          description: Successful operation returns the new item amount.
+          content:
+            application/json:
+              schema:
+                type: integer
+                examples:
+                  - 5
+        "401":
+          description: Unauthorized. (User is not admin of the owner app?)
+      security:
+        - biscuit_token:
+            - admin
+            - user
+  /authenticated/item/{itemId}/user/{userId}/send_item:
+    parameters:
+      - in: path
+        name: userId
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: itemId
+        schema:
+          type: integer
+        required: true
+    post:
+      tags:
+        - item as user
+      summary: send amount of item to another user
+      description: "Logged as user or admin.<br>
+        - User fails if its app has no rights to modify (or has not this app in its biscuit)<br>
+        - User fails if amount is negative<br>
+        - Admin fails if he's not managing this app"
+      operationId: sendItem
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  description: the amount to add (or remove if negative).<br>Can only be positive if authenticated as user.
+                  type: integer
+                user_to_send_to:
+                  description: the user to send to.<br>🚧 Specific rights should be checked for negative/positive values.
+                  type: integer
+        required: true
+      responses:
+        "201":
+          description: Successful operation returns the new item amount for caller user.
+          content:
+            application/json:
+              schema:
+                type: integer
+                examples:
+                  - 5
         "401":
           description: Unauthorized. (User is not admin of the owner app?)
       security:
@@ -410,7 +481,7 @@ paths:
       operationId: getUserItems
       responses:
         "201":
-          description: Successful operation returns the id of created app.
+          description: Successful operation returns the user items.
           content:
             application/json:
               schema:
@@ -471,14 +542,11 @@ paths:
       operationId: getItem
       responses:
         "200":
-          description: Successful operation returns the id of created app.
+          description: Successful operation returns the item details.
           content:
             application/json:
               schema:
-                description: items interactable through a given app.
-                type: array
-                items:
-                  $ref: "#/components/schemas/ItemDef"
+                $ref: "#/components/schemas/ItemDef"
       security:
         - biscuit_token:
             - admin
@@ -498,7 +566,7 @@ paths:
       operationId: getItems
       responses:
         "200":
-          description: Successful operation returns the id of created app.
+          description: Successful operation returns the items of the app.
           content:
             application/json:
               schema:
@@ -523,12 +591,13 @@ paths:
       operationId: getAppsItem
       responses:
         "201":
-          description: Successful operation returns the id of created item.
+          description: Successful operation returns the apps owning this item.
           content:
             application/json:
               schema:
-                description: the id of the created item.
-                type: integer
+                type: array
+                items:
+                  $ref: "#/components/schemas/App"
       security:
         - biscuit_token:
             - admin
@@ -539,23 +608,27 @@ components:
       properties:
         authToken:
           type: string
-          example: En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
+          examples:
+            - En0KEwoEMTIzNBgDIgkKBwgKEgMYgAgSJAgAEiAs2CFWr5WyHHWEiMhTXxVNw4gP7PlADPaGfr_AQk9WohpA6LZTjFfFhcFQrMsp2O7bOI9BOzP-jIE5PGhha62HDfX4t5FLQivX5rUhH5iTv2c-rd0kDSazrww4cD1UCeytDSIiCiCfMgpVPOuqq371l1wHVhCXoIscKW-wrwiKN80vR_Rfzg==
         refreshToken:
           type: object
           properties:
             id:
               type: string
-              example: Tv2c-rd0kDSazrww4cD1UCeytDS
+              examples:
+                - Tv2c-rd0kDSazrww4cD1UCeytDS
             expirationDate:
               type: string
               format: date-time
-              example: 2030-07-21T17:32:28Z
+              examples:
+                - 2030-07-21T17:32:28Z
     BiscuitInfo:
       type: object
       properties:
         user_id:
           type: integer
-          example: 1
+          examples:
+            - 1
         role:
           # TODO: #15 (OpenAPI) fix BiscuitInfo Role: swagger editor wants a "schema:" before this line, but vscode highlighter doesn't like it...
           oneOf:
@@ -572,20 +645,24 @@ components:
         id:
           type: integer
           format: int64
-          example: 100000
+          examples:
+            - 100000
         name:
           type: string
-          example: "Game name"
+          examples:
+            - "Game name"
     ItemWithName:
       type: object
       properties:
         id:
           type: integer
           format: int64
-          example: 100000
+          examples:
+            - 100000
         name:
           type: string
-          example: "Item name"
+          examples:
+            - "Item name"
     ItemDef:
       type: object
       properties:
@@ -593,7 +670,8 @@ components:
           $ref: "#/components/schemas/ItemWithName"
         app_id:
           type: integer
-          example: 19
+          examples:
+            - 19
     ItemAmount:
       type: object
       properties:
@@ -601,7 +679,8 @@ components:
           $ref: "#/components/schemas/ItemWithName"
         amount:
           type: integer
-          example: 42
+          examples:
+            - 42
   securitySchemes:
     github_auth:
       type: oauth2
